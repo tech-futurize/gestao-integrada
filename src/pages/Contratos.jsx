@@ -98,30 +98,8 @@ export default function Contratos({ initialTab = "contratos" }) {
 
   return (
     <div className="p-6 space-y-6">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total Contratado", value: fmt(totalContratado), icon: DollarSign, color: "#26405d" },
-          { label: "Pago em Medições", value: fmt(medicoesPagas), icon: CheckCircle, color: "#00a49a" },
-          { label: "Contratos Ativos", value: contratosAtivos, icon: FileText, color: "#c35e1e" },
-          { label: "Medições Pendentes", value: medioesEmAprovacao, icon: ClipboardList, color: "#f59e0b" },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="bg-white shadow-sm">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + "20" }}>
-                <Icon className="w-5 h-5" style={{ color }} />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">{label}</p>
-                <p className="text-lg font-bold text-brand-primary">{value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <TabsList className="bg-gray-100">
             <TabsTrigger value="contratos">Contratos</TabsTrigger>
             <TabsTrigger value="medicoes">Medições</TabsTrigger>
@@ -135,7 +113,29 @@ export default function Contratos({ initialTab = "contratos" }) {
           </Button>
         </div>
 
-        <TabsContent value="contratos" className="mt-4">
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: "Total Contratado", value: fmt(totalContratado), icon: DollarSign, color: "#26405d" },
+            { label: "Pago em Medições", value: fmt(medicoesPagas), icon: CheckCircle, color: "#00a49a" },
+            { label: "Contratos Ativos", value: contratosAtivos, icon: FileText, color: "#c35e1e" },
+            { label: "Medições Pendentes", value: medioesEmAprovacao, icon: ClipboardList, color: "#f59e0b" },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <Card key={label} className="bg-white shadow-sm">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + "20" }}>
+                  <Icon className="w-5 h-5" style={{ color }} />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">{label}</p>
+                  <p className="text-lg font-bold text-brand-primary">{value}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <TabsContent value="contratos">
           {selectedContrato ? (
             <ContratoDetalhes
               contrato={selectedContrato}
@@ -156,7 +156,7 @@ export default function Contratos({ initialTab = "contratos" }) {
           )}
         </TabsContent>
 
-        <TabsContent value="medicoes" className="mt-4">
+        <TabsContent value="medicoes">
           <MedicoesList
             medicoes={medicoes}
             contratos={contratos}

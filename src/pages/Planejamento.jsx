@@ -115,7 +115,7 @@ function SixWLA({ projetoId }) {
   const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [modal, setModal] = useState(null);
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: items = [], isPending, isError } = useQuery({
     queryKey: ["itens_6wla", projetoId],
     queryFn: () => entities.Item6WLA.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
@@ -149,7 +149,13 @@ function SixWLA({ projetoId }) {
     ? Math.round(items.filter(a => a.ppc > 0).reduce((s, a) => s + a.ppc, 0) / items.filter(a => a.ppc > 0).length)
     : 0;
 
-  if (isLoading) return <div className="py-8 text-center text-gray-400 text-sm">Carregando...</div>;
+  if (isPending) return <div className="py-8 text-center text-gray-400 text-sm">Carregando...</div>;
+  if (isError) return (
+    <div className="py-12 text-center space-y-2">
+      <p className="text-sm font-medium text-gray-500">Não foi possível carregar o 6WLA.</p>
+      <p className="text-xs text-gray-400">Verifique se a tabela <code className="bg-gray-100 px-1 rounded">itens_6wla</code> existe no banco de dados.</p>
+    </div>
+  );
 
   return (
     <div className="space-y-4">

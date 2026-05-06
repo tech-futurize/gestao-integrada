@@ -29,7 +29,6 @@ import {
   Bot,
   Settings2,
   ScrollText,
-  AlertTriangle,
   FolderOpen,
 } from "lucide-react";
 
@@ -42,7 +41,6 @@ const navigationItems = [
   { title: "Planejamento", url: "Planejamento", icon: ClipboardList },
   { title: "Histograma", url: "Histograma", icon: BarChart3 },
   { title: "Avanço Físico", url: "AvancoFisico", icon: TrendingUp },
-  { title: "Registros", url: "Registros", icon: AlertTriangle },
   { title: "Pleitos", url: "Pleitos", icon: FileText },
   { title: "Qualidade", url: "Qualidade", icon: Settings },
   { title: "Gestão de Mudanças", url: "GestaoMudancas", icon: GitBranch },

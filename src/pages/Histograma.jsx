@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, Plus, Save, X, Upload, Edit, Trash2 } from "lucide-react";
+import { BarChart3, Users, Truck, Plus, Save, X, Upload, Edit, Trash2 } from "lucide-react";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -99,8 +99,14 @@ export default function Histograma() {
       <div className="max-w-7xl mx-auto space-y-6">
         <Tabs defaultValue="mao-de-obra">
           <TabsList className="mb-4">
-            <TabsTrigger value="mao-de-obra">Mão de Obra</TabsTrigger>
-            <TabsTrigger value="equipamentos">Equipamentos</TabsTrigger>
+            <TabsTrigger value="mao-de-obra" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Mão de Obra
+            </TabsTrigger>
+            <TabsTrigger value="equipamentos" className="flex items-center gap-2">
+              <Truck className="w-4 h-4" />
+              Equipamentos
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="equipamentos">
             <HistogramaEquipamentos />

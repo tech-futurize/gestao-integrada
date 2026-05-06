@@ -5,15 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
-import { Plus, FileText, AlertTriangle, MapPin } from "lucide-react";
+import { Plus, FileText, AlertTriangle, MapPin, ClipboardList } from "lucide-react";
 
 import CasoForm from "../components/casos/CasoForm";
-
 import CasosList from "../components/casos/CasosList";
 import CasoDetalhes from "../components/casos/CasoDetalhes";
 import IncidenteForm from "../components/incidentes/IncidenteForm";
 import IncidentesList from "../components/incidentes/IncidentesList";
-
+import RDOsList from "../components/incidentes/RDOsList";
 import MapaRegistroImpacto from "../components/incidentes/MapaRegistroImpacto";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
@@ -123,36 +122,49 @@ export default function Casos() {
   const tabs = [
     { value: "pleitos", label: "Pleitos", icon: <FileText className="w-4 h-4" /> },
     { value: "registros", label: "Registros", icon: <AlertTriangle className="w-4 h-4" /> },
+    { value: "rdos", label: "RDOs", icon: <ClipboardList className="w-4 h-4" /> },
     { value: "mapa", label: "Mapa de Impacto", icon: <MapPin className="w-4 h-4" /> },
   ];
 
   return (
     <div className="p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Tab bar */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-          {tabs.map(tab => (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-                activeTab === tab.value
-                  ? "bg-white text-gray-900 shadow"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab.icon}{tab.label}
-            </button>
-          ))}
+        {/* Tab bar + action button */}
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+            {tabs.map(tab => (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+                  activeTab === tab.value
+                    ? "bg-white text-gray-900 shadow"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab.icon}{tab.label}
+              </button>
+            ))}
+          </div>
+          {activeTab === "pleitos" && (
+            <Button onClick={() => { setEditingCaso(null); setShowForm(true); }} className="bg-green-600 hover:bg-green-700 shadow-md">
+              <Plus className="w-5 h-5 mr-2" />Novo Pleito
+            </Button>
+          )}
+          {activeTab === "registros" && (
+            <Button onClick={() => { setEditingIncidente(null); setShowIncidenteForm(true); }} className="bg-green-600 hover:bg-green-700 shadow-md">
+              <Plus className="w-5 h-5 mr-2" />Novo Registro
+            </Button>
+          )}
+          {activeTab === "rdos" && (
+            <Button onClick={() => { setEditingIncidente(null); setShowIncidenteForm(true); }} className="bg-green-600 hover:bg-green-700 shadow-md">
+              <Plus className="w-5 h-5 mr-2" />Novo RDO
+            </Button>
+          )}
         </div>
 
         {activeTab === "pleitos" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={() => { setEditingCaso(null); setShowForm(true); }} className="bg-green-600 hover:bg-green-700 shadow-md">
-                <Plus className="w-5 h-5 mr-2" />Novo Pleito
-              </Button>
-            </div>
             {showForm && (
               <CasoForm
                 key={editingCaso?.id || "new-caso"}
@@ -168,11 +180,6 @@ export default function Casos() {
 
         {activeTab === "registros" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={() => { setEditingIncidente(null); setShowIncidenteForm(true); }} className="bg-green-600 hover:bg-green-700 shadow-md">
-                <Plus className="w-5 h-5 mr-2" />Novo Registro
-              </Button>
-            </div>
             {showIncidenteForm && (
               <IncidenteForm
                 key={editingIncidente?.id || "new-incidente"}
@@ -195,6 +202,29 @@ export default function Casos() {
           </div>
         )}
 
+        {activeTab === "rdos" && (
+          <div className="space-y-4">
+            {showIncidenteForm && (
+              <IncidenteForm
+                key={editingIncidente?.id || "new-incidente"}
+                incidente={editingIncidente}
+                casos={casos}
+                onSubmit={handleSubmitIncidente}
+                onCancel={() => { setShowIncidenteForm(false); setEditingIncidente(null); }}
+                isSubmitting={createIncidenteMutation.isPending || updateIncidenteMutation.isPending}
+              />
+            )}
+            <RDOsList
+              rdos={incidentes.filter(i => i.tipo_registro === "RDO")}
+              casos={casos}
+              isLoading={loadingIncidentes}
+              onEdit={(inc) => { setEditingIncidente(inc); setShowIncidenteForm(true); }}
+              onDelete={deleteIncidenteMutation.mutate}
+              onCriarCaso={criarCasoMutation.mutate}
+              isCriandoCaso={criarCasoMutation.isPending}
+            />
+          </div>
+        )}
 
         {activeTab === "mapa" && (
           <MapaRegistroImpacto incidentes={incidentes} />

@@ -578,7 +578,7 @@ function ResumoRegistros({ projetoId }) {
     <Card className="border-0 shadow-md">
       {isLoading ? <div className="p-6"><Skeleton className="h-64 w-full" /></div> : (
         <>
-          <SectionHeader title="Registros" icon={AlertTriangle} color="#f59e0b" link="Registros" subtitle="RDOs, atas, e-mails e notificações" />
+          <SectionHeader title="Registros" icon={AlertTriangle} color="#f59e0b" link="Pleitos" subtitle="RDOs, atas, e-mails e notificações" />
           <CardContent className="p-6">
             <div className="grid grid-cols-4 gap-4 mb-6">
               <KpiCard label="Total de Registros" value={incidentes.length} icon={AlertTriangle} color="#26405d" />
@@ -733,6 +733,12 @@ function ResumoPlanejamento({ projetoId }) {
     enabled: !!projetoId,
   });
 
+  const { data: lancamentos = [] } = useQuery({
+    queryKey: ["lanc_comm_dash", projetoId],
+    queryFn: () => entities.LancamentoCommodity.filter({ projeto_id: projetoId }),
+    enabled: !!projetoId,
+  });
+
   const { data: atas = [] } = useQuery({
     queryKey: ["atas_dash", projetoId],
     queryFn: () => entities.AtaReuniao.filter({ projeto_id: projetoId }),
@@ -759,8 +765,11 @@ function ResumoPlanejamento({ projetoId }) {
     commodities.reduce((acc, c) => {
       const disc = c.disciplina || "Outros";
       if (!acc[disc]) acc[disc] = { name: disc, previsto: 0, realizado: 0, unidade: c.unidade || "" };
-      acc[disc].previsto += c.quantidade_prevista || 0;
-      acc[disc].realizado += c.quantidade_realizada || 0;
+      acc[disc].previsto += c.qtd_contrato || 0;
+      const realizadoItem = lancamentos
+        .filter(l => l.commodity_id === c.id)
+        .reduce((s, l) => s + (l.quantidade || 0), 0);
+      acc[disc].realizado += realizadoItem;
       return acc;
     }, {})
   ).map(d => ({ ...d, pct: d.previsto > 0 ? Math.round((d.realizado / d.previsto) * 100) : 0 }));

@@ -97,29 +97,8 @@ export default function Suprimentos() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Requisições Aprovadas", value: reqAprovadas, icon: CheckCircle, color: "#00a49a" },
-          { label: "Em Cotação", value: reqEmCotacao, icon: ClipboardList, color: "#f59e0b" },
-          { label: "Cotações Abertas", value: cotAberta, icon: BarChart2, color: "#3b82f6" },
-          { label: "Total Aprovado", value: fmt(totalAprovado), icon: ShoppingCart, color: "#26405d" },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="bg-white shadow-sm">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + "20" }}>
-                <Icon className="w-5 h-5" style={{ color }} />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">{label}</p>
-                <p className="text-lg font-bold text-brand-primary">{value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       <Tabs value={tab} onValueChange={setTab}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <TabsList className="bg-gray-100">
             <TabsTrigger value="requisicoes">Requisições</TabsTrigger>
             <TabsTrigger value="cotacoes">Cotações</TabsTrigger>
@@ -136,7 +115,28 @@ export default function Suprimentos() {
           )}
         </div>
 
-        <TabsContent value="requisicoes" className="mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: "Requisições Aprovadas", value: reqAprovadas, icon: CheckCircle, color: "#00a49a" },
+            { label: "Em Cotação", value: reqEmCotacao, icon: ClipboardList, color: "#f59e0b" },
+            { label: "Cotações Abertas", value: cotAberta, icon: BarChart2, color: "#3b82f6" },
+            { label: "Total Aprovado", value: fmt(totalAprovado), icon: ShoppingCart, color: "#26405d" },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <Card key={label} className="bg-white shadow-sm">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + "20" }}>
+                  <Icon className="w-5 h-5" style={{ color }} />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">{label}</p>
+                  <p className="text-lg font-bold text-brand-primary">{value}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <TabsContent value="requisicoes">
           <RequisicoesList
             requisicoes={requisicoes}
             isLoading={loadingReq}
@@ -146,7 +146,7 @@ export default function Suprimentos() {
           />
         </TabsContent>
 
-        <TabsContent value="cotacoes" className="mt-4">
+        <TabsContent value="cotacoes">
           <CotacoesList
             cotacoes={cotacoes}
             isLoading={loadingCot}
@@ -156,7 +156,7 @@ export default function Suprimentos() {
           />
         </TabsContent>
 
-        <TabsContent value="mapa" className="mt-4">
+        <TabsContent value="mapa">
           <MapaSuprimentos selectedProjectId={selectedProjectId} />
         </TabsContent>
       </Tabs>

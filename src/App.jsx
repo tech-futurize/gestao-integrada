@@ -13,7 +13,6 @@ import { ProjectProvider } from '@/lib/ProjectContext';
 import Login from './pages/Login';
 import Layout from './Layout';
 import Dashboard from './pages/Dashboard';
-import Incidentes from './pages/Incidentes';
 import Casos from './pages/Casos';
 import Qualidade from './pages/Qualidade';
 import Financeiro from './pages/Financeiro';
@@ -55,7 +54,6 @@ const AuthenticatedApp = () => (
     <Route path="/login" element={<Login />} />
     <Route path="/" element={<Navigate to="/Dashboard" replace />} />
     <Route path="/Dashboard" element={<ProtectedRoute><LayoutWrapper currentPageName="Dashboard"><Dashboard /></LayoutWrapper></ProtectedRoute>} />
-    <Route path="/Registros" element={<ProtectedRoute><LayoutWrapper currentPageName="Registros"><Incidentes /></LayoutWrapper></ProtectedRoute>} />
     <Route path="/Pleitos" element={<ProtectedRoute><LayoutWrapper currentPageName="Pleitos"><Casos /></LayoutWrapper></ProtectedRoute>} />
     <Route path="/Qualidade" element={<ProtectedRoute><LayoutWrapper currentPageName="Qualidade"><Qualidade /></LayoutWrapper></ProtectedRoute>} />
     <Route path="/Financeiro" element={<ProtectedRoute><LayoutWrapper currentPageName="Financeiro"><Financeiro /></LayoutWrapper></ProtectedRoute>} />

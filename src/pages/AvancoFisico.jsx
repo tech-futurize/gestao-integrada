@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Plus, Save, X, Upload, Edit, Trash2 } from "lucide-react";
+import { TrendingUp, DollarSign, Plus, Save, X, Upload, Edit, Trash2 } from "lucide-react";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -96,8 +96,14 @@ export default function AvancoFisico() {
       <div className="max-w-7xl mx-auto space-y-6">
         <Tabs defaultValue="fisico">
           <TabsList className="mb-4">
-            <TabsTrigger value="fisico">Físico</TabsTrigger>
-            <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+            <TabsTrigger value="fisico" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Físico
+            </TabsTrigger>
+            <TabsTrigger value="financeiro" className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Financeiro
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="fisico">

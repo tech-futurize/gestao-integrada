@@ -88,16 +88,6 @@ export default function Incidentes() {
   return (
     <div className="p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <p className="text-gray-600">Atas de Reunião, RDOs, E-mails e Notificações do projeto</p>
-          </div>
-          <Button onClick={() => { setEditingIncidente(null); setShowForm(true); }} className="bg-green-600 hover:bg-green-700 shadow-md">
-            <Plus className="w-5 h-5 mr-2" />
-            Novo Registro
-          </Button>
-        </div>
-
         {showForm && (
           <IncidenteForm
             key={editingIncidente?.id || "new"}
@@ -110,20 +100,26 @@ export default function Incidentes() {
         )}
 
         <Tabs defaultValue="lista">
-          <TabsList className="mb-4">
-            <TabsTrigger value="lista" className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
-              Lista de Registros
-            </TabsTrigger>
-            <TabsTrigger value="rdos" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              RDOs
-            </TabsTrigger>
-            <TabsTrigger value="mapa" className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              Mapa de Registro × Impacto
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              <TabsTrigger value="lista" className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Lista de Registros
+              </TabsTrigger>
+              <TabsTrigger value="rdos" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                RDOs
+              </TabsTrigger>
+              <TabsTrigger value="mapa" className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                Mapa de Registro × Impacto
+              </TabsTrigger>
+            </TabsList>
+            <Button onClick={() => { setEditingIncidente(null); setShowForm(true); }} className="bg-green-600 hover:bg-green-700 shadow-md">
+              <Plus className="w-5 h-5 mr-2" />
+              Novo Registro
+            </Button>
+          </div>
 
           <TabsContent value="lista">
             <IncidentesList

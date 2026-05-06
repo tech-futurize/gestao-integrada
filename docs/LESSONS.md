@@ -74,35 +74,67 @@ Copie o bloco abaixo para cada nova lição.
 > Adicione novas entradas ao final. Não renumere nem apague entradas antigas.
 > Se uma lição ficar obsoleta, marque com `**Status:** Obsoleta — substituída por L0YZ` sem remover o texto.
 
-<!-- Primeiras entradas virão com o projeto. Exemplos ilustrativos abaixo — apague-os no primeiro commit real. -->
+### L001 — Dashboard: campos de entidade referenciados sem verificar o schema real
 
-### L001 — Exemplo: não usar `any` como escape de TypeScript em endpoints públicos
-
-- **Data:** 2026-01-15
+- **Data:** 2026-05-06
 - **Agente:** Builder
-- **Milestone:** 2 — API de auth
+- **Milestone:** 1 — UI/UX e correção de dados no Dashboard
+- **Categoria:** Banco
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** Implementação do painel "Planejamento" no Dashboard principal (ModulosResumo.jsx).
+- **Erro observado:** Barra de avanço e gráfico por disciplina exibiam 0% para todos os itens, mesmo com dados cadastrados no Take-Off.
+- **Causa raiz:** O código acessava `c.quantidade_prevista` e `c.quantidade_realizada` na entidade `Commodity`, mas os campos reais são `qtd_contrato` (previsto) e o realizado é calculado somando `lancamentos_commodity.quantidade` via join manual. Nenhum dos dois campos inexistentes aparece no banco, então todas as somas ficam em zero.
+- **Correção aplicada:** Substituir `c.quantidade_prevista` por `c.qtd_contrato`; adicionar query de `LancamentoCommodity` e calcular o realizado por commodity antes de agrupar por disciplina.
+- **Como evitar em projetos futuros:** Antes de referenciar qualquer campo de entidade em um novo componente, ler o componente de origem (ex: `TakeOffCommodities.jsx`) ou a migration SQL para confirmar os nomes exatos. Campos computados (somados de outra tabela) nunca existem como colunas — exigem query adicional.
+- **Referências:** `src/components/dashboard/ModulosResumo.jsx` linha 758–766 (antes), `src/components/planejamento/TakeOffCommodities.jsx` linha 339–346 (fonte da verdade).
+
+---
+
+### L002 — Dashboard: link de seção apontando para rota removida
+
+- **Data:** 2026-05-06
+- **Agente:** Builder
+- **Milestone:** 1 — UI/UX e correção de dados no Dashboard
+- **Categoria:** Arquitetura
+- **Gravidade:** Média
+- **Contexto em 1 frase:** Remoção do módulo "Registros" (página duplicada que foi absorvida por "Pleitos").
+- **Erro observado:** O botão "Ver módulo" na seção "Registros" do Dashboard gerava 404 porque ainda apontava para `link="Registros"`, rota deletada do App.jsx e do sidebar.
+- **Causa raiz:** A remoção de uma rota não foi acompanhada de busca em todos os componentes que faziam referência a esse path. ModulosResumo.jsx é um arquivo de ~850 linhas que não foi auditado no momento da remoção.
+- **Correção aplicada:** Alterar `link="Registros"` para `link="Pleitos"` em `ResumoRegistros` dentro de ModulosResumo.jsx.
+- **Como evitar em projetos futuros:** Ao remover ou renomear uma rota, executar grep por todo o projeto antes de fechar a tarefa: `grep -r "Registros" src/`. Tratar links de navegação como referências que exigem refactor, não apenas exclusão pontual.
+- **Referências:** `src/components/dashboard/ModulosResumo.jsx` linha 581, `src/App.jsx`.
+
+---
+
+### L003 — React Query v5: `isLoading` não sinaliza erro após retries esgotados
+
+- **Data:** 2026-05-06
+- **Agente:** Builder
+- **Milestone:** 1 — UI/UX e correção de dados no Dashboard
 - **Categoria:** DX
 - **Gravidade:** Média
-- **Contexto em 1 frase:** endpoint `/api/auth/callback` recebia payload de provedor OAuth.
-- **Erro observado:** 4 horas perdidas depurando crash em runtime porque o campo `email` vinha em `user.profile.email`, não em `user.email` como o `any` sugeria.
-- **Causa raiz:** `any` fez TypeScript "concordar" com a forma errada; o contrato do provedor era diferente do que se presumia.
-- **Correção aplicada:** schema Zod espelhando o contrato real do provedor; type inferido do schema.
-- **Como evitar em projetos futuros:** Regra já existente em CLAUDE.md §3 TypeScript ("Nunca use `any`"). Reforço: endpoints externos sempre começam por um schema Zod antes da primeira linha de lógica.
-- **Referências:** PR #42, ADR 0003.
+- **Contexto em 1 frase:** Aba 6WLA no módulo Planejamento exibia tela em branco sem mensagem de erro.
+- **Erro observado:** Quando a query falhava (tabela inexistente ou policy bloqueando), `isLoading` retornava `false` e nenhum estado de erro era renderizado — tela simplesmente ficava vazia.
+- **Causa raiz:** No React Query v5, `isLoading = isPending && isFetching`. Após os retries, `isPending` vira `false` e `isLoading` também, mesmo sem dados. Usar `isLoading` como guard de loading state é insuficiente — `isError` precisa ser tratado separadamente.
+- **Correção aplicada:** Substituir `isLoading` por `isPending` (v5 canônico) + adicionar branch `if (isError)` com mensagem explicativa.
+- **Como evitar em projetos futuros:** Em todo componente com `useQuery`, SEMPRE desestruturar e tratar os três estados: `isPending`, `isError`, `data`. Nunca renderizar apenas com `if (isLoading) return ...` sem um `if (isError) return ...` subsequente. Padrão: `const { data, isPending, isError } = useQuery(...)`.
+- **Referências:** `src/pages/Planejamento.jsx` componente `SixWLA`, [React Query v5 migration guide](https://tanstack.com/query/v5/docs/framework/react/guides/migrating-to-v5).
 
-### L002 — Exemplo: webhook do Stripe falha silenciosamente quando parse de JSON é aplicado antes da verificação de assinatura
+---
 
-- **Data:** 2026-02-03
-- **Agente:** Security
-- **Milestone:** 4 — Pagamentos
-- **Categoria:** Integrações
-- **Gravidade:** Alta
-- **Contexto em 1 frase:** implementação do webhook `POST /api/webhooks/stripe`.
-- **Erro observado:** assinaturas válidas sendo rejeitadas; eventos de `checkout.session.completed` ignorados.
-- **Causa raiz:** Next.js aplicou `bodyParser` antes do handler, alterando bytes do payload e invalidando a assinatura HMAC.
-- **Correção aplicada:** desabilitar bodyParser na route (`export const config = { api: { bodyParser: false } }`) e consumir o raw stream.
-- **Como evitar em projetos futuros:** Adicionar regra em INTEGRATIONS.md: "Webhooks que verificam HMAC precisam de raw body — desabilitar bodyParser na route e documentar no bloco do serviço".
-- **Referências:** [Stripe docs — Signing secrets](https://docs.stripe.com/webhooks/signatures).
+### L004 — Módulo duplicado: auditar sobreposição de responsabilidades antes de criar nova página
+
+- **Data:** 2026-05-06
+- **Agente:** Architect
+- **Milestone:** 1 — UI/UX e correção de dados no Dashboard
+- **Categoria:** Arquitetura
+- **Gravidade:** Baixa
+- **Contexto em 1 frase:** O módulo "Registros" foi criado com as abas "Lista de Registros" e "Mapa de Registro × Impacto", que já existiam dentro do módulo "Pleitos".
+- **Erro observado:** Duplicação de UI e de queries — dois módulos renderizavam os mesmos dados de `incidentes`, gerando confusão para o usuário e aumentando o número de rotas sem necessidade.
+- **Causa raiz:** A aba "RDOs" estava ausente em "Pleitos", e em vez de adicioná-la ao módulo existente, um novo módulo "Registros" foi criado englobando as abas que já existiam.
+- **Correção aplicada:** Mover a aba RDOs para "Pleitos" e remover o módulo "Registros" do sidebar e do roteamento.
+- **Como evitar em projetos futuros:** Antes de criar uma nova página/módulo, verificar se o conteúdo pretendido já existe (mesmo que parcialmente) em alguma página existente. Preferir adicionar uma aba a uma página existente do que criar nova rota para conteúdo parcialmente sobreposto.
+- **Referências:** `src/pages/Casos.jsx`, `src/Layout.jsx`, `src/App.jsx`.
 
 ---
 
