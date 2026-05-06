@@ -1,0 +1,67 @@
+import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Edit, Trash2, Eye, FileText } from "lucide-react";
+
+const STATUS_COLORS = {
+  Ativo: "bg-green-100 text-green-700",
+  "Em Revisão": "bg-yellow-100 text-yellow-700",
+  Suspenso: "bg-orange-100 text-orange-700",
+  Encerrado: "bg-gray-100 text-gray-600",
+  Cancelado: "bg-red-100 text-red-700",
+};
+
+const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
+
+export default function ContratosList({ contratos, isLoading, onSelect, onEdit, onDelete }) {
+  if (isLoading) return (
+    <div className="space-y-3">
+      {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+    </div>
+  );
+
+  if (!contratos.length) return (
+    <Card className="text-center p-12">
+      <FileText className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+      <p className="text-gray-500 font-medium">Nenhum contrato cadastrado</p>
+      <p className="text-gray-400 text-sm mt-1">Clique em "Novo Contrato" para começar.</p>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-3">
+      {contratos.map(c => (
+        <Card key={c.id} className="bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => onSelect(c)}>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  {c.numero && <span className="text-xs font-mono text-gray-400">{c.numero}</span>}
+                  <Badge className={STATUS_COLORS[c.status] || "bg-gray-100 text-gray-600"}>{c.status}</Badge>
+                  {c.tipo && <Badge variant="outline" className="text-xs">{c.tipo}</Badge>}
+                </div>
+                <p className="font-semibold text-sm" style={{ color: "#26405d" }}>{c.objeto}</p>
+                <p className="text-sm text-gray-500 mt-0.5">{c.fornecedor} {c.cnpj && <span className="text-xs text-gray-400">· {c.cnpj}</span>}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="font-bold text-base" style={{ color: "#c35e1e" }}>{fmt(c.valor_total)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{fmtDate(c.data_inicio)} → {fmtDate(c.data_fim)}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+              <span className="text-xs text-gray-400">Gestor: {c.gestor || "—"}</span>
+              <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                <Button size="sm" variant="ghost" onClick={() => onSelect(c)}><Eye className="w-4 h-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => onEdit(c)}><Edit className="w-4 h-4" /></Button>
+                <Button size="sm" variant="ghost" className="text-red-500" onClick={() => onDelete(c.id)}><Trash2 className="w-4 h-4" /></Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
