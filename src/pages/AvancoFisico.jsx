@@ -14,10 +14,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 export default function AvancoFisico() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [showNewRow, setShowNewRow] = useState(false);
@@ -46,6 +49,7 @@ export default function AvancoFisico() {
       return entities.AvancoFisico.create({ ...data, projeto_id: selectedProjectId, avanco_previsto_acumulado: acc.previsto, avanco_realizado_acumulado: acc.realizado });
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["avancos"] }); setShowNewRow(false); setNewRow({ mes_referencia: "", avanco_previsto_mensal: "", avanco_realizado_mensal: "" }); },
+    onError: onErr,
   });
 
   const updateMutation = useMutation({
@@ -56,11 +60,13 @@ export default function AvancoFisico() {
       return entities.AvancoFisico.update(id, { ...data, avanco_previsto_acumulado: acc.previsto, avanco_realizado_acumulado: acc.realizado });
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["avancos"] }); setEditingId(null); },
+    onError: onErr,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.AvancoFisico.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["avancos"] }),
+    onError: onErr,
   });
 
   const dadosGrafico = sorted.map((a) => ({

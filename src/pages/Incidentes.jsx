@@ -12,12 +12,15 @@ import RDOsList from "../components/incidentes/RDOsList";
 import MapaRegistroImpacto from "../components/incidentes/MapaRegistroImpacto";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 export default function Incidentes() {
   const [showForm, setShowForm] = useState(false);
   const [editingIncidente, setEditingIncidente] = useState(null);
   const queryClient = useQueryClient();
   const { selectedProjectId } = useProject();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
 
   const { data: incidentes = [], isLoading } = useQuery({
     queryKey: ["incidentes", selectedProjectId],
@@ -34,16 +37,19 @@ export default function Incidentes() {
   const createMutation = useMutation({
     mutationFn: (data) => entities.Incidente.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["incidentes"] }); setShowForm(false); setEditingIncidente(null); },
+    onError: onErr,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Incidente.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["incidentes"] }); setShowForm(false); setEditingIncidente(null); },
+    onError: onErr,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.Incidente.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["incidentes"] }),
+    onError: onErr,
   });
 
   const criarCasoMutation = useMutation({
@@ -63,6 +69,7 @@ export default function Incidentes() {
       queryClient.invalidateQueries({ queryKey: ["incidentes"] });
       queryClient.invalidateQueries({ queryKey: ["casos"] });
     },
+    onError: onErr,
   });
 
   const handleSubmit = (data) => {
@@ -93,6 +100,7 @@ export default function Incidentes() {
 
         {showForm && (
           <IncidenteForm
+            key={editingIncidente?.id || "new"}
             incidente={editingIncidente}
             casos={casos}
             onSubmit={handleSubmit}

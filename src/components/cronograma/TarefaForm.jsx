@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 export default function TarefaForm({ tarefa, tarefas, onSave, onClose }) {
   const [form, setForm] = useState({
-    codigo_wbs: "", nome: "", tipo: "Atividade", nivel: 1, pai_id: "",
+    codigo_wbs: "", nome: "", tipo: "Atividade", nivel: 1, pai_id: null,
     data_inicio_planejada: "", data_fim_planejada: "",
     data_inicio_baseline: "", data_fim_baseline: "",
     avanco_previsto: 0, avanco_realizado: 0,
@@ -25,6 +25,7 @@ export default function TarefaForm({ tarefa, tarefas, onSave, onClose }) {
     e.preventDefault();
     onSave({
       ...form,
+      pai_id: form.pai_id || null,
       nivel: parseInt(form.nivel) || 1,
       avanco_previsto: parseFloat(form.avanco_previsto) || 0,
       avanco_realizado: parseFloat(form.avanco_realizado) || 0,
@@ -38,7 +39,7 @@ export default function TarefaForm({ tarefa, tarefas, onSave, onClose }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-lg font-bold" style={{ color: "#26405d" }}>{tarefa ? "Editar Tarefa" : "Nova Tarefa"}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -59,10 +60,10 @@ export default function TarefaForm({ tarefa, tarefas, onSave, onClose }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Tarefa Pai</Label>
-              <Select value={form.pai_id} onValueChange={v => set("pai_id", v)}>
+              <Select value={form.pai_id || "__none__"} onValueChange={v => set("pai_id", v === "__none__" ? null : v)}>
                 <SelectTrigger><SelectValue placeholder="Nenhuma (raiz)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Nenhuma (raiz)</SelectItem>
+                  <SelectItem value="__none__">Nenhuma (raiz)</SelectItem>
                   {pais.map(t => <SelectItem key={t.id} value={t.id}>{t.codigo_wbs ? `${t.codigo_wbs} - ` : ""}{t.nome}</SelectItem>)}
                 </SelectContent>
               </Select>

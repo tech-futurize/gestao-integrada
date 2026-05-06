@@ -199,7 +199,7 @@ export default function MapaRegistroImpacto({ incidentes }) {
                       borderLeft: isMonthStart ? "2px solid #c35e1e" : "none",
                     }}
                   >
-                    {format(w, "dd/MM", { locale: ptBR })}
+                    S-{format(w, "dd/MM", { locale: ptBR })}
                   </th>
                 );
               })}

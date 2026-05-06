@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 export default function RequisicaoForm({ requisicao, onSave, onClose }) {
   const [form, setForm] = useState({
@@ -32,7 +33,7 @@ export default function RequisicaoForm({ requisicao, onSave, onClose }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-lg font-bold" style={{ color: "#26405d" }}>{requisicao ? "Editar Requisição" : "Nova Requisição de Compra"}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">

@@ -44,26 +44,26 @@ export default function KpisContrato({ projetoId }) {
   }, [financeiros, avancos, projeto]);
 
   const cards = [
-    { title: "Valor do Contrato", value: `R$ ${(kpis.valor_contrato / 1000000).toFixed(1)}M`, icon: DollarSign, color: "#26405d" },
+    { title: "Valor do Contrato", value: `R$ ${(kpis.valor_contrato / 1000000).toFixed(1)}M`, icon: DollarSign, color: "#26405d", featured: true },
     { title: "% Faturado", value: `${kpis.pct_faturado}%`, icon: TrendingUp, color: "#c35e1e" },
     { title: "Avanço Físico", value: `${kpis.avanco_fisico}%`, icon: Percent, color: "#00a49a" },
     { title: "Aderência Financeira", value: `${kpis.aderencia}%`, icon: CheckCircle2, color: "#4CAF50" },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-in fade-in duration-300">
       {cards.map((card) => (
-        <Card key={card.title} className="border-0 shadow-md">
-          <CardContent className="p-4">
+        <Card key={card.title} className={`border-0 shadow-md ${card.featured ? "ring-2 ring-brand-primary/20" : ""}`}>
+          <CardContent className={`p-4 ${card.featured ? "bg-brand-primary/5 rounded-xl" : ""}`}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm text-gray-600">{card.title}</div>
-                <div className="text-2xl font-bold mt-1" style={{ color: card.color }}>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">{card.title}</div>
+                <div className={`font-bold mt-1 ${card.featured ? "text-3xl" : "text-2xl"}`} style={{ color: card.color }}>
                   {card.value}
                 </div>
               </div>
-              <div className="p-2 rounded-lg" style={{ backgroundColor: `${card.color}20` }}>
-                <card.icon className="w-6 h-6" style={{ color: card.color }} />
+              <div className="p-2.5 rounded-xl" style={{ backgroundColor: `${card.color}20` }}>
+                <card.icon className={`${card.featured ? "w-7 h-7" : "w-6 h-6"}`} style={{ color: card.color }} />
               </div>
             </div>
           </CardContent>

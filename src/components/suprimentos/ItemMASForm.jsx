@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 const DEFAULT_ETAPAS = [
   { nome: "Requisição",   status: "pendente", data: "" },
@@ -43,7 +43,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
       <Card className="w-full max-w-lg mx-4 shadow-2xl">
         <CardHeader className="pb-3 flex-row items-center justify-between">
           <CardTitle className="text-base" style={{ color: "#26405d" }}>{item ? "Editar Item" : "Novo Item MAS"}</CardTitle>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <CloseButton onClick={onClose} />
         </CardHeader>
         <CardContent className="space-y-3">
           <div>

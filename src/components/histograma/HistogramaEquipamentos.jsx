@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,11 +27,13 @@ const formatPeriodo = (dateStr) => {
 export default function HistogramaEquipamentos() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [showNewRow, setShowNewRow] = useState(false);
   const [newRow, setNewRow] = useState({ tipo_equipamento: "", mes_referencia: "", quantidade_prevista_mensal: "", quantidade_rdo_mensal: "" });
-  const [filtroTipo, setFiltroTipo] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState("__none__");
 
   const { data: histogramas = [] } = useQuery({
     queryKey: ["histogramas-equip", selectedProjectId],
@@ -40,7 +43,7 @@ export default function HistogramaEquipamentos() {
 
   const sorted = [...histogramas]
     .filter(h => h.tipo_equipamento)
-    .filter(h => !filtroTipo || h.tipo_equipamento === filtroTipo)
+    .filter(h => filtroTipo === "__none__" || h.tipo_equipamento === filtroTipo)
     .sort((a, b) => new Date(a.mes_referencia) - new Date(b.mes_referencia));
 
   const createMutation = useMutation({
@@ -50,16 +53,19 @@ export default function HistogramaEquipamentos() {
       setShowNewRow(false);
       setNewRow({ tipo_equipamento: "", mes_referencia: "", quantidade_prevista_mensal: "", quantidade_rdo_mensal: "" });
     },
+    onError: onErr,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Histograma.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["histogramas-equip"] }); setEditingId(null); },
+    onError: onErr,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.Histograma.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["histogramas-equip"] }),
+    onError: onErr,
   });
 
   const dadosGrafico = sorted.map((h) => ({
@@ -80,7 +86,7 @@ export default function HistogramaEquipamentos() {
             <Select value={filtroTipo} onValueChange={setFiltroTipo}>
               <SelectTrigger className="w-60"><SelectValue placeholder="Filtrar por equipamento" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os equipamentos</SelectItem>
+                <SelectItem value="__none__">Todos os equipamentos</SelectItem>
                 {TIPOS_EQUIPAMENTO.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>

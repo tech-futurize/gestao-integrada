@@ -11,10 +11,13 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 export default function Financeiro() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
   const [showNewRow, setShowNewRow] = useState(false);
@@ -48,6 +51,7 @@ export default function Financeiro() {
       });
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["financeiros"] }); setShowNewRow(false); setNewRow({ mes_referencia: "", faturamento_previsto_mensal: "", faturamento_realizado_mensal: "" }); },
+    onError: onErr,
   });
 
   const updateMutation = useMutation({
@@ -62,11 +66,13 @@ export default function Financeiro() {
       });
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["financeiros"] }); setEditingId(null); },
+    onError: onErr,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.Financeiro.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["financeiros"] }),
+    onError: onErr,
   });
 
   const dadosGrafico = sorted.map((f) => ({

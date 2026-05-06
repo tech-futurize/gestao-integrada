@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 export default function MedicaoForm({ medicao, contratos, defaultContratoId, onSave, onClose }) {
   const [form, setForm] = useState({
@@ -46,7 +47,7 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-lg font-bold" style={{ color: "#26405d" }}>{medicao ? "Editar Medição" : "Nova Medição"}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -117,8 +118,8 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="text-white" style={{ backgroundColor: "#c35e1e" }}>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white">
               {medicao ? "Atualizar" : "Criar Medição"}
             </Button>
           </div>

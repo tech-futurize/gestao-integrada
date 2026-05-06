@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toDatetimeLocal, toUtcIso } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 const IMPACTO_CATEGORIES = [
   "Engenharia", "Suprimentos", "Escopo", "Planejamento",
@@ -17,12 +19,12 @@ const IMPACTO_CATEGORIES = [
 export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, isSubmitting }) {
   const [formData, setFormData] = useState({
     tipo_registro: incidente?.tipo_registro || "Ata de Reunião",
-    data_hora: incidente?.data_hora || new Date().toISOString().slice(0, 16),
+    data_hora: toDatetimeLocal(incidente?.data_hora) || toDatetimeLocal(new Date()),
     responsavel_registro: incidente?.responsavel_registro || "",
     descricao: incidente?.descricao || "",
     impacto_preliminar: incidente?.impacto_preliminar || "",
     status: incidente?.status || "Registrado",
-    caso_id: incidente?.caso_id || "",
+    caso_id: incidente?.caso_id || null,
     numero_rdo: incidente?.numero_rdo || "",
     area: incidente?.area || "",
     disciplina: incidente?.disciplina || "",
@@ -66,6 +68,8 @@ export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, is
     e.preventDefault();
     onSubmit({
       ...formData,
+      data_hora: toUtcIso(formData.data_hora),
+      caso_id: formData.caso_id || null,
       mao_de_obra: isRDO ? maoDeObra.filter(r => r.quantidade || r.funcao) : [],
       equipamentos_rdo: isRDO ? equipamentosRdo.filter(r => r.quantidade || r.equipamento) : [],
       impacto_ocorrencia: impactoOcorrencia,
@@ -81,7 +85,7 @@ export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, is
           <CardTitle className="text-xl font-bold text-gray-900">
             {incidente ? "Editar Registro" : "Novo Registro"}
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel}><X className="w-5 h-5" /></Button>
+          <CloseButton onClick={onCancel} />
         </div>
       </CardHeader>
       <CardContent className="p-6">
@@ -94,6 +98,11 @@ export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, is
               <Select value={formData.tipo_registro} onValueChange={(v) => set("tipo_registro", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  {(formData.tipo_registro === "INCIDENTE" || formData.tipo_registro === "Incidente") && (
+                    <SelectItem value={formData.tipo_registro} disabled className="text-gray-400 italic">
+                      Incidente (legado — selecione um tipo)
+                    </SelectItem>
+                  )}
                   <SelectItem value="Ata de Reunião">Ata de Reunião</SelectItem>
                   <SelectItem value="RDO">RDO</SelectItem>
                   <SelectItem value="E-mail">E-mail</SelectItem>
@@ -296,10 +305,10 @@ export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, is
           {/* Associar Pleito */}
           <div className="space-y-2">
             <Label>Associar a Pleito (Opcional)</Label>
-            <Select value={formData.caso_id || ""} onValueChange={(v) => set("caso_id", v)}>
+            <Select value={formData.caso_id || "__none__"} onValueChange={(v) => set("caso_id", v === "__none__" ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Selecione um pleito" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>Nenhum</SelectItem>
+                <SelectItem value="__none__">Nenhum</SelectItem>
                 {casos.map((caso) => (
                   <SelectItem key={caso.id} value={caso.id}>{caso.titulo}</SelectItem>
                 ))}
@@ -308,8 +317,8 @@ export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, is
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700" disabled={isSubmitting}>
+            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar Registro"}
             </Button>
           </div>

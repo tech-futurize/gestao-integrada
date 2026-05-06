@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 export default function ContratoForm({ contrato, onSave, onClose }) {
   const [form, setForm] = useState({
@@ -28,7 +28,7 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
           <h2 className="text-lg font-bold" style={{ color: "#26405d" }}>
             {contrato ? "Editar Contrato" : "Novo Contrato"}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -116,8 +116,8 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="text-white" style={{ backgroundColor: "#c35e1e" }}>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white">
               {contrato ? "Atualizar" : "Criar Contrato"}
             </Button>
           </div>

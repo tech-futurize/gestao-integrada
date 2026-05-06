@@ -1,25 +1,30 @@
 import React, { useState } from "react";
-import { ShieldAlert, Plus, X, AlertTriangle, CheckCircle, Clock, Filter, Pencil, Trash2, Save } from "lucide-react";
+import { ShieldAlert, Plus, AlertTriangle, CheckCircle, Clock, Filter, Pencil, Trash2, Save } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
+import CloseButton from "@/components/ui/CloseButton";
+import InfoTooltip from "@/components/ui/InfoTooltip";
+import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 const PROB_MAP = { "Alta": 3, "Média": 2, "Baixa": 1 };
 const IMP_MAP  = { "Alto": 3, "Médio": 2, "Baixo": 1 };
 
-const SCORE_COLOR = (score) => {
-  if (score >= 7) return { bg: "#fee2e2", text: "#dc2626", label: "Crítico" };
-  if (score >= 4) return { bg: "#fef3c7", text: "#d97706", label: "Moderado" };
-  return { bg: "#dcfce7", text: "#16a34a", label: "Baixo" };
+const SCORE_CLS = (score) => {
+  if (score >= 7) return { cls: "bg-red-100 text-red-700", label: "Crítico" };
+  if (score >= 4) return { cls: "bg-yellow-100 text-yellow-700", label: "Moderado" };
+  return { cls: "bg-green-100 text-green-700", label: "Baixo" };
 };
 
-const STATUS_STYLE = {
-  "Ativo": { bg: "#fee2e2", text: "#dc2626" },
-  "Em Monitoramento": { bg: "#fef3c7", text: "#d97706" },
-  "Encerrado": { bg: "#dcfce7", text: "#16a34a" },
+const STATUS_CLS = {
+  "Ativo": "bg-red-100 text-red-700",
+  "Em Monitoramento": "bg-yellow-100 text-yellow-700",
+  "Encerrado": "bg-green-100 text-green-700",
 };
 
 const CATEGORIAS = ["Todas", "Suprimentos", "Financeiro", "Construção", "Engenharia", "Qualidade/SSMA", "Contratos"];
@@ -87,7 +92,7 @@ function RiskForm({ risk, onSave, onClose }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white z-10 flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-base font-bold text-brand-primary">{risk ? "Editar Risco" : "Novo Risco"}</h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -108,19 +113,19 @@ function RiskForm({ risk, onSave, onClose }) {
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Probabilidade</label>
+              <label className="text-xs text-gray-500 mb-1 flex items-center">Probabilidade<InfoTooltip text="Likelihood de o risco ocorrer: Alta (esperado), Média (possível), Baixa (improvável)." /></label>
               <select className={selectCls} value={form.probabilidade} onChange={e => set("probabilidade", e.target.value)}>
                 {["Alta", "Média", "Baixa"].map(o => <option key={o}>{o}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Impacto</label>
+              <label className="text-xs text-gray-500 mb-1 flex items-center">Impacto<InfoTooltip text="Consequência caso o risco se materialize: Alto (crítico ao projeto), Médio (gerenciável), Baixo (desprezível)." /></label>
               <select className={selectCls} value={form.impacto} onChange={e => set("impacto", e.target.value)}>
                 {["Alto", "Médio", "Baixo"].map(o => <option key={o}>{o}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 mb-1 block">Score</label>
+              <label className="text-xs text-gray-500 mb-1 flex items-center">Score<InfoTooltip text="Score = Probabilidade × Impacto (escala 1–9). Crítico ≥ 7, Moderado ≥ 4, Baixo < 4." /></label>
               <div className="px-3 py-2 rounded-lg text-sm font-bold text-white text-center" style={{ backgroundColor: score >= 7 ? "#dc2626" : score >= 4 ? "#d97706" : "#16a34a" }}>{score}</div>
             </div>
           </div>
@@ -148,8 +153,8 @@ function RiskForm({ risk, onSave, onClose }) {
           </div>
         </div>
         <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancelar</button>
-          <button onClick={() => onSave({ ...form, score })} className="px-4 py-2 text-sm text-white rounded-lg flex items-center gap-2 bg-brand-primary hover:opacity-90">
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">Cancelar</button>
+          <button onClick={() => onSave({ ...form, score })} className="px-4 py-2 text-sm text-white rounded-lg flex items-center gap-2 bg-brand-accent hover:opacity-90 transition-opacity">
             <Save className="w-4 h-4" />Salvar
           </button>
         </div>
@@ -161,6 +166,8 @@ function RiskForm({ risk, onSave, onClose }) {
 export default function GestaoRiscos() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
   const [filtroStatus, setFiltroStatus] = useState("Todos");
   const [selectedRisk, setSelectedRisk] = useState(null);
@@ -176,16 +183,19 @@ export default function GestaoRiscos() {
   const createMutation = useMutation({
     mutationFn: (data) => entities.Risco.create({ ...data, projeto_id: selectedProjectId }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["riscos"] }); setShowForm(false); setEditRisk(null); },
+    onError: onErr,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Risco.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["riscos"] }); setShowForm(false); setEditRisk(null); },
+    onError: onErr,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.Risco.delete(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["riscos"] }); if (selectedRisk?.id) setSelectedRisk(null); },
+    onError: onErr,
   });
 
   const saveRisk = (form) => {
@@ -285,13 +295,19 @@ export default function GestaoRiscos() {
             <CardTitle className="text-base font-bold text-brand-primary">Registro de Riscos</CardTitle>
             <div className="flex flex-wrap gap-2 items-center">
               <Filter className="w-4 h-4 text-gray-400" />
-              <select className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white" value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}>
-                {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
-              </select>
-              <select className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
-                {["Todos", "Ativo", "Em Monitoramento", "Encerrado"].map(s => <option key={s}>{s}</option>)}
-              </select>
-              <button onClick={() => { setEditRisk(null); setShowForm(true); }} className="text-xs px-3 py-1.5 rounded-lg text-white flex items-center gap-1 bg-brand-primary hover:opacity-90">
+              <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
+                <SelectTrigger className="h-8 text-xs w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                <SelectTrigger className="h-8 text-xs w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {["Todos", "Ativo", "Em Monitoramento", "Encerrado"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <button onClick={() => { setEditRisk(null); setShowForm(true); }} className="text-xs px-3 py-1.5 rounded-lg text-white flex items-center gap-1 bg-brand-accent hover:opacity-90 transition-opacity">
                 <Plus className="w-3 h-3" /> Novo Risco
               </button>
             </div>
@@ -315,8 +331,8 @@ export default function GestaoRiscos() {
                 </thead>
                 <tbody>
                   {filtered.map((r) => {
-                    const sc = SCORE_COLOR(r.score);
-                    const st = STATUS_STYLE[r.status] || {};
+                    const sc = SCORE_CLS(r.score);
+                    const stCls = STATUS_CLS[r.status] || "bg-gray-100 text-gray-600";
                     return (
                       <tr
                         key={r.id}
@@ -334,16 +350,16 @@ export default function GestaoRiscos() {
                         <td className="px-4 py-3 text-xs font-medium text-gray-600">{r.probabilidade}</td>
                         <td className="px-4 py-3 text-xs font-medium text-gray-600">{r.impacto}</td>
                         <td className="px-4 py-3">
-                          <span className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold" style={{ backgroundColor: sc.bg, color: sc.text }}>{r.score}</span>
+                          <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold ${sc.cls}`}>{r.score}</span>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{r.responsavel}</td>
                         <td className="px-4 py-3">
-                          <span className="text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap" style={{ backgroundColor: st.bg, color: st.text }}>{r.status}</span>
+                          <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${stCls}`}>{r.status}</span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => { setEditRisk(r); setShowForm(true); }} className="p-1 text-gray-400 hover:text-blue-600"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => deleteMutation.mutate(r.id)} className="p-1 text-gray-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                            <button title="Editar" onClick={() => { setEditRisk(r); setShowForm(true); }} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                            <ConfirmDeleteButton size="sm" onConfirm={() => deleteMutation.mutate(r.id)} description="O risco será excluído permanentemente." />
                           </div>
                         </td>
                       </tr>
@@ -357,19 +373,17 @@ export default function GestaoRiscos() {
           {/* Detalhe do risco selecionado */}
           {selectedRisk && (
             <div className="mx-4 mb-4 mt-2 p-4 rounded-xl border border-blue-100 bg-blue-50 relative">
-              <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-700" onClick={() => setSelectedRisk(null)}>
-                <X className="w-4 h-4" />
-              </button>
+              <CloseButton onClick={() => setSelectedRisk(null)} className="absolute top-2 right-2" />
               <div className="text-xs font-bold mb-1 text-brand-primary">{selectedRisk.codigo} — Plano de Mitigação</div>
               <p className="text-sm text-gray-700 mb-2"><span className="font-semibold">Ação:</span> {selectedRisk.mitigacao}</p>
               <p className="text-sm text-gray-700"><span className="font-semibold">Risco Residual:</span>{" "}
-                <span className="font-bold" style={{ color: selectedRisk.residual === "Baixo" ? "#16a34a" : "#d97706" }}>{selectedRisk.residual}</span>
+                <span className={`font-bold ${selectedRisk.residual === "Baixo" ? "text-green-600" : "text-yellow-600"}`}>{selectedRisk.residual}</span>
               </p>
             </div>
           )}
         </CardContent>
       </Card>
-      {showForm && <RiskForm risk={editRisk} onSave={saveRisk} onClose={() => { setShowForm(false); setEditRisk(null); }} />}
+      {showForm && <RiskForm key={editRisk?.id || "new-risco"} risk={editRisk} onSave={saveRisk} onClose={() => { setShowForm(false); setEditRisk(null); }} />}
       </div>
     </div>
   );

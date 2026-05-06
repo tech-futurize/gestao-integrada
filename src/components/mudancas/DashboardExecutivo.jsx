@@ -8,7 +8,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 
@@ -108,9 +107,6 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
     return <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.75} />;
   };
 
-  const midCusto = totalCusto / 2;
-  const midPrazo = totalPrazo / 2;
-
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
@@ -188,8 +184,6 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
                 tick={{ fontSize: 10 }}
               />
               <Tooltip content={<CustomTooltip />} />
-              <ReferenceLine x={midCusto} stroke="#c35e1e" strokeDasharray="5 3" strokeOpacity={0.5} />
-              <ReferenceLine y={midPrazo} stroke="#26405d" strokeDasharray="5 3" strokeOpacity={0.5} />
               <Scatter data={scatterData} shape={<CustomDot />} />
             </ScatterChart>
           </ResponsiveContainer>

@@ -2,7 +2,18 @@
 import { useState, useEffect, createContext, useContext } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 6000;
+
+export function friendlyMessage(e) {
+  const msg = (e?.message || "").toLowerCase();
+  if (msg.includes("uuid") || msg.includes("invalid input syntax")) return "Dados inválidos: verifique os campos selecionados.";
+  if (msg.includes("foreign key") || msg.includes("violates")) return "Não foi possível salvar: referência inválida.";
+  if (msg.includes("not-null") || msg.includes("null value") || msg.includes("violates not-null")) return "Preencha todos os campos obrigatórios.";
+  if (msg.includes("duplicate") || msg.includes("unique")) return "Este registro já existe.";
+  if (msg.includes("network") || msg.includes("fetch") || msg.includes("failed")) return "Erro de conexão. Verifique sua internet.";
+  if (msg.includes("jwt") || msg.includes("auth") || msg.includes("unauthorized")) return "Sessão expirada. Faça login novamente.";
+  return "Verifique os dados e tente novamente.";
+}
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",

@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 export default function RelacionamentoForm({
   relacionamento,
@@ -61,9 +62,7 @@ export default function RelacionamentoForm({
           <CardTitle className="text-xl font-bold text-gray-900">
             {relacionamento ? "Editar Tratativa" : "Nova Tratativa"}
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <X className="w-5 h-5" />
-          </Button>
+          <CloseButton onClick={onCancel} />
         </div>
       </CardHeader>
       <CardContent className="p-6">
@@ -187,14 +186,8 @@ export default function RelacionamentoForm({
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar Tratativa"}
             </Button>
           </div>

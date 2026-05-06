@@ -13,10 +13,13 @@ import MedicoesList from "@/components/contratos/MedicoesList";
 import MedicaoForm from "@/components/contratos/MedicaoForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 export default function Contratos({ initialTab = "contratos" }) {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [tab, setTab] = useState(initialTab);
   const [showContratoForm, setShowContratoForm] = useState(false);
   const [editContrato, setEditContrato] = useState(null);
@@ -38,32 +41,38 @@ export default function Contratos({ initialTab = "contratos" }) {
 
   const createContrato = useMutation({
     mutationFn: (data) => entities.Contrato.create(data),
-    onSuccess: () => { queryClient.invalidateQueries(["contratos"]); setShowContratoForm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["contratos"] }); setShowContratoForm(false); },
+    onError: onErr,
   });
 
   const updateContrato = useMutation({
     mutationFn: ({ id, data }) => entities.Contrato.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["contratos"]); setShowContratoForm(false); setEditContrato(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["contratos"] }); setShowContratoForm(false); setEditContrato(null); },
+    onError: onErr,
   });
 
   const deleteContrato = useMutation({
     mutationFn: (id) => entities.Contrato.delete(id),
-    onSuccess: () => { queryClient.invalidateQueries(["contratos"]); setSelectedContrato(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["contratos"] }); setSelectedContrato(null); },
+    onError: onErr,
   });
 
   const createMedicao = useMutation({
     mutationFn: (data) => entities.Medicao.create(data),
-    onSuccess: () => { queryClient.invalidateQueries(["medicoes"]); setShowMedicaoForm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["medicoes"] }); setShowMedicaoForm(false); },
+    onError: onErr,
   });
 
   const updateMedicao = useMutation({
     mutationFn: ({ id, data }) => entities.Medicao.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["medicoes"]); setShowMedicaoForm(false); setEditMedicao(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["medicoes"] }); setShowMedicaoForm(false); setEditMedicao(null); },
+    onError: onErr,
   });
 
   const deleteMedicao = useMutation({
     mutationFn: (id) => entities.Medicao.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["medicoes"]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["medicoes"] }),
+    onError: onErr,
   });
 
   if (!selectedProjectId) {
@@ -161,6 +170,7 @@ export default function Contratos({ initialTab = "contratos" }) {
 
       {showContratoForm && (
         <ContratoForm
+          key={editContrato?.id || "new-contrato"}
           contrato={editContrato}
           onSave={handleSaveContrato}
           onClose={() => { setShowContratoForm(false); setEditContrato(null); }}
@@ -169,6 +179,7 @@ export default function Contratos({ initialTab = "contratos" }) {
 
       {showMedicaoForm && (
         <MedicaoForm
+          key={editMedicao?.id || "new-medicao"}
           medicao={editMedicao}
           contratos={contratos}
           defaultContratoId={selectedContrato?.id}

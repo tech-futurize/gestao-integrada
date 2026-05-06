@@ -9,6 +9,9 @@ import {
   AlertTriangle, Plus, X, Save, ArrowLeft, Clock, CheckCircle, XCircle,
   ChevronDown, ChevronUp, Filter
 } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
+import InfoTooltip from "@/components/ui/InfoTooltip";
+import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -59,7 +62,7 @@ function RNCForm({ rnc, onSave, onClose }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b sticky top-0 bg-white z-10">
           <h3 className="text-base font-bold" style={{ color: "#26405d" }}>{rnc ? `Editar RNC — ${rnc.numero}` : "Nova Não Conformidade"}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="w-5 h-5" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <div className="p-6 space-y-6">
           {/* Seção 1: Identificação */}
@@ -85,7 +88,7 @@ function RNCForm({ rnc, onSave, onClose }) {
                     {TIPOS.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </Field>
-                <Field label="Severidade">
+                <Field label={<span className="flex items-center">Severidade<InfoTooltip text="Menor: desvio cosmético sem impacto funcional. Maior: desvio com impacto operacional. Crítica: risco de segurança ou falha sistêmica." /></span>}>
                   <select className={selectCls} value={form.severidade} onChange={e => set("severidade", e.target.value)}>
                     {["Menor", "Maior", "Crítica"].map(s => <option key={s}>{s}</option>)}
                   </select>
@@ -106,7 +109,7 @@ function RNCForm({ rnc, onSave, onClose }) {
               <Field label="Descrição detalhada">
                 <textarea className={inputCls} rows={4} value={form.descricao} onChange={e => set("descricao", e.target.value)} placeholder="Descreva a não conformidade em detalhes..." />
               </Field>
-              <Field label="Norma / Especificação violada">
+              <Field label={<span className="flex items-center">Norma / Especificação violada<InfoTooltip text="Cite a norma, procedimento ou especificação técnica que foi descumprida. Ex: ABNT NBR 6118, ISO 9001:2015, PRC-ENG-001." /></span>}>
                 <input className={inputCls} value={form.norma_violada} onChange={e => set("norma_violada", e.target.value)} placeholder="Ex: NBR 6118, ISO 9001..." />
               </Field>
             </div>
@@ -151,8 +154,8 @@ function RNCForm({ rnc, onSave, onClose }) {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={() => onSave(form)} style={{ backgroundColor: "#c35e1e" }}>
+            <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+            <Button onClick={() => onSave(form)} className="bg-brand-accent hover:opacity-90 text-white">
               <Save className="w-4 h-4 mr-1" />Salvar
             </Button>
           </div>
@@ -279,17 +282,17 @@ export default function RelatoriosNNC() {
       const num = `RNC-${new Date().getFullYear()}-${String(rncs.length + 1).padStart(3, "0")}`;
       return entities.RNC.create({ ...data, projeto_id: selectedProjectId, numero: num, timeline: [{ data: data.data_abertura, autor: "Sistema", acao: "RNC aberta" }] });
     },
-    onSuccess: () => { queryClient.invalidateQueries(["rncs"]); setShowForm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["rncs"] }); setShowForm(false); },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.RNC.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["rncs"]); setShowForm(false); setEditingRnc(null); if (selectedRnc) { setSelectedRnc(null); } },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["rncs"] }); setShowForm(false); setEditingRnc(null); if (selectedRnc) { setSelectedRnc(null); } },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.RNC.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["rncs"]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["rncs"] }),
   });
 
   const handleSave = (data) => {
@@ -408,9 +411,7 @@ export default function RelatoriosNNC() {
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">{r.responsavel_tratamento || "—"}</td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => deleteMutation.mutate(r.id)} className="text-gray-300 hover:text-red-500 p-1">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      <ConfirmDeleteButton size="sm" onConfirm={() => deleteMutation.mutate(r.id)} description="A RNC será excluída permanentemente." />
                     </td>
                   </tr>
                 );

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
+import { toDatetimeLocal, toUtcIso } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -9,6 +10,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const CATEGORIAS_OCORRENCIA = [
@@ -23,7 +25,7 @@ const selectCls = `${inputCls} bg-white`;
 
 const EMPTY_RDO = {
   numero_rdo: "", area: "", disciplina: "", tipo_registro: "RDO",
-  data_hora: new Date().toISOString().slice(0, 16),
+  data_hora: toDatetimeLocal(new Date()),
   condicoes_climaticas_manha: "", condicoes_climaticas_tarde: "", condicoes_climaticas_noite: "",
   turno_manha: false, turno_tarde: false, turno_noite: false,
   horario_inicio: "", horario_fim: "",
@@ -46,7 +48,7 @@ function ClimaBtn({ label, icon: Icon, active, onClick, color }) {
 
 // ── RDO Form ───────────────────────────────────────────────────────────────────
 function RDOForm({ rdo, selectedProjectId, casos, onClose, onSaved }) {
-  const [form, setForm] = useState(rdo ? { ...rdo } : { ...EMPTY_RDO });
+  const [form, setForm] = useState(rdo ? { ...rdo, data_hora: toDatetimeLocal(rdo.data_hora) } : { ...EMPTY_RDO });
   const [openPanels, setOpenPanels] = useState({ mdo: true, equip: false, ativ: false, evid: false, ocorr: false });
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +81,7 @@ function RDOForm({ rdo, selectedProjectId, casos, onClose, onSaved }) {
 
   const handleSave = async () => {
     setLoading(true);
-    const data = { ...form, projeto_id: selectedProjectId };
+    const data = { ...form, projeto_id: selectedProjectId, data_hora: toUtcIso(form.data_hora) };
     if (rdo?.id) await entities.Incidente.update(rdo.id, data);
     else await entities.Incidente.create(data);
     setLoading(false);
@@ -403,6 +405,8 @@ function RDODetail({ rdo, casos, onClose }) {
 // ── Main Module ────────────────────────────────────────────────────────────────
 export default function RDOModule({ selectedProjectId }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [showForm, setShowForm] = useState(false);
   const [editRDO, setEditRDO] = useState(null);
   const [viewRDO, setViewRDO] = useState(null);
@@ -425,12 +429,13 @@ export default function RDOModule({ selectedProjectId }) {
   const deleteMut = useMutation({
     mutationFn: (id) => entities.Incidente.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["rdos_module"] }),
+    onError: onErr,
   });
 
   let filtered = [...rdos];
   if (search) filtered = filtered.filter(r => (r.ocorrencias || r.atividades || r.numero_rdo || "").toLowerCase().includes(search.toLowerCase()));
-  if (dateFrom) filtered = filtered.filter(r => r.data_hora >= dateFrom);
-  if (dateTo) filtered = filtered.filter(r => r.data_hora <= dateTo + "T23:59");
+  if (dateFrom) filtered = filtered.filter(r => r.data_hora && new Date(r.data_hora) >= new Date(dateFrom));
+  if (dateTo) filtered = filtered.filter(r => r.data_hora && new Date(r.data_hora) <= new Date(dateTo + "T23:59:59"));
 
   const climaCell = (v) => {
     if (!v) return <span className="text-gray-300 text-xs">—</span>;

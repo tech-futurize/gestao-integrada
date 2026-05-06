@@ -4,9 +4,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/lib/ProjectContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import CloseButton from "@/components/ui/CloseButton";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import {
   BarChart2, Plus, ArrowLeft, ChevronUp, ChevronDown, ChevronsUpDown,
-  Save, X, Edit, Trash2, TrendingUp, AlertTriangle, CheckCircle, XCircle
+  Save, Edit, Trash2, TrendingUp, AlertTriangle, CheckCircle, XCircle
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart
@@ -56,7 +58,7 @@ function ItemModal({ item, onSave, onClose, totalItems }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h3 className="font-bold" style={{ color: "#26405d" }}>{item ? "Editar Item" : "Novo Item"}</h3>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -103,7 +105,7 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose, 
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h3 className="font-bold" style={{ color: "#26405d" }}>{lancamento ? "Editar Lançamento" : "Lançar Realizado"}</h3>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-3">
@@ -276,6 +278,8 @@ function ItemDetalhe({ item, lancamentos, projetoId, onBack, onAddLancamento, on
 export default function TakeOffCommodities() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showItemModal, setShowItemModal] = useState(false);
@@ -302,27 +306,33 @@ export default function TakeOffCommodities() {
 
   const createItem = useMutation({
     mutationFn: (d) => entities.Commodity.create({ ...d, projeto_id: selectedProjectId }),
-    onSuccess: () => { queryClient.invalidateQueries(["commodities"]); setShowItemModal(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["commodities"] }); setShowItemModal(false); },
+    onError: onErr,
   });
   const updateItem = useMutation({
     mutationFn: ({ id, data }) => entities.Commodity.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["commodities"]); setShowItemModal(false); setEditingItem(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["commodities"] }); setShowItemModal(false); setEditingItem(null); },
+    onError: onErr,
   });
   const deleteItem = useMutation({
     mutationFn: (id) => entities.Commodity.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["commodities"]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["commodities"] }),
+    onError: onErr,
   });
   const createLanc = useMutation({
     mutationFn: (d) => entities.LancamentoCommodity.create(d),
-    onSuccess: () => { queryClient.invalidateQueries(["lancamentos-commodity"]); setShowLancModal(false); setEditingLanc(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["lancamentos-commodity"] }); setShowLancModal(false); setEditingLanc(null); },
+    onError: onErr,
   });
   const updateLanc = useMutation({
     mutationFn: ({ id, data }) => entities.LancamentoCommodity.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["lancamentos-commodity"]); setShowLancModal(false); setEditingLanc(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["lancamentos-commodity"] }); setShowLancModal(false); setEditingLanc(null); },
+    onError: onErr,
   });
   const deleteLanc = useMutation({
     mutationFn: (id) => entities.LancamentoCommodity.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["lancamentos-commodity"]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos-commodity"] }),
+    onError: onErr,
   });
 
   // Enrich items with computed fields

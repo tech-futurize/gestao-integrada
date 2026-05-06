@@ -8,10 +8,13 @@ import GanttChart from "@/components/cronograma/GanttChart";
 import TarefaForm from "@/components/cronograma/TarefaForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 export default function Cronograma() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [showForm, setShowForm] = useState(false);
   const [editTarefa, setEditTarefa] = useState(null);
   const [showBaseline, setShowBaseline] = useState(false);
@@ -26,17 +29,20 @@ export default function Cronograma() {
 
   const createTarefa = useMutation({
     mutationFn: (data) => entities.TarefaCronograma.create(data),
-    onSuccess: () => { queryClient.invalidateQueries(["tarefas"]); setShowForm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tarefas"] }); setShowForm(false); },
+    onError: onErr,
   });
 
   const updateTarefa = useMutation({
     mutationFn: ({ id, data }) => entities.TarefaCronograma.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["tarefas"]); setShowForm(false); setEditTarefa(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["tarefas"] }); setShowForm(false); setEditTarefa(null); },
+    onError: onErr,
   });
 
   const deleteTarefa = useMutation({
     mutationFn: (id) => entities.TarefaCronograma.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["tarefas"]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tarefas"] }),
+    onError: onErr,
   });
 
   if (!selectedProjectId) {
@@ -126,6 +132,7 @@ export default function Cronograma() {
 
       {showForm && (
         <TarefaForm
+          key={editTarefa?.id || "new-tarefa"}
           tarefa={editTarefa}
           tarefas={tarefas}
           onSave={handleSave}

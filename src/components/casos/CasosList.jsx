@@ -49,7 +49,7 @@ export default function CasosList({ casos, isLoading, onSelect }) {
   }
 
   return (
-    <Card className="border-0 shadow-md">
+    <Card className="border-0 shadow-md animate-in fade-in duration-300">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="w-5 h-5" style={{ color: "#26405d" }} />

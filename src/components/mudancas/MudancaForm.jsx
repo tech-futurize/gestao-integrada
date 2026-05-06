@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 const CATEGORIAS = ["Escopo", "Prazo", "Custo"];
 
@@ -48,7 +49,7 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting 
             <ArrowRightLeft className="w-5 h-5" style={{ color: "#26405d" }} />
             {mudanca ? "Editar Mudança" : "Registrar Nova Mudança"}
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel}><X className="w-5 h-5" /></Button>
+          <CloseButton onClick={onCancel} />
         </div>
       </CardHeader>
       <CardContent className="p-6">
@@ -164,8 +165,8 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting 
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700" disabled={isSubmitting}>
+            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar Mudança"}
             </Button>
           </div>

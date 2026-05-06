@@ -36,7 +36,7 @@ export default function Histograma() {
   const [editData, setEditData] = useState({});
   const [showNewRow, setShowNewRow] = useState(false);
   const [newRow, setNewRow] = useState({ recurso_id: "", mes_referencia: "", quantidade_prevista_mensal: "", quantidade_rdo_mensal: "" });
-  const [recursoSelecionado, setRecursoSelecionado] = useState("");
+  const [recursoSelecionado, setRecursoSelecionado] = useState("__none__");
 
   const { data: recursos = [] } = useQuery({
     queryKey: ["recursos", selectedProjectId],
@@ -47,7 +47,7 @@ export default function Histograma() {
   const { data: histogramas = [], isLoading } = useQuery({
     queryKey: ["histogramas", selectedProjectId, recursoSelecionado],
     queryFn: () => {
-      if (!recursoSelecionado) return entities.Histograma.filter({ projeto_id: selectedProjectId });
+      if (recursoSelecionado === "__none__") return entities.Histograma.filter({ projeto_id: selectedProjectId });
       return entities.Histograma.filter({ projeto_id: selectedProjectId, recurso_id: recursoSelecionado });
     },
     enabled: !!selectedProjectId,
@@ -117,7 +117,7 @@ export default function Histograma() {
               <Select value={recursoSelecionado} onValueChange={setRecursoSelecionado}>
                 <SelectTrigger className="w-60"><SelectValue placeholder="Filtrar por recurso" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Todos os recursos</SelectItem>
+                  <SelectItem value="__none__">Todos os recursos</SelectItem>
                   {recursos.map((r) => <SelectItem key={r.id} value={r.id}>{r.nome_recurso}</SelectItem>)}
                 </SelectContent>
               </Select>

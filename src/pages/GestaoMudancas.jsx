@@ -2,22 +2,24 @@ import React, { useState } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, GitBranch, BarChart2, LayoutDashboard } from "lucide-react";
+import { Plus, GitBranch, LayoutDashboard, LayoutGrid, LayoutList } from "lucide-react";
 import DashboardExecutivo from "../components/mudancas/DashboardExecutivo";
-
 import MudancaKanban from "../components/mudancas/MudancaKanban";
 import MudancaForm from "../components/mudancas/MudancaForm";
 import MudancaTermometro from "../components/mudancas/MudancaTermometro";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 export default function GestaoMudancas() {
   const [showForm, setShowForm] = useState(false);
   const [editingMudanca, setEditingMudanca] = useState(null);
+  const [viewMode, setViewMode] = useState("kanban");
   const queryClient = useQueryClient();
   const { selectedProjectId } = useProject();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
 
   const { data: mudancas = [], isLoading } = useQuery({
     queryKey: ["mudancas", selectedProjectId],
@@ -37,16 +39,19 @@ export default function GestaoMudancas() {
   const createMutation = useMutation({
     mutationFn: (data) => entities.MudancaContratual.create({ ...data, projeto_id: selectedProjectId }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["mudancas"] }); setShowForm(false); setEditingMudanca(null); },
+    onError: onErr,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.MudancaContratual.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["mudancas"] }); setShowForm(false); setEditingMudanca(null); },
+    onError: onErr,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.MudancaContratual.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["mudancas"] }),
+    onError: onErr,
   });
 
   const handleSubmit = (data) => {
@@ -64,11 +69,7 @@ export default function GestaoMudancas() {
   return (
     <div className="p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold mb-1 text-brand-primary">Gestão de Mudanças</h2>
-            <p className="text-gray-600">Controle de alterações contratuais e seus impactos</p>
-          </div>
+        <div className="flex justify-end">
           <Button onClick={() => { setEditingMudanca(null); setShowForm(true); }} className="bg-green-600 hover:bg-green-700 shadow-md">
             <Plus className="w-5 h-5 mr-2" />
             Nova Mudança
@@ -77,6 +78,7 @@ export default function GestaoMudancas() {
 
         {showForm && (
           <MudancaForm
+            key={editingMudanca?.id || "new-mudanca"}
             mudanca={editingMudanca}
             onSubmit={handleSubmit}
             onCancel={() => { setShowForm(false); setEditingMudanca(null); }}
@@ -84,15 +86,11 @@ export default function GestaoMudancas() {
           />
         )}
 
-        <Tabs defaultValue="kanban">
+        <Tabs defaultValue="workflow">
           <TabsList className="mb-4">
-            <TabsTrigger value="kanban" className="flex items-center gap-2">
+            <TabsTrigger value="workflow" className="flex items-center gap-2">
               <GitBranch className="w-4 h-4" />
-              Workflow de Mudanças
-            </TabsTrigger>
-            <TabsTrigger value="termometro" className="flex items-center gap-2">
-              <BarChart2 className="w-4 h-4" />
-              Termômetro de Desvio
+              Workflow
             </TabsTrigger>
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <LayoutDashboard className="w-4 h-4" />
@@ -100,18 +98,46 @@ export default function GestaoMudancas() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="kanban">
-            <MudancaKanban
-              mudancas={mudancas}
-              isLoading={isLoading}
-              onEdit={(m) => { setEditingMudanca(m); setShowForm(true); }}
-              onDelete={deleteMutation.mutate}
-              onUpdateStatus={(id, status) => updateMutation.mutate({ id, data: { status } })}
-            />
-          </TabsContent>
+          <TabsContent value="workflow">
+            {/* View toggle */}
+            <div className="flex items-center justify-end mb-4">
+              <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode("kanban")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "kanban"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  Kanban
+                </button>
+                <button
+                  onClick={() => setViewMode("lista")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === "lista"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  <LayoutList className="w-4 h-4" />
+                  Lista
+                </button>
+              </div>
+            </div>
 
-          <TabsContent value="termometro">
-            <MudancaTermometro mudancas={mudancas} projeto={projeto} />
+            {viewMode === "kanban" ? (
+              <MudancaKanban
+                mudancas={mudancas}
+                isLoading={isLoading}
+                onEdit={(m) => { setEditingMudanca(m); setShowForm(true); }}
+                onDelete={deleteMutation.mutate}
+                onUpdateStatus={(id, status) => updateMutation.mutate({ id, data: { status } })}
+              />
+            ) : (
+              <MudancaTermometro mudancas={mudancas} projeto={projeto} />
+            )}
           </TabsContent>
 
           <TabsContent value="dashboard">

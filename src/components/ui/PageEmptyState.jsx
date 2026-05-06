@@ -6,6 +6,7 @@ export default function PageEmptyState({
   icon: Icon = Layers,
   title = "Nenhum Projeto Selecionado",
   description = "Selecione um projeto na barra lateral para continuar.",
+  action = null,
 }) {
   return (
     <div className="p-8">
@@ -14,6 +15,14 @@ export default function PageEmptyState({
           <Icon className="w-14 h-14 mx-auto mb-4 text-brand-accent" />
           <h3 className="text-xl font-semibold text-brand-primary mb-2">{title}</h3>
           <p className="text-gray-500 text-sm">{description}</p>
+          {action && (
+            <button
+              onClick={action.onClick}
+              className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-accent text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+            >
+              {action.label}
+            </button>
+          )}
         </CardContent>
       </Card>
     </div>

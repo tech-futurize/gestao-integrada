@@ -3,6 +3,7 @@ import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 import { Plus, FileText, AlertTriangle, MapPin } from "lucide-react";
 
@@ -26,6 +27,7 @@ export default function Casos() {
   const [editingIncidente, setEditingIncidente] = useState(null);
   const queryClient = useQueryClient();
   const { selectedProjectId } = useProject();
+  const { toast } = useToast();
 
   const { data: casos = [], isLoading } = useQuery({
     queryKey: ["casos", selectedProjectId],
@@ -39,29 +41,36 @@ export default function Casos() {
     enabled: !!selectedProjectId,
   });
 
+  const onErr = (msg) => toast({ title: "Erro ao salvar", description: msg, variant: "destructive" });
+
   const createCasoMutation = useMutation({
     mutationFn: (data) => entities.Caso.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["casos"] }); setShowForm(false); setEditingCaso(null); },
+    onError: (e) => onErr(e.message),
   });
 
   const updateCasoMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Caso.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["casos"] }); setShowForm(false); setEditingCaso(null); setSelectedCaso(null); },
+    onError: (e) => onErr(e.message),
   });
 
   const createIncidenteMutation = useMutation({
     mutationFn: (data) => entities.Incidente.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["incidentes"] }); setShowIncidenteForm(false); setEditingIncidente(null); },
+    onError: (e) => onErr(e.message),
   });
 
   const updateIncidenteMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Incidente.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["incidentes"] }); setShowIncidenteForm(false); setEditingIncidente(null); },
+    onError: (e) => onErr(e.message),
   });
 
   const deleteIncidenteMutation = useMutation({
     mutationFn: (id) => entities.Incidente.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["incidentes"] }),
+    onError: (e) => onErr(e.message),
   });
 
   const criarCasoMutation = useMutation({
@@ -81,6 +90,7 @@ export default function Casos() {
       queryClient.invalidateQueries({ queryKey: ["incidentes"] });
       queryClient.invalidateQueries({ queryKey: ["casos"] });
     },
+    onError: (e) => onErr(e.message),
   });
 
   const handleSubmitCaso = (data) => {
@@ -145,6 +155,7 @@ export default function Casos() {
             </div>
             {showForm && (
               <CasoForm
+                key={editingCaso?.id || "new-caso"}
                 caso={editingCaso}
                 onSubmit={handleSubmitCaso}
                 onCancel={() => { setShowForm(false); setEditingCaso(null); }}
@@ -164,6 +175,7 @@ export default function Casos() {
             </div>
             {showIncidenteForm && (
               <IncidenteForm
+                key={editingIncidente?.id || "new-incidente"}
                 incidente={editingIncidente}
                 casos={casos}
                 onSubmit={handleSubmitIncidente}

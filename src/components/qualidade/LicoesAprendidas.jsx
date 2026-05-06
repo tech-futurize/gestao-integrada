@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/lib/ProjectContext";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, X, Save } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 const STATUS_COLORS = {
   "Aprovada": { bg: "#dcfce7", text: "#16a34a" },
@@ -39,7 +41,7 @@ function LicaoModal({ item, onSave, onClose }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
           <h3 className="text-base font-bold" style={{ color: "#00a49a" }}>{item ? "Editar Lição Aprendida" : "Nova Lição Aprendida"}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="w-5 h-5" /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <div className="p-6 space-y-4">
           <Field label="Título"><input className={inputCls} value={form.titulo} onChange={e => set("titulo", e.target.value)} placeholder="Título da lição aprendida" /></Field>
@@ -103,6 +105,8 @@ export default function LicoesAprendidas({ projetoId }) {
   const { selectedProjectId: contextProjectId } = useProject();
   const selectedProjectId = projetoId || contextProjectId;
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [modal, setModal] = useState(null);
   const [filtro, setFiltro] = useState("Todas");
   const [open, setOpen] = useState({});
@@ -116,16 +120,19 @@ export default function LicoesAprendidas({ projetoId }) {
   const createMutation = useMutation({
     mutationFn: (data) => entities.LicaoAprendida.create({ ...data, projeto_id: selectedProjectId }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["licoes_aprendidas"] }); setModal(null); },
+    onError: onErr,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.LicaoAprendida.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["licoes_aprendidas"] }); setModal(null); },
+    onError: onErr,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.LicaoAprendida.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["licoes_aprendidas"] }),
+    onError: onErr,
   });
 
   const save = (form) => {

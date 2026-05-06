@@ -26,7 +26,7 @@ export default function Engenharia() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.DocumentoEngenharia.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries(["docs-engenharia"]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["docs-engenharia"] }),
   });
 
   const handleUpdate = (id, data) => {

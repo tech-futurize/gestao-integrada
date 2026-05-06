@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 const CATEGORIAS = ["Escopo", "Prazo", "Custo"];
 
@@ -59,9 +61,7 @@ export default function CasoForm({ caso, onSubmit, onCancel, isSubmitting }) {
           <CardTitle className="text-xl font-bold text-gray-900">
             {caso ? "Editar Pleito" : "Novo Pleito"}
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <X className="w-5 h-5" />
-          </Button>
+          <CloseButton onClick={onCancel} />
         </div>
       </CardHeader>
       <CardContent className="p-6">
@@ -140,7 +140,7 @@ export default function CasoForm({ caso, onSubmit, onCancel, isSubmitting }) {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label>Categoria (múltipla seleção)</Label>
+              <Label className="flex items-center">Categoria (múltipla seleção)<InfoTooltip text="Classifica a tríade de impacto do pleito: Escopo (mudança no que será entregue), Prazo (impacto nas datas) ou Custo (impacto financeiro)." /></Label>
               <div className="flex gap-2 flex-wrap">
                 {CATEGORIAS.map((cat) => (
                   <button key={cat} type="button" onClick={() => toggleCategoria(cat)}
@@ -166,8 +166,8 @@ export default function CasoForm({ caso, onSubmit, onCancel, isSubmitting }) {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700" disabled={isSubmitting}>
+            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar Pleito"}
             </Button>
           </div>

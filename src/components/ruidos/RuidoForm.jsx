@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery } from "@tanstack/react-query";
 
@@ -21,7 +21,7 @@ export default function RuidoForm({ ruido, onSubmit, onCancel, isSubmitting, pro
       data_identificacao: new Date().toISOString().split("T")[0],
       responsavel: "",
       status: "Identificado",
-      caso_id: "",
+      caso_id: null,
     }
   );
 
@@ -33,7 +33,7 @@ export default function RuidoForm({ ruido, onSubmit, onCancel, isSubmitting, pro
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({ ...formData, caso_id: formData.caso_id || null });
   };
 
   return (
@@ -43,9 +43,7 @@ export default function RuidoForm({ ruido, onSubmit, onCancel, isSubmitting, pro
           <CardTitle className="text-xl font-bold text-gray-900">
             {ruido ? "Editar Notificação" : "Nova Notificação"}
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <X className="w-5 h-5" />
-          </Button>
+          <CloseButton onClick={onCancel} />
         </div>
       </CardHeader>
       <CardContent className="p-6">
@@ -160,10 +158,10 @@ export default function RuidoForm({ ruido, onSubmit, onCancel, isSubmitting, pro
 
             <div className="space-y-2 md:col-span-2">
               <Label>Associar a Pleito (Opcional)</Label>
-              <Select value={formData.caso_id || ""} onValueChange={(v) => setFormData({ ...formData, caso_id: v })}>
+              <Select value={formData.caso_id || "__none__"} onValueChange={(v) => setFormData({ ...formData, caso_id: v === "__none__" ? null : v })}>
                 <SelectTrigger><SelectValue placeholder="Selecione um pleito" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Nenhum</SelectItem>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
                   {casos.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.titulo}</SelectItem>
                   ))}
@@ -173,8 +171,8 @@ export default function RuidoForm({ ruido, onSubmit, onCancel, isSubmitting, pro
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700" disabled={isSubmitting}>
+            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar Notificação"}
             </Button>
           </div>

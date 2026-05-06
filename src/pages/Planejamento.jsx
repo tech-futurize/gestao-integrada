@@ -14,6 +14,7 @@ import Cronograma from "./Cronograma";
 import Contratos from "./Contratos";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 const TABS = [
   { id: "cronograma", label: "Cronograma", icon: CalendarRange, color: "#26405d" },
@@ -110,6 +111,8 @@ function WlaModal({ item, onSave, onClose }) {
 
 function SixWLA({ projetoId }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [modal, setModal] = useState(null);
 
   const { data: items = [], isLoading } = useQuery({
@@ -121,16 +124,19 @@ function SixWLA({ projetoId }) {
   const createMutation = useMutation({
     mutationFn: (data) => entities.Item6WLA.create({ ...data, projeto_id: projetoId }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }); setModal(null); },
+    onError: onErr,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Item6WLA.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }); setModal(null); },
+    onError: onErr,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.Item6WLA.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
+    onError: onErr,
   });
 
   const save = (form) => {

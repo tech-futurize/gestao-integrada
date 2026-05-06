@@ -12,10 +12,13 @@ import CotacaoForm from "@/components/suprimentos/CotacaoForm";
 import MapaSuprimentos from "@/components/suprimentos/MapaSuprimentos";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 export default function Suprimentos() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
   const [tab, setTab] = useState("requisicoes");
   const [showReqForm, setShowReqForm] = useState(false);
   const [editReq, setEditReq] = useState(null);
@@ -36,32 +39,38 @@ export default function Suprimentos() {
 
   const createReq = useMutation({
     mutationFn: (data) => entities.RequisicaoCompra.create(data),
-    onSuccess: () => { queryClient.invalidateQueries(["requisicoes"]); setShowReqForm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["requisicoes"] }); setShowReqForm(false); },
+    onError: onErr,
   });
 
   const updateReq = useMutation({
     mutationFn: ({ id, data }) => entities.RequisicaoCompra.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["requisicoes"]); setShowReqForm(false); setEditReq(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["requisicoes"] }); setShowReqForm(false); setEditReq(null); },
+    onError: onErr,
   });
 
   const deleteReq = useMutation({
     mutationFn: (id) => entities.RequisicaoCompra.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["requisicoes"]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["requisicoes"] }),
+    onError: onErr,
   });
 
   const createCot = useMutation({
     mutationFn: (data) => entities.Cotacao.create(data),
-    onSuccess: () => { queryClient.invalidateQueries(["cotacoes"]); setShowCotForm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["cotacoes"] }); setShowCotForm(false); },
+    onError: onErr,
   });
 
   const updateCot = useMutation({
     mutationFn: ({ id, data }) => entities.Cotacao.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries(["cotacoes"]); setShowCotForm(false); setEditCot(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["cotacoes"] }); setShowCotForm(false); setEditCot(null); },
+    onError: onErr,
   });
 
   const deleteCot = useMutation({
     mutationFn: (id) => entities.Cotacao.delete(id),
-    onSuccess: () => queryClient.invalidateQueries(["cotacoes"]),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cotacoes"] }),
+    onError: onErr,
   });
 
   if (!selectedProjectId) {
@@ -154,6 +163,7 @@ export default function Suprimentos() {
 
       {showReqForm && (
         <RequisicaoForm
+          key={editReq?.id || "new-requisicao"}
           requisicao={editReq}
           onSave={handleSaveReq}
           onClose={() => { setShowReqForm(false); setEditReq(null); }}
@@ -161,6 +171,7 @@ export default function Suprimentos() {
       )}
       {showCotForm && (
         <CotacaoForm
+          key={editCot?.id || "new-cotacao"}
           cotacao={editCot}
           requisicoes={requisicoes}
           onSave={handleSaveCot}

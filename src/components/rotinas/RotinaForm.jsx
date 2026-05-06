@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X } from "lucide-react";
+import CloseButton from "@/components/ui/CloseButton";
 
 export default function RotinaForm({ rotina, onSubmit, onCancel, isSubmitting }) {
   const [formData, setFormData] = useState(
@@ -37,9 +37,7 @@ export default function RotinaForm({ rotina, onSubmit, onCancel, isSubmitting })
           <CardTitle className="text-xl font-bold text-gray-900">
             {rotina ? "Editar Rotina" : "Nova Rotina"}
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <X className="w-5 h-5" />
-          </Button>
+          <CloseButton onClick={onCancel} />
         </div>
       </CardHeader>
       <CardContent className="p-6">
@@ -146,14 +144,8 @@ export default function RotinaForm({ rotina, onSubmit, onCancel, isSubmitting })
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              className="bg-green-600 hover:bg-green-700"
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar Rotina"}
             </Button>
           </div>
