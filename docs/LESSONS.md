@@ -138,6 +138,22 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L005 — Subagente atinge rate limit no meio da tarefa: trabalho parcial não documentado
+
+- **Data:** 2026-05-14
+- **Agente:** Builder (subagente)
+- **Milestone:** Refatoração Geral 2026-Q2
+- **Categoria:** Processo / DX
+- **Gravidade:** Média
+- **Contexto em 1 frase:** Subagente implementando Mapa de Impacto atingiu limite de taxa e reportou falha sem indicar quais edições já havia aplicado.
+- **Erro observado:** O subagente executou parte das edições em `MapaRegistroImpacto.jsx` (funções de cor e texto já atualizadas) antes de atingir o limite — mas reportou apenas "BLOCKED". O coordenador precisou reler o arquivo para descobrir o que havia sido feito e o que faltava.
+- **Causa raiz:** Subagentes não deixam estado parcial visível; quando encerrados abruptamente, o trabalho já commitado fica no repositório mas o que ainda estava em memória se perde sem rastreio.
+- **Correção aplicada:** Coordenador releu o arquivo e aplicou diretamente as 4 edições restantes com Edit tool.
+- **Como evitar em projetos futuros:** Quando um subagente falha antes de completar, SEMPRE reler o arquivo alvo antes de redispatchar ou editar manualmente — não assumir que nada foi feito. Para tarefas com muitos arquivos, solicitar ao subagente que comite a cada arquivo concluído, não só ao final.
+- **Referências:** `src/components/pleitos/MapaRegistroImpacto.jsx`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:
