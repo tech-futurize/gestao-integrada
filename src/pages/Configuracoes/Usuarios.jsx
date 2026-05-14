@@ -32,7 +32,7 @@ export default function Usuarios() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const { data: usuarios = [], isLoading } = useQuery({
+  const { data: usuarios = [], isLoading, isError } = useQuery({
     queryKey: ["usuarios"],
     queryFn: () => entities.Usuario.list(),
   });
@@ -106,7 +106,9 @@ export default function Usuarios() {
         </Button>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <div className="text-center py-10 text-red-500">Erro ao carregar usuários.</div>
+      ) : isLoading ? (
         <div className="text-center py-10 text-muted-foreground">Carregando usuários...</div>
       ) : usuarios.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
