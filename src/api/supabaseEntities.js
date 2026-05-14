@@ -23,19 +23,20 @@ const TABLE_MAP = {
   Ruido: 'ruidos',
   Commodity: 'commodities',
   LancamentoCommodity: 'lancamentos_commodity',
-  RNC: 'rncs',
   ItemMAS: 'itens_mas',
   DocumentoEngenharia: 'documentos_engenharia',
-  LicaoAprendida: 'licoes_aprendidas',
-  AtaReuniao: 'atas_reuniao',
   Item6WLA: 'itens_6wla',
   Risco: 'riscos',
   ItemTakeOff: 'itens_takeof',
+  PlanoAcao: 'plano_acao',
+  RDO: 'rdo',
+  Usuario: 'usuarios',
+  UnidadeMedida: 'unidades_medida',
 };
 
 function createEntityClient(tableName) {
   return {
-    async list(filters = {}) {
+    async list(filters = {}, { page = null, pageSize = null } = {}) {
       let query = supabase
         .from(tableName)
         .select('*')
@@ -47,6 +48,10 @@ function createEntityClient(tableName) {
         }
       }
 
+      if (page !== null && pageSize !== null) {
+        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+      }
+
       const { data, error } = await query;
       if (error) throw new Error(error.message);
       return data ?? [];
@@ -54,6 +59,22 @@ function createEntityClient(tableName) {
 
     async filter(filters = {}) {
       return this.list(filters);
+    },
+
+    async count(filters = {}) {
+      let query = supabase
+        .from(tableName)
+        .select('*', { count: 'exact', head: true });
+
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== undefined && value !== null && value !== '') {
+          query = query.eq(key, value);
+        }
+      }
+
+      const { count, error } = await query;
+      if (error) throw new Error(error.message);
+      return count ?? 0;
     },
 
     async create(data) {
