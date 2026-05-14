@@ -74,7 +74,7 @@ export const executeSQLTool = createTool({
     query: z.string().describe('Query SQL a ser executada (somente SELECT e CTEs de leitura)'),
   }),
   outputSchema: z.object({
-    rows: z.array(z.record(z.unknown())),
+    rows: z.array(z.record(z.string(), z.unknown())),
     rowCount: z.number(),
   }),
   execute: async (input) => {
