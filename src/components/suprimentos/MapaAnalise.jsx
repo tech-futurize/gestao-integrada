@@ -5,7 +5,7 @@ import { BarChart2 } from "lucide-react";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 
-export default function MapaAnalise({ cotacoes }) {
+export default function MapaAnalise({ cotacoes = [] }) {
   const cotacoesComPropostas = cotacoes.filter(c => c.propostas?.length > 0);
 
   if (!cotacoesComPropostas.length) return (

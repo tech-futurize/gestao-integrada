@@ -17,6 +17,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
+const TYPE_LABELS = {
+  string:  "texto",
+  number:  "número",
+  date:    "data",
+  boolean: "sim/não",
+};
+
 function normalize(str) {
   return str
     .toLowerCase()
@@ -87,7 +94,7 @@ export function ColumnMappingDialog({
                 <span className="text-sm font-medium">{col.label}</span>
                 <div className="flex gap-1 mt-0.5">
                   <Badge variant="outline" className="text-xs px-1 py-0">
-                    {col.type}
+                    {TYPE_LABELS[col.type] || col.type}
                   </Badge>
                   {col.required && (
                     <Badge variant="destructive" className="text-xs px-1 py-0">
@@ -137,7 +144,7 @@ export function ColumnMappingDialog({
             {mappedCount} de {systemColumns.length} campo(s) mapeado(s)
           </p>
           <Button variant="outline" onClick={onClose}>
-            Cancelar
+            ← Voltar
           </Button>
           <Button
             onClick={() => onConfirm(mapping)}

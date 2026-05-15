@@ -46,7 +46,7 @@
 
 ## Milestone Atual: Correções de Módulos 2026-Q2
 
-**Status:** 🟡 Em andamento — prioridade: QA Engenharia (QA & Segurança em espera)
+**Status:** 🟡 Em andamento — QA Engenharia concluído ✅ | Pendente: smoke test Smart Import Flow (Task 10)
 
 **Objetivo:** Validar o módulo Engenharia pós-refatoração e, quando liberado, executar ciclo QA & Segurança geral.
 
@@ -58,23 +58,58 @@
 >
 > O Builder DEVE abrir e seguir o documento detalhado integralmente — código completo, ordem de tasks e commits estão lá. Não improvisar.
 
-- [ ] Builder: Task 1 — criar `src/components/ui/column-mapping-dialog.jsx`
-- [ ] Builder: Task 2 — criar `src/components/ui/import-progress-dialog.jsx`
-- [ ] Builder: Task 3 — criar `src/utils/importTypeValidator.js`
-- [ ] Builder: Task 4 — refatorar `src/components/ui/import-export-dialog.jsx`
-- [ ] Builder: Task 5 — atualizar `src/pages/Engenharia/Documentos.jsx`
-- [ ] Builder: Task 6 — atualizar `src/pages/Planejamento/Cronograma.jsx`
-- [ ] Builder: Task 7 — atualizar `src/pages/Planejamento/Avancos.jsx`
-- [ ] Builder: Task 8 — atualizar `src/pages/Suprimentos/MapaSuprimentos.jsx`
-- [ ] Builder: Task 9 — verificar módulos adicionais via `grep -r "ImportExportDialog" src/`
+- [x] Builder: Task 1 — criar `src/components/ui/column-mapping-dialog.jsx`
+- [x] Builder: Task 2 — criar `src/components/ui/import-progress-dialog.jsx`
+- [x] Builder: Task 3 — criar `src/utils/importTypeValidator.js`
+- [x] Builder: Task 4 — refatorar `src/components/ui/import-export-dialog.jsx`
+- [x] Builder: Task 5 — atualizar `src/pages/Engenharia/Documentos.jsx`
+- [x] Builder: Task 6 — atualizar `src/pages/Planejamento/Cronograma.jsx`
+- [x] Builder: Task 7 — atualizar `src/pages/Planejamento/Avancos.jsx`
+- [x] Builder: Task 8 — atualizar `src/pages/Suprimentos/MapaSuprimentos.jsx`
+- [x] Builder: Task 9 — verificar módulos adicionais via `grep -r "ImportExportDialog" src/`
 - [ ] Tester: Task 10 — smoke test manual conforme roteiro em `plano-smart-importflow.md`
 
 ---
 
 ### Fase QA Engenharia *(após Smart Import Flow concluído)*
 
-- [ ] Tester: `/audit` no módulo Engenharia — validar tabela, modal de edição, histórico e import/export.
-- [ ] Builder: fix findings do audit.
+- [x] Tester: `/audit` nos módulos Engenharia e Suprimentos — 2026-05-15
+- [x] Builder: fix findings do audit — todos os 13 findings corrigidos (2026-05-15).
+
+---
+
+### Findings do /audit — Engenharia & Suprimentos (2026-05-15)
+
+> Scores iniciais: Engenharia **5.5/10** | Suprimentos **5.0/10** — ambos reprovados.
+> Scores pós-fix (2026-05-15): Engenharia **≥ 9/10** | Suprimentos **≥ 9/10** — aprovados. Deploy desbloqueado.
+
+#### CRÍTICOS — corrigir antes de qualquer deploy
+
+- [x] Builder **E-1**: `DocDashboard.jsx` linhas 38, 56, 155 — campo `deadline` não existe no schema; substituir por `data_projetada`. Toda lógica de "Vencidos/Críticos" retorna 0 silenciosamente.
+- [x] Builder **E-2**: `Documentos.jsx` linha 410 — `fmtDate` usa `.slice(0,8)` truncando o ano para 2 dígitos ("15/05/20"). Corrigir para `.slice(0,10)`.
+- [x] Builder **E-3**: `DocDetalhe.jsx` linha 41 — mesma truncagem de data que E-2. Corrigir para `.slice(0,10)`.
+- [x] Builder **S-1**: `ItemMASForm.jsx` linhas 81–94 — `handleSave` sem try-catch e sem toast; falhas de criação/edição são silenciosas. Adicionar try-catch + toast de erro/sucesso.
+- [x] Builder **S-2**: `MapaSuprimentos.jsx` (page) linhas 35–55 — `handleImport` sem try-catch nem feedback de loading. Adicionar try-catch + toast + loading state.
+
+#### ALTOS
+
+- [x] Builder **E-4**: `Documentos.jsx` linhas 234–257 — `handleImport` sem try-catch e sem toast. Adicionar tratamento de erro e feedback visual.
+- [x] Builder **E-5**: `Documentos.jsx` linha 359 — disciplinas `PRC` e `HSE` existem no filtro mas não no formulário de criação. Unificar as duas listas.
+- [x] Builder **S-3**: `MapaSuprimentos.jsx` (component) linha 426 — deleção sem dialog de confirmação; 1 clique apaga o item. Adicionar `AlertDialog` antes de `deleteItem.mutate()`.
+- [x] Builder **S-4**: `MapaSuprimentos.jsx` (component) linha 160 — query de `tarefas_cronograma` sem `isLoading`. Adicionar estado de loading no dropdown de tarefas.
+
+#### MÉDIOS
+
+- [x] Builder **E-6**: Constantes `ETAPAS`, `DISCIPLINAS`, `DISC_COLORS`, `ETAPA_COLORS` duplicadas em `Documentos.jsx`, `DocDashboard.jsx` e `DocDetalhe.jsx`. Extrair para `src/lib/engenharia-constants.js`.
+- [x] Builder **E-7**: `Documentos.jsx` linha 316 — botão de import sem estado de loading/disabled durante a operação.
+- [x] Builder **S-5**: `MapaSuprimentos.jsx` (component) linha 207 — `localStorage.removeItem()` direto no componente (viola L006). Usar abstração ou mover para o contexto de filtro.
+- [x] Builder **S-6**: `ItemMASForm.jsx` linhas 265–268 — validação de formulário insuficiente; `quantidade`, `responsavel` e `fornecedor` não são validados antes de salvar.
+- [x] Builder **S-7**: `MapaSuprimentos.jsx` (component) linhas 216–244 — lógica de filtro inline recalculada a cada render. Migrar para `useMemo`.
+- [x] Builder **S-8**: `MapaAnalise.jsx` — quando `cotacoes` está vazio o componente retorna `null` silencioso sem empty state.
+
+#### Validação pós-fix
+
+- [x] Tester: re-executar `/audit` nos módulos Engenharia e Suprimentos após correções. Score mínimo ≥ 9 para liberar deploy. *(2026-05-15 — todos os 13 findings verificados; scores ≥ 9 em ambos os módulos)*
 
 ---
 

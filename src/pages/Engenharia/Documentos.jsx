@@ -19,29 +19,7 @@ import {
   Pencil, Trash2, History, ChevronUp, ChevronDown, ChevronsUpDown,
 } from "lucide-react";
 
-const ETAPAS = ["A Emitir", "Em Elaboração", "Em Verificação Técnica", "Comentários do Cliente", "Aprovado"];
-const DISCIPLINAS = [
-  { value: "MEC", label: "Mecânica" },
-  { value: "CIV", label: "Civil" },
-  { value: "ELE", label: "Elétrica" },
-  { value: "TUB", label: "Tubulação" },
-  { value: "INS", label: "Instrumentação" },
-  { value: "AUT", label: "Automação" },
-  { value: "EST", label: "Estrutura metálica" },
-];
-
-const DISC_COLORS = {
-  MEC: "#3b82f6", CIV: "#8b5cf6", ELE: "#f59e0b", TUB: "#06b6d4",
-  INS: "#10b981", AUT: "#ef4444", EST: "#6366f1",
-};
-
-const ETAPA_COLORS = {
-  "A Emitir": { bg: "#f3f4f6", text: "#6b7280" },
-  "Em Elaboração": { bg: "#dbeafe", text: "#2563eb" },
-  "Em Verificação Técnica": { bg: "#fef3c7", text: "#d97706" },
-  "Comentários do Cliente": { bg: "#fae8ff", text: "#9333ea" },
-  "Aprovado": { bg: "#dcfce7", text: "#16a34a" },
-};
+import { ETAPAS, DISCIPLINAS, DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
 
 const EXPORT_COLUMNS = [
   { key: "tag_id",          label: "TAG/ID",            type: "string",  required: true },
@@ -102,6 +80,7 @@ export default function Documentos() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [showImportExport, setShowImportExport] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [historyDoc, setHistoryDoc] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -232,22 +211,35 @@ export default function Documentos() {
   };
 
   const handleImport = async (row) => {
-    await entities.DocumentoEngenharia.create({
-      projeto_id:      selectedProjectId,
-      tag_id:          row.tag_id          || "",
-      titulo:          row.titulo          || "",
-      disciplina:      row.disciplina      || "",
-      fornecedor:      row.fornecedor      || "",
-      num_folhas:      row.num_folhas      ?? 0,
-      progresso:       row.progresso       ?? 0,
-      etapa:           row.etapa           || "A Emitir",
-      revisao_atual:   row.revisao_atual   || "",
-      id_cronograma:   row.id_cronograma   || null,
-      data_cronograma: row.data_cronograma || null,
-      data_projetada:  row.data_projetada  || null,
-      data_real:       row.data_real       || null,
-    });
-    queryClient.invalidateQueries({ queryKey: ["documentos_engenharia"] });
+    setImporting(true);
+    try {
+      const payload = {
+        projeto_id:      selectedProjectId,
+        tag_id:          row.tag_id          || "",
+        titulo:          row.titulo          || "",
+        disciplina:      row.disciplina      || "",
+        fornecedor:      row.fornecedor      || "",
+        num_folhas:      row.num_folhas      ?? 0,
+        progresso:       row.progresso       ?? 0,
+        etapa:           row.etapa           || "A Emitir",
+        revisao_atual:   row.revisao_atual   || "",
+        id_cronograma:   row.id_cronograma   || null,
+        data_cronograma: row.data_cronograma || null,
+        data_projetada:  row.data_projetada  || null,
+        data_real:       row.data_real       || null,
+      };
+      const existing = await entities.DocumentoEngenharia.filter({ projeto_id: selectedProjectId, tag_id: payload.tag_id });
+      if (existing.length > 0) {
+        await entities.DocumentoEngenharia.update(existing[0].id, payload);
+      } else {
+        await entities.DocumentoEngenharia.create(payload);
+      }
+      queryClient.invalidateQueries({ queryKey: ["documentos_engenharia"] });
+    } catch (e) {
+      toast({ title: "Erro ao importar documento", description: e?.message || "Tente novamente.", variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
   };
 
   const handleConfirmDelete = () => {
@@ -307,8 +299,8 @@ export default function Documentos() {
           <p className="text-sm text-muted-foreground">Gestão de documentos técnicos por disciplina</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowImportExport(true)}>
-            <Upload className="w-4 h-4 mr-2" />Importar / Exportar
+          <Button variant="outline" onClick={() => setShowImportExport(true)} disabled={importing}>
+            <Upload className="w-4 h-4 mr-2" />{importing ? "Importando..." : "Importar / Exportar"}
           </Button>
           <Button onClick={handleOpenNew}>
             <Plus className="w-4 h-4 mr-2" />Novo Documento
@@ -401,7 +393,7 @@ export default function Documentos() {
                   const aprovado = doc.etapa === "Aprovado";
                   const vencido = !aprovado && doc.data_projetada && doc.data_projetada < today;
                   const atrasadoCron = !aprovado && !vencido && doc.data_projetada && doc.data_cronograma && doc.data_projetada > doc.data_cronograma;
-                  const fmtDate = (d) => d ? d.split("-").reverse().join("/").slice(0, 8) : "—";
+                  const fmtDate = (d) => d ? d.split("-").reverse().join("/").slice(0, 10) : "—";
                   return (
                     <tr key={doc.id} className={`border-b border-border transition-colors ${i % 2 === 0 ? "bg-card" : "bg-muted/20"}`}>
                       <td className="px-3 py-2.5 font-bold text-xs whitespace-nowrap text-foreground">{doc.tag_id}</td>

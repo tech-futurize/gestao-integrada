@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Package } from "lucide-react";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { UNIDADES_MEDIDA } from "@/lib/unidadesMedida";
 
 const STATUS_BADGE = {
@@ -50,15 +51,15 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
     numero_sc: item?.numero_sc || "",
     responsavel: item?.responsavel || "",
     fornecedor: item?.fornecedor || "",
-    data_prevista: item?.data_prevista || "",
     id_cronograma: item?.id_cronograma || "",
     data_cronograma: item?.data_cronograma || "",
     status: item?.status || "A iniciar",
     etapas: item?.etapas?.length === 7 ? item.etapas : DEFAULT_ETAPAS,
   });
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const { data: tarefas = [] } = useQuery({
+  const { data: tarefas = [], isLoading: isLoadingTarefas } = useQuery({
     queryKey: ["tarefas_cronograma", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -80,12 +81,36 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
   };
 
   const handleSave = async () => {
+    if (!form.quantidade || parseFloat(form.quantidade) <= 0) {
+      toast({ title: "Campo obrigatório", description: "Informe uma quantidade válida.", variant: "destructive" });
+      return;
+    }
+    if (!form.responsavel?.trim()) {
+      toast({ title: "Campo obrigatório", description: "Informe o responsável.", variant: "destructive" });
+      return;
+    }
+    if (!form.fornecedor?.trim()) {
+      toast({ title: "Campo obrigatório", description: "Informe o fornecedor.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
-    const data = { ...form, projeto_id: selectedProjectId, quantidade: parseFloat(form.quantidade) || 0 };
-    if (item) await entities.ItemMAS.update(item.id, data);
-    else await entities.ItemMAS.create(data);
-    setLoading(false);
-    onSaved();
+    try {
+      const data = {
+        ...form,
+        projeto_id: selectedProjectId,
+        quantidade: parseFloat(form.quantidade) || 0,
+        id_cronograma: form.id_cronograma || null,
+        data_cronograma: form.data_cronograma || null,
+      };
+      if (item) await entities.ItemMAS.update(item.id, data);
+      else await entities.ItemMAS.create(data);
+      toast({ title: item ? "Item atualizado" : "Item criado", description: form.descricao });
+      onSaved();
+    } catch (e) {
+      toast({ title: "Erro ao salvar item", description: friendlyMessage(e), variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const barColor = STATUS_BAR[form.status] || "#64748b";
@@ -111,7 +136,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
                   {item ? "Editar Item MAS" : "Novo Item MAS"}
                 </p>
                 {item ? (
-                  <p className="text-xs text-muted-foreground font-mono truncate max-w-xs mt-0.5">
+                  <p className="text-xs text-muted-foreground truncate max-w-xs mt-0.5">
                     {item.numero_sc} — {item.descricao}
                   </p>
                 ) : (
@@ -135,7 +160,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
                   value={form.numero_sc}
                   onChange={e => set("numero_sc", e.target.value)}
                   placeholder="SC/OC-0001"
-                  className="font-mono"
+                  className=""
                 />
               </div>
               <div className="space-y-1">
@@ -163,6 +188,25 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
                   onChange={e => set("fornecedor", e.target.value)}
                   placeholder="Nome do fornecedor"
                 />
+              </div>
+              <div className="space-y-1 col-span-2">
+                <Label className="text-xs">Status</Label>
+                <Select value={form.status} onValueChange={v => set("status", v)}>
+                  <SelectTrigger
+                    style={
+                      form.status && STATUS_BADGE[form.status]
+                        ? { backgroundColor: STATUS_BADGE[form.status].bg, color: STATUS_BADGE[form.status].text, borderColor: "transparent" }
+                        : {}
+                    }
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["A iniciar", "Em andamento", "Concluído", "Cancelado"].map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -196,49 +240,15 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
             </div>
           </div>
 
-          {/* Prazo & Status */}
-          <div>
-            <SectionDivider color="#f59e0b" label="Prazo & Status" />
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Data Prevista</Label>
-                <Input
-                  type="date"
-                  value={form.data_prevista}
-                  onChange={e => set("data_prevista", e.target.value)}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Status</Label>
-                <Select value={form.status} onValueChange={v => set("status", v)}>
-                  <SelectTrigger
-                    style={
-                      form.status && STATUS_BADGE[form.status]
-                        ? { backgroundColor: STATUS_BADGE[form.status].bg, color: STATUS_BADGE[form.status].text, borderColor: "transparent" }
-                        : {}
-                    }
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["A iniciar", "Em andamento", "Concluído", "Cancelado"].map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
           {/* Cronograma */}
           <div>
             <SectionDivider color="#10b981" label="Cronograma" />
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1 col-span-2">
                 <Label className="text-xs">Vincular ao Cronograma</Label>
-                <Select value={form.id_cronograma || "__none__"} onValueChange={handleSelectCronograma}>
+                <Select value={form.id_cronograma || "__none__"} onValueChange={handleSelectCronograma} disabled={isLoadingTarefas}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Vincular tarefa..." />
+                    <SelectValue placeholder={isLoadingTarefas ? "Carregando tarefas..." : "Vincular tarefa..."} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— Sem vínculo —</SelectItem>

@@ -126,14 +126,20 @@ export default function Avancos() {
   };
 
   const handleImport = async (row) => {
-    await entities.AvancoFisico.create({
+    const payload = {
       projeto_id:                  selectedProjectId,
       mes_referencia:              row.mes_referencia              || "",
       avanco_previsto_mensal:      row.avanco_previsto_mensal      ?? 0,
       avanco_realizado_mensal:     row.avanco_realizado_mensal     ?? 0,
       avanco_previsto_acumulado:   row.avanco_previsto_acumulado   ?? 0,
       avanco_realizado_acumulado:  row.avanco_realizado_acumulado  ?? 0,
-    });
+    };
+    const existing = await entities.AvancoFisico.filter({ projeto_id: selectedProjectId, mes_referencia: payload.mes_referencia });
+    if (existing.length > 0) {
+      await entities.AvancoFisico.update(existing[0].id, payload);
+    } else {
+      await entities.AvancoFisico.create(payload);
+    }
     queryClient.invalidateQueries({ queryKey: ["avanco_fisico"] });
   };
 

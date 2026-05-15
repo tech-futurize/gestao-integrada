@@ -18,6 +18,7 @@ export function ImportProgressDialog({
   errors = [],
   done,
   onClose,
+  onBack,
 }) {
   const percent = total > 0 ? Math.round((processed / total) * 100) : 0;
   const successCount = processed - errors.length;
@@ -122,6 +123,11 @@ export function ImportProgressDialog({
         </div>
 
         <DialogFooter>
+          {done && onBack && (
+            <Button variant="outline" onClick={onBack}>
+              ← Nova importação
+            </Button>
+          )}
           <Button
             onClick={onClose}
             disabled={!done}

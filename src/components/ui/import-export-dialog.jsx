@@ -186,84 +186,136 @@ export function ImportExportDialog({
   return (
     <>
       <Dialog open={open && phase === "idle"} onOpenChange={(v) => !v && handleClose()}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-lg p-0 overflow-hidden">
 
-          {/* Exportar */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Exportar</p>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => handleExport("csv")}>
-                <Download className="h-4 w-4 mr-2" />
-                CSV
-              </Button>
-              <Button variant="outline" className="flex-1" onClick={() => handleExport("xlsx")}>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Excel
-              </Button>
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="w-1 self-stretch rounded-full flex-shrink-0 bg-emerald-500" style={{ minHeight: "40px" }} />
+              <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center flex-shrink-0">
+                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-base font-bold text-foreground leading-tight">{title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">CSV, XLSX ou XLS</p>
+              </div>
             </div>
           </div>
 
-          <hr />
+          <div className="px-6 py-5 space-y-5">
 
-          {/* Importar */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Importar</p>
+            {/* Exportar */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Exportar dados</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => handleExport("csv")}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/60 hover:border-emerald-300 transition-all group text-left"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-100 transition-colors">
+                    <Download className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">CSV</p>
+                    <p className="text-xs text-muted-foreground">Planilha de texto</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleExport("xlsx")}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/60 hover:border-emerald-300 transition-all group text-left"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-100 transition-colors">
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Excel</p>
+                    <p className="text-xs text-muted-foreground">Formato .xlsx</p>
+                  </div>
+                </button>
+              </div>
+            </div>
 
-            <div
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-            >
-              {isParsing ? (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm">Lendo arquivo...</p>
-                </div>
-              ) : selectedFile && rawRows.length > 0 ? (
-                <div className="flex flex-col items-center gap-1">
-                  <FileSpreadsheet className="h-8 w-8 text-green-500" />
-                  <p className="text-sm font-medium">{selectedFile.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {rawRows.length} linha(s) · {fileHeaders.length} coluna(s)
-                  </p>
-                  <p className="text-xs text-muted-foreground">Clique para trocar o arquivo</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                  <Upload className="h-8 w-8" />
-                  <p className="text-sm">Arraste ou clique para selecionar</p>
-                  <p className="text-xs">CSV, XLSX ou XLS</p>
-                </div>
+            {/* Importar */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2.5 h-2.5 rounded-sm bg-sky-500 flex-shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-sky-600">Importar dados</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              <div
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                  selectedFile && rawRows.length > 0
+                    ? "border-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/10"
+                    : "border-border hover:border-sky-400 hover:bg-sky-50/40 dark:hover:bg-sky-900/10"
+                }`}
+              >
+                {isParsing ? (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <div className="h-7 w-7 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-medium">Lendo arquivo...</p>
+                  </div>
+                ) : selectedFile && rawRows.length > 0 ? (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-300 flex items-center justify-center">
+                      <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground mt-1">{selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {rawRows.length} linha(s) · {fileHeaders.length} coluna(s)
+                    </p>
+                    <p className="text-xs text-sky-600 font-medium mt-0.5">Clique para trocar o arquivo</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground mt-1">Arraste ou clique para selecionar</p>
+                    <p className="text-xs text-muted-foreground">CSV, XLSX ou XLS</p>
+                  </div>
+                )}
+              </div>
+
+              {parseError && (
+                <p className="text-sm text-destructive mt-2 flex items-center gap-1.5">
+                  <X className="w-3.5 h-3.5 flex-shrink-0" />
+                  {parseError}
+                </p>
               )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                className="hidden"
+                onChange={(e) => handleFileSelected(e.target.files[0])}
+              />
             </div>
 
-            {parseError && <p className="text-sm text-destructive">{parseError}</p>}
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              className="hidden"
-              onChange={(e) => handleFileSelected(e.target.files[0])}
-            />
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>
+          {/* Footer */}
+          <div className="flex justify-end gap-2 border-t px-6 py-4 bg-muted/30">
+            <Button variant="secondary" onClick={handleClose}>
               Cancelar
             </Button>
             <Button
               disabled={!hasFileReady}
               onClick={() => setPhase("mapping")}
-              className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
             >
               Próximo: Mapear Colunas →
             </Button>
-          </DialogFooter>
+          </div>
+
         </DialogContent>
       </Dialog>
 
@@ -283,6 +335,7 @@ export function ImportExportDialog({
         errors={progress.errors}
         done={phase === "done"}
         onClose={handleClose}
+        onBack={() => setPhase("idle")}
       />
     </>
   );

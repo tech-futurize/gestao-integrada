@@ -2,21 +2,7 @@ import React, { useState } from "react";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Save, X } from "lucide-react";
-
-const DISC_COLORS = {
-  MEC: "#3b82f6", CIV: "#8b5cf6", ELE: "#f59e0b", TUB: "#06b6d4",
-  INS: "#10b981", AUT: "#ef4444", EST: "#6366f1", PRC: "#ec4899", HSE: "#84cc16",
-};
-
-const ETAPA_COLORS = {
-  "A Emitir": { bg: "#f3f4f6", text: "#6b7280" },
-  "Em Elaboração": { bg: "#dbeafe", text: "#2563eb" },
-  "Em Verificação Técnica": { bg: "#fef3c7", text: "#d97706" },
-  "Comentários do Cliente": { bg: "#fae8ff", text: "#9333ea" },
-  "Aprovado": { bg: "#dcfce7", text: "#16a34a" },
-};
-
-const ETAPAS = ["A Emitir", "Em Elaboração", "Em Verificação Técnica", "Comentários do Cliente", "Aprovado"];
+import { ETAPAS, DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
 
 export default function DocDetalhe({ doc, tarefas = [], onClose, onUpdate }) {
   const tarefaLabel = (id) => {
@@ -38,7 +24,7 @@ export default function DocDetalhe({ doc, tarefas = [], onClose, onUpdate }) {
     setNovaRevisao({ revisao: "", data: "", observacao: "" });
   };
 
-  const formatDate = (d) => d ? d.split("-").reverse().join("/").slice(0, 8) : "—";
+  const formatDate = (d) => d ? d.split("-").reverse().join("/").slice(0, 10) : "—";
 
   return (
     <div className="space-y-5">
@@ -61,9 +47,6 @@ export default function DocDetalhe({ doc, tarefas = [], onClose, onUpdate }) {
                 <span className="text-xs font-semibold bg-muted text-muted-foreground rounded px-2 py-0.5">{doc.revisao_atual}</span>
               )}
               <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ backgroundColor: etapaCfg.bg, color: etapaCfg.text }}>{doc.etapa}</span>
-              {doc.prioridade && (
-                <span className="text-xs font-semibold bg-orange-50 text-orange-700 rounded-full px-2 py-0.5">{doc.prioridade}</span>
-              )}
             </div>
           </div>
 
@@ -71,7 +54,7 @@ export default function DocDetalhe({ doc, tarefas = [], onClose, onUpdate }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             {[
               { label: "Fornecedor", value: doc.fornecedor || "—" },
-              { label: "Nº de Folhas", value: doc.num_folhas || "—" },
+              { label: "Nº de Folhas", value: doc.num_folhas ? `A4 (${doc.num_folhas})` : "—" },
               { label: "Dt. Projetada", value: formatDate(doc.data_projetada) },
               { label: "Dt. Real", value: formatDate(doc.data_real) },
             ].map(({ label, value }) => (

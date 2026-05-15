@@ -3,14 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
 } from "recharts";
-
-const DISC_COLORS = {
-  MEC: "#3b82f6", CIV: "#8b5cf6", ELE: "#f59e0b", TUB: "#06b6d4",
-  INS: "#10b981", AUT: "#ef4444", EST: "#6366f1", PRC: "#ec4899", HSE: "#84cc16",
-};
-
-const ETAPA_COLORS_PIE = ["#6b7280", "#2563eb", "#d97706", "#9333ea", "#16a34a"];
-const ETAPAS = ["A Emitir", "Em Elaboração", "Em Verificação Técnica", "Comentários do Cliente", "Aprovado"];
+import { ETAPAS, DISC_COLORS, ETAPA_COLORS_PIE } from "@/lib/engenharia-constants";
 
 export default function DocDashboard({ docs }) {
   const today = new Date().toISOString().split("T")[0];
@@ -35,7 +28,7 @@ export default function DocDashboard({ docs }) {
   const fornecedores = [...new Set(docs.map(d => d.fornecedor).filter(Boolean))];
   const byFornecedor = fornecedores.map(f => {
     const ds = docs.filter(d => d.fornecedor === f);
-    const vencidos = ds.filter(d => d.deadline && d.deadline < today && d.etapa !== "Aprovado").length;
+    const vencidos = ds.filter(d => d.data_projetada && d.data_projetada < today && d.etapa !== "Aprovado").length;
     return {
       fornecedor: f.length > 18 ? f.slice(0, 18) + "…" : f,
       total: ds.length,
@@ -53,7 +46,7 @@ export default function DocDashboard({ docs }) {
   });
 
   // Docs críticos (vencidos + baixo progresso)
-  const criticos = docs.filter(d => d.deadline && d.deadline < today && d.etapa !== "Aprovado")
+  const criticos = docs.filter(d => d.data_projetada && d.data_projetada < today && d.etapa !== "Aprovado")
     .sort((a, b) => (a.progresso || 0) - (b.progresso || 0))
     .slice(0, 5);
 
@@ -152,7 +145,7 @@ export default function DocDashboard({ docs }) {
           <h3 className="font-semibold mb-3 text-sm text-red-600">⚠ Documentos Vencidos — Ação Necessária</h3>
           <div className="space-y-2">
             {criticos.map(doc => {
-              const daysLate = Math.abs(Math.ceil((new Date(doc.deadline) - new Date()) / 86400000));
+              const daysLate = Math.abs(Math.ceil((new Date(doc.data_projetada) - new Date()) / 86400000));
               return (
                 <div key={doc.id} className="flex items-center justify-between gap-3 p-2 rounded-lg bg-red-50 text-xs">
                   <span className="font-bold" style={{ color: DISC_COLORS[doc.disciplina] || "#374151" }}>{doc.tag_id}</span>
