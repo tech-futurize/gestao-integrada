@@ -10,6 +10,7 @@
 - **Refatoração Geral 2026-Q2** — Todos os módulos refatorados, nova estrutura de páginas por domínio, migration SQL, import/export, agentes Mastra refinados
 - **Pendências + Documentação 2026-Q2** *(2026-05-14)* — `Usuarios.jsx` + rota criados, entities Qualidade removidas do shim, 25 docs de módulos reescritos, ARCHITECTURE/DATABASE/PROJECT/README/CLAUDE.md atualizados, 3 lições (L006-L008) promovidas a regras em CLAUDE.md
 - **Correções Engenharia 2026-Q2** *(2026-05-15)* — Migration SQL, tabela com novas colunas, modal de edição, histórico de versões em Dialog, import/export atualizado, doc atualizado
+- **DX: dev unificado** *(2026-05-15)* — `npm run dev` na raiz sobe Vite + Mastra via `concurrently`; `postinstall` propaga deps; `Agents Mastra/` ignorado no ESLint; README atualizado
 
 ---
 

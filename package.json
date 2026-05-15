@@ -3,11 +3,18 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently --names \"VITE,MASTRA\" --prefix-colors \"cyan,magenta\" --kill-others-on-fail \"npm run dev:vite\" \"npm run dev:mastra\"",
+    "dev:vite": "vite",
+    "dev:mastra": "npm --prefix \"Agents Mastra\" run dev",
     "build": "vite build",
+    "build:mastra": "npm --prefix \"Agents Mastra\" run build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "npm --prefix \"Agents Mastra\" install"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.27",
@@ -42,6 +49,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@supabase/supabase-js": "^2.105.4",
     "@tanstack/react-query": "^5.84.1",
+    "@tanstack/react-virtual": "^3.13.24",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -87,6 +95,7 @@
     "globals": "^15.14.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
-    "vite": "^6.1.0"
+    "vite": "^6.1.0",
+    "concurrently": "^9.1.0"
   }
 }

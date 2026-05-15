@@ -6,7 +6,7 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
 
 ## Pré-requisitos
 
-- Node.js 18+
+- Node.js 22.13.0+
 - npm 9+ (ou pnpm)
 - Conta no [Supabase](https://supabase.com) com projeto criado
 
@@ -22,6 +22,7 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
    ```bash
    npm install
    ```
+   > O `postinstall` instala automaticamente as dependências de `Agents Mastra/` — nenhum `cd` necessário.
 
 3. **Configure as variáveis de ambiente:**
    ```bash
@@ -39,6 +40,8 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
    ```bash
    npm run dev
    ```
+   Sobe simultaneamente o app React em `:5173` e o servidor Mastra (agentes IA) em `:4111`.
+   O output é prefixado por `[VITE]` e `[MASTRA]`. `Ctrl+C` encerra os dois.
 
 6. **Acesse:** [http://localhost:5173](http://localhost:5173)
 
@@ -51,6 +54,7 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
 | `VITE_SUPABASE_URL` | URL do projeto Supabase | Supabase → Project Settings → API |
 | `VITE_SUPABASE_ANON_KEY` | Chave anônima JWT | Supabase → Project Settings → API |
 | `GITHUB_TOKEN` | Token de acesso ao repositório | GitHub → Settings → Developer settings → PAT |
+| `OPENAI_API_KEY` | API key OpenAI (usada pelos agentes Mastra) | platform.openai.com → API keys |
 
 > ⚠️ O arquivo `.env.local` nunca deve ser commitado. Use `.env.example` como template.
 > Variáveis com prefixo `VITE_` são expostas ao browser — nunca coloque secrets nelas.
@@ -62,8 +66,11 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
 
 | Comando | O que faz |
 |---------|-----------|
-| `npm run dev` | Roda em desenvolvimento (localhost:5173) |
+| `npm run dev` | Sobe Vite (:5173) **e** Mastra (:4111) simultaneamente |
+| `npm run dev:vite` | Só o app React (sem Mastra) |
+| `npm run dev:mastra` | Só o servidor Mastra (sem Vite) |
 | `npm run build` | Build de produção em `/dist/` |
+| `npm run build:mastra` | Build de produção do servidor Mastra |
 | `npm run preview` | Roda o build de produção localmente |
 | `npm run lint` | Verifica erros de lint com ESLint |
 
@@ -92,15 +99,7 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
 | Agentes de IA (3 agentes Mastra) | `/agentes/*` | Executor, Analista de Negócio, Analista Contratual |
 | Configurações | `/configuracoes/*` | Usuários, Gerenciar Projeto, Config. Agentes |
 
-> **Mastra (agentes de IA):** rodar separado em `Agents Mastra/` na porta 4111 antes de usar os agentes.
-
-```bash
-# Terminal 1 — Mastra
-cd "Agents Mastra" && npm run dev
-
-# Terminal 2 — App React
-npm run dev
-```
+> **Mastra (agentes de IA):** sobe automaticamente com `npm run dev` junto com o app React. Para rodar só o Mastra: `npm run dev:mastra`.
 
 ---
 
