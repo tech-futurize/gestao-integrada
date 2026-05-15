@@ -36,9 +36,9 @@ export default function TarefaForm({ tarefa, tarefas, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-bold" style={{ color: "#26405d" }}>{tarefa ? "Editar Tarefa" : "Nova Tarefa"}</h2>
+          <h2 className="text-lg font-bold text-foreground">{tarefa ? "Editar Tarefa" : "Nova Tarefa"}</h2>
           <CloseButton onClick={onClose} />
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -104,7 +104,7 @@ export default function TarefaForm({ tarefa, tarefas, onSave, onClose }) {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="text-white" style={{ backgroundColor: "#c35e1e" }}>
+            <Button type="submit" variant="save">
               {tarefa ? "Atualizar" : "Criar Tarefa"}
             </Button>
           </div>

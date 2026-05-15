@@ -9,11 +9,24 @@
 ## Visão Geral
 
 - **Banco:** Supabase PostgreSQL
-- **Total de tabelas:** 25
+- **Total de tabelas:** 28 (após Milestone Refatoração Geral 2026-Q2)
 - **Auth:** Supabase Auth (tabela `auth.users` gerenciada pelo Supabase)
-- **RLS:** Habilitado em todas as tabelas
+- **RLS:** Habilitado em todas as tabelas com policy aberta para `authenticated`
 - **UUID:** `gen_random_uuid()` como PK padrão
 - **Timestamps:** `created_at` e `updated_at` em todas as tabelas
+- **Migration ativa:** `supabase-migration-2026-q2.sql` (aplicar antes de rodar o app)
+
+### Tabelas removidas neste milestone
+- ~~`rncs`~~ — módulo Qualidade dropado
+- ~~`licoes_aprendidas`~~ — módulo Qualidade dropado
+- ~~`atas_reuniao`~~ — módulo Qualidade dropado
+- ~~`acoes`~~ — migrado para `plano_acao` (genérico, aceita riscos e mudanças)
+
+### Tabelas adicionadas neste milestone
+- `unidades_medida` — tabela global de unidades de medida
+- `plano_acao` — plano de ação genérico (vincula risco ou mudança)
+- `rdo` — RDO desacoplado de `incidentes`
+- `usuarios` — cadastro básico de usuários
 
 ---
 
@@ -22,25 +35,33 @@
 ```
 projetos (1)
   ├── documentos_contratuais (N)
-  ├── incidentes (N) → casos (N)
-  ├── casos (1) → acoes (N)
+  ├── incidentes (N)                         ← Registros (desacoplado do RDO)
+  ├── rdo (N)                                ← RDO próprio (desacoplado de incidentes)
+  ├── casos (N)                              ← Pleitos contratuais
   ├── engenharias (N)
   ├── financeiros (N)
   ├── recursos (N) → histogramas (N)
   ├── avanco_fisico (N)
   ├── mudancas_contratuais (N)
+  ├── riscos (N)
+  ├── plano_acao (N) ──→ riscos (FK opcional)
+  │                └──→ mudancas_contratuais (FK opcional)
   ├── contratos (N) → medicoes (N)
   │              └── aditivos (N)
-  ├── requisicoes_compra (N) → cotacoes (N)
   ├── tarefas_cronograma (N, self-ref pai_id)
+  │   └── itens_6wla (N) via tarefa_cronograma_id
   ├── relacionamentos (N)
   ├── rotinas (N)
-  ├── ruidos (N) → casos (N)
+  ├── ruidos (N)
   ├── commodities (N) → lancamentos_commodity (N)
-  ├── rncs (N)
-  ├── itens_mas (N)
-  └── documentos_engenharia (N)
+  ├── itens_mas (N) → unidades_medida (FK)
+  ├── documentos_engenharia (N) → tarefas_cronograma (FK opcional)
+  └── usuarios (N)
+
+unidades_medida (lookup global, sem projeto_id)
 ```
+
+> **Removidos:** `acoes`, `requisicoes_compra`, `cotacoes`, `rncs`, `licoes_aprendidas`, `atas_reuniao`
 
 ---
 
@@ -77,20 +98,44 @@ Documentos formais do contrato (Contrato, Aditivos, OS, etc).
 ---
 
 ### incidentes
-Registros diários de ocorrências (RDO, notificações, etc.).
+Registros de ocorrências / notificações (módulo Registros na UI).
+> RDO foi desacoplado para a tabela `rdo` separada neste milestone.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
 | projeto_id | UUID FK → projetos | CASCADE |
-| data_hora | TIMESTAMPTZ | |
+| data_hora | TIMESTAMPTZ | Campo `hora` removido |
 | descricao | TEXT NOT NULL | |
 | impacto_preliminar | TEXT | |
 | probabilidade | TEXT | Baixa / Média / Alta |
 | gravidade | TEXT | Baixa / Média / Alta |
-| status | TEXT | Registrado / Em Análise / Resolvido / Fechado |
+| status | TEXT | Registrado / Em Análise / Resolvido (status "Fechado" removido) |
 | responsavel_registro | TEXT | |
-| caso_id | UUID FK → casos | SET NULL — FK diferida |
-| rdo_data | JSONB | Campos extras do RDO |
+| caso_id | UUID FK → casos | SET NULL |
+| atividades_vinculadas | JSONB | IDs de tarefas_cronograma vinculadas |
+| anexos | JSONB | URLs do Supabase Storage (bucket `registros-anexos`) |
+
+> Colunas RDO removidas: `rdo_data`, `numero_rdo`, `area`, `disciplina`, `condicoes_climaticas_*`, `turnos_*`, `horarios_*`, `mao_de_obra`, `equipamentos_rdo`, `atividades`, `ocorrencias`, `responsabilidade`, `impacto_ocorrencia`.
+
+---
+
+### rdo
+Relatórios Diários de Obra — desacoplado de `incidentes`.
+
+| Coluna | Tipo | Notas |
+|--------|------|-------|
+| projeto_id | UUID FK → projetos | CASCADE |
+| numero | TEXT | |
+| data | DATE NOT NULL | |
+| area | TEXT | |
+| disciplinas | JSONB | Array de strings (seleção múltipla) |
+| clima | JSONB | `{manha, tarde, noite}` com condicao/praticabilidade independentes |
+| mao_de_obra | JSONB | Array `[{nome, funcao, quantidade}]` |
+| equipamentos | JSONB | Array `[{nome, identificacao, quantidade}]` |
+| atividades_vinculadas | JSONB | Array de IDs de tarefas_cronograma |
+| ocorrencias | JSONB | Array de ocorrências com atividades_vinculadas próprias |
+| impactos | JSONB | |
+| evidencias | JSONB | URLs do Supabase Storage (bucket `rdo-evidencias`) |
 
 ---
 
@@ -114,21 +159,22 @@ Pleitos contratuais — o core do módulo de Pleitos.
 
 ---
 
-### acoes
-Ações do plano de resolução de um pleito (caso).
+### plano_acao
+Plano de ação genérico — substitui `acoes` (que era exclusivo de pleitos). Vincula um risco ou uma mudança.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
-| caso_id | UUID FK → casos | CASCADE |
+| projeto_id | UUID FK → projetos | CASCADE |
 | descricao | TEXT NOT NULL | |
 | formato_tratativa | TEXT | Reunião / Documento / Inspeção / Análise Técnica / Negociação / Outros |
-| data_inicio_prevista | DATE | |
-| data_fim_prevista | DATE | |
-| data_conclusao_real | DATE | |
+| data_prevista | DATE | |
+| data_real | DATE | |
 | responsavel | TEXT | |
 | status | TEXT | Pendente / Em Andamento / Concluída / Atrasada / Cancelada |
-| marca_causa | TEXT | Camada 1..5 |
-| observacoes | TEXT | |
+| registro_risco_id | UUID FK → riscos | SET NULL |
+| registro_mudanca_id | UUID FK → mudancas_contratuais | SET NULL |
+
+> CHECK: `registro_risco_id IS NOT NULL OR registro_mudanca_id IS NOT NULL` (obrigatório vincular a risco ou mudança).
 
 ---
 
@@ -232,13 +278,15 @@ Contratos com fornecedores e prestadores de serviço.
 | objeto | TEXT NOT NULL | |
 | fornecedor | TEXT NOT NULL | |
 | cnpj | TEXT | |
-| valor_total | NUMERIC | |
-| data_inicio | DATE | |
-| data_fim | DATE | |
-| status | TEXT | Ativo / Em Revisão / Suspenso / Encerrado / Cancelado |
-| tipo | TEXT | Serviços / Fornecimento / Misto |
+| valor_total | NUMERIC | Formatação BR (ponto milhar, vírgula decimal) no front |
+| data_inicio | DATE | Data de início original |
+| data_fim | DATE | Data de término original |
+| status | TEXT | **A iniciar / Em andamento / Concluído / Paralisado** |
+| tipo | TEXT | **Fornecimento / Serviço / Fornecimento + Serviço** (ex-"Misto" migrado) |
 | centro_custo | TEXT | |
 | gestor | TEXT | |
+
+> Datas "Início Atual" e "Término Atual" são **calculadas no front** somando `Σ(dias_adicionais)` dos aditivos ao `data_fim` original. Não são persistidas.
 
 ---
 
@@ -251,10 +299,12 @@ Medições de serviços executados vinculadas a contratos.
 | contrato_id | UUID FK → contratos | CASCADE |
 | numero | TEXT NOT NULL | |
 | periodo_inicio / fim | DATE | |
-| valor_bruto / retencao / liquido | NUMERIC | |
+| valor | NUMERIC | Soma automática dos `itens` (read-only no front). Ex-"valor_liquido" |
 | status | TEXT | Elaboração / Em Revisão / Em Aprovação / Aprovada / Paga / Rejeitada |
-| elaborador / aprovador | TEXT | |
-| itens | JSONB | |
+| aprovador | TEXT | |
+| itens | JSONB | Array `[{descricao, quantidade, valor_unitario}]` |
+
+> Campos removidos: `elaborador`, `valor_bruto`, `retencao`.
 
 ---
 
@@ -267,8 +317,9 @@ Aditivos de prazo e/ou valor de contratos.
 | contrato_id | UUID FK → contratos | CASCADE |
 | numero | TEXT | |
 | tipo | TEXT NOT NULL | Prazo / Valor / Prazo e Valor |
-| valor_adicional | NUMERIC | |
-| dias_adicionais | NUMERIC | |
+| escopo_texto | TEXT | Descrição do escopo alterado |
+| prazo_dias | INTEGER | Dias adicionados ao contrato |
+| valor | NUMERIC | Valor em R$ do aditivo |
 | justificativa | TEXT | |
 | data_assinatura | DATE | |
 | status | TEXT | Pendente / Assinado / Cancelado |
@@ -308,7 +359,7 @@ Cotações vinculadas a requisições de compra.
 ---
 
 ### tarefas_cronograma
-Estrutura WBS do cronograma com hierarquia pai/filho.
+Estrutura WBS do cronograma com hierarquia pai/filho (até 9 níveis).
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
@@ -317,13 +368,20 @@ Estrutura WBS do cronograma com hierarquia pai/filho.
 | codigo_wbs | TEXT | |
 | nome | TEXT NOT NULL | |
 | tipo | TEXT | Resumo / Atividade / Marco |
-| nivel | INTEGER | |
-| data_inicio/fim_planejada | DATE | |
-| data_inicio/fim_real | DATE | |
-| data_inicio/fim_baseline | DATE | |
-| avanco_previsto / realizado | NUMERIC | |
-| caminho_critico | BOOLEAN | |
+| nivel | INTEGER | CHECK (nivel BETWEEN 1 AND 9) |
+| data_inicio_planejada / data_fim_planejada | DATE | Datas planejadas originais |
+| data_inicio_real / data_fim_real | DATE | Datas efetivas |
+| inicio_baseline / termino_baseline | DATE | Linha de base |
+| inicio_previsto / termino_previsto | DATE | Previsão de conclusão (atualizada) |
+| percentual_previsto | NUMERIC | 0–100 |
+| percentual_real | NUMERIC | 0–100 |
+| area | TEXT | |
+| disciplina | TEXT | |
+| caminho_critico | BOOLEAN | default false |
 | predecessoras | TEXT | |
+| status | TEXT | Calculado: A Iniciar / Em Andamento / Atrasada / Concluído |
+
+> **Fórmula de status:** `Se prev=0 e real=0 → "A Iniciar"; Se real=100 → "Concluído"; Se prev > real → "Atrasada"; Se real >= prev → "Em Andamento"`
 
 ---
 
@@ -403,37 +461,41 @@ Produção semanal por commodity.
 
 ---
 
-### rncs
-Relatórios de Não Conformidade (RNC).
-
-| Coluna | Tipo | Notas |
-|--------|------|-------|
-| projeto_id | UUID FK → projetos | CASCADE |
-| numero | TEXT | |
-| titulo | TEXT NOT NULL | |
-| data_abertura | DATE | |
-| disciplina | TEXT | Mecânica / Elétrica / ... |
-| tipo | TEXT | Material / Execução / Projeto / Procedimento |
-| severidade | TEXT | Menor / Maior / Crítica |
-| status | TEXT | Aberta / Em Tratamento / Verificação / Encerrada / Reaberta |
-| acao_corretiva / preventiva | TEXT | |
-| timeline | JSONB | Histórico de eventos da RNC |
+### ~~rncs~~ (REMOVIDA)
+> Tabela dropada no Milestone Refatoração Geral 2026-Q2 (DROP TABLE rncs CASCADE). Módulo Qualidade removido.
 
 ---
 
 ### itens_mas
-Itens do Mapa de Acompanhamento de Suprimentos (MAS).
+Itens do Mapa de Acompanhamento de Suprimentos (MAS). Submódulos "Requisições" e "Cotações" removidos da UI.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
 | projeto_id | UUID FK → projetos | CASCADE |
 | descricao | TEXT NOT NULL | |
-| unidade / quantidade | TEXT / NUMERIC | |
-| numero_sc | TEXT NOT NULL | Número da Solicitação de Compra |
-| solicitante | TEXT | |
-| data_necessidade | DATE | |
+| unidade_id | TEXT FK → unidades_medida | Substituí `unidade` text |
+| quantidade | NUMERIC | |
+| numero_sc | TEXT NOT NULL | Label UI: "N SC/OC" |
+| solicitante | TEXT | Label UI: "Responsável" |
+| fornecedor | TEXT | |
+| id_cronograma | UUID FK → tarefas_cronograma | SET NULL |
+| data_cronograma | DATE | Preenchida ao vincular a tarefa |
 | status | TEXT | A iniciar / Em andamento / Concluído / Cancelado |
-| etapas | JSONB | Array com etapas do processo de compra |
+| etapas | JSONB | Array `[{nome, data_prevista, data_real}]` |
+
+> `data_necessidade` foi substituída por `data_cronograma` (vínculo via `id_cronograma`).
+
+---
+
+### unidades_medida
+Tabela de lookup global de unidades de medida. Sem `projeto_id`.
+
+| Coluna | Tipo | Notas |
+|--------|------|-------|
+| codigo | TEXT PK | kg / t / m3 / m2 / m / l / un / pc / h / mes / vb |
+| descricao | TEXT NOT NULL | Ex: "Quilograma", "Metro Cúbico" |
+
+> Referenciada por: `recursos.unidade_id`, `itens_takeof.unidade_id`, `commodities.unidade_id`, `itens_mas.unidade_id`.
 
 ---
 
@@ -457,101 +519,90 @@ Gestão documental de engenharia (emissão, revisões, aprovações).
 | historico_etapas | JSONB | |
 
 >
+---
+
+### mudancas_contratuais (alterada)
+Gestão de mudanças de escopo, prazo e valor do contrato.
+
+| Coluna | Tipo | Notas |
+|--------|------|-------|
+| projeto_id | UUID FK → projetos | CASCADE |
+| titulo | TEXT | |
+| descricao | TEXT | |
+| origem | TEXT | Contratante / Contratado / Regulatório / Técnico |
+| status | TEXT | Identificada / Em Análise / Aprovada / Rejeitada / Implementada |
+| impacto_custo | NUMERIC | |
+| impacto_prazo_dias | NUMERIC | |
+| impacto_escopo | TEXT | |
+| impacto_escopo_tipo | TEXT | **Adição** ou **Redução** (radio único na UI) |
+| data_registro | DATE | Ex-`data_ocorrencia` |
+| pleito_texto | TEXT | |
+| responsavel | TEXT | |
+| categorias | JSONB | Sincronizado com categorias do Mapa de Impacto |
+
+---
+
+### riscos (alterada)
+Gestão de riscos do projeto.
+
+| Coluna | Tipo | Notas |
+|--------|------|-------|
+| projeto_id | UUID FK → projetos | CASCADE |
+| codigo | TEXT | |
+| descricao | TEXT NOT NULL | |
+| categoria | TEXT | Sincronizada com `src/lib/categorias.js` |
+| probabilidade | TEXT | Baixa / Média / Alta |
+| impacto_nivel | TEXT | Baixa / Média / Alta |
+| impactos | JSONB | Array com 0..3 valores: 'Escopo', 'Prazo', 'Valor' |
+| escopo_texto | TEXT | |
+| prazo_dias | INTEGER | |
+| valor_impacto | NUMERIC | |
+| score | NUMERIC | |
+| status | TEXT | |
+| responsavel | TEXT | |
+| mitigacao | TEXT | |
+| residual | TEXT | |
+
+---
+
+### usuarios
+Cadastro básico de usuários (sem RBAC granular neste milestone).
+
+| Coluna | Tipo | Notas |
+|--------|------|-------|
+| id | UUID PK | |
+| email | TEXT UNIQUE NOT NULL | |
+| nome | TEXT NOT NULL | |
+| papel | TEXT | default 'usuario' (livre neste milestone) |
+| projeto_padrao_id | UUID FK → projetos | SET NULL |
+| created_at / updated_at | TIMESTAMPTZ | |
+
+---
+
+### itens_6wla (alterada)
+Look-ahead de 6 semanas — vínculo obrigatório com o cronograma.
+
+| Coluna | Tipo | Notas |
+|--------|------|-------|
+| projeto_id | UUID FK → projetos | CASCADE |
+| tarefa_cronograma_id | UUID FK → tarefas_cronograma | NOT NULL |
+| observacao | TEXT | |
+| restricoes | JSONB | `{documentos, material, equipamentos, mao_obra, seguranca, qualidade}` — cada um array bool[6] |
+
+> `semanas` (array bool[6] de atividade ativa) é calculado no front pela sobreposição de `[inicio_previsto, termino_previsto]` da tarefa com a janela de cada semana. Não persistido.
+
+---
+
 > **Ownership:** Architect | **Atualizado a cada:** migration relevante
 
 ---
 
-## 1. Visão Geral
+## Migrations
 
-- **Serviço:** <!-- Ex: Supabase PostgreSQL -->
-- **ORM:** <!-- Ex: Prisma -->
-- **Row Level Security (RLS):** <!-- Habilitado/Desabilitado. Se habilitado, descreva a política geral -->
-
----
-
-## 2. Tabelas
-
-<!-- Para cada tabela, documente: descrição, campos, tipos, constraints e classificação PII/não-PII. -->
-
-> **Convenção de classificação (vale para toda a seção):**
->
-> - `PII` = dado pessoal identificável direto ou indireto (email, nome, CPF, telefone, endereço, IP, localização, foto, dados biométricos).
-> - `Sensível` = PII de categoria especial — dados de saúde, orientação sexual, religião, filiação política, dados de crianças, dados financeiros (cartão, conta bancária).
-> - `Interno` = dado operacional do sistema sem relação direta com uma pessoa (ids técnicos, timestamps, flags).
->
-> **Regras:** todo campo `PII` ou `Sensível` precisa ser listado também na §5 com política de retenção e criptografia. Campos `Sensível` exigem `encrypted at rest` obrigatório.
-
-### <!-- nome_da_tabela -->
-
-**Descrição:** <!-- O que esta tabela armazena -->
-
-| Campo | Tipo | Constraints | Classificação | Descrição |
-|-------|------|-------------|---------------|-----------|
-| `id` | `uuid` | PK, default gen_random_uuid() | Interno | Identificador único |
-| | | | | |
-| | | | | |
-| `created_at` | `timestamptz` | NOT NULL, default now() | Interno | Data de criação |
-| `updated_at` | `timestamptz` | NOT NULL, default now() | Interno | Última atualização |
-
-**RLS Policy:** <!-- Descreva a política de acesso. Ex: "Usuário só acessa seus próprios registros" -->
-
----
-
-### <!-- próxima_tabela -->
-
-**Descrição:** 
-
-| Campo | Tipo | Constraints | Classificação | Descrição |
-|-------|------|-------------|---------------|-----------|
-| | | | | |
-
----
-
-## 3. Relacionamentos
-
-<!-- Descreva os relacionamentos entre tabelas. Use formato: Tabela A → Tabela B (tipo) -->
-
-| Tabela A | Tabela B | Tipo | Chave | Descrição |
-|----------|----------|------|-------|-----------|
-| | | 1:N | `tabela_b.tabela_a_id → tabela_a.id` | |
-| | | N:N | via tabela_intermediária | |
-
----
-
-## 4. Índices
-
-<!-- Liste índices criados para performance e justifique -->
-
-| Tabela | Campo(s) | Tipo | Justificativa |
-|--------|----------|------|---------------|
-| | | btree | |
-
----
-
-## 5. Campos PII e Sensíveis
-
-> ⚠️ Este é o inventário consolidado. **Todo campo classificado `PII` ou `Sensível` em §2 deve aparecer aqui.**
-> A auditoria do `/security-scan` cruza §2 × §5 — divergência vira finding.
-
-<!-- Classificação segue a convenção declarada no topo da §2.
-     Campos `Sensível` exigem `encrypted at rest` = Sim. -->
-
-| Tabela | Campo | Classificação | Categoria (ex: Email, Nome, CPF, Saúde) | Encrypted at rest? | Política de retenção |
-|--------|-------|---------------|-----------------------------------------|--------------------|---------------------|
-| | | PII | Email | | |
-| | | PII | Nome | | |
-| | | Sensível | <!-- Saúde, Financeiro, etc. --> | Sim | |
-
----
-
-## 6. Migrations
-
-<!-- Registre as migrations mais relevantes. Não precisa listar todas — apenas as que mudaram a estrutura significativamente -->
-
-| Data | Descrição | Impacto |
-|------|-----------|---------|
-| | Criação inicial do schema | Todas as tabelas base |
-| | | |
+| Data | Arquivo | Descrição | Impacto |
+|------|---------|-----------|---------|
+| 2026-Q1 | `supabase-migration.sql` | Criação inicial do schema (~30 tabelas) | Todas as tabelas base |
+| 2026-Q2 | `supabase-migration-2026-q2.sql` | Refatoração Geral: Drop Qualidade, criação de `unidades_medida`, `plano_acao`, `rdo`, `usuarios`; ALTER em 10+ tabelas | Ver seção "Tabelas removidas/adicionadas" acima |
 
 ---
 

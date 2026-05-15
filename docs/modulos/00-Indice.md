@@ -2,116 +2,162 @@
 
 ## Visão Geral do Sistema
 
-O **Sistema de Gestão Integrada** é uma plataforma web desenvolvida em React para gerenciamento integrado de projetos de engenharia/construção. O sistema concentra todas as informações contratuais, operacionais e de gestão de um projeto em um único lugar, com foco em contratos de empreitada e administração contratual.
+O **Sistema de Gestão Integrada** é uma SPA React para gerenciamento integrado de projetos EPC (Engineering, Procurement & Construction). Centraliza cronograma, suprimentos, avanço físico, pleitos contratuais, riscos e mudanças em um único sistema multiempresa, com dados em tempo real via Supabase.
 
-### Tecnologias Utilizadas
+### Stack Tecnológica
 
-| Tecnologia | Versão / Lib | Uso |
+| Tecnologia | Versão | Uso |
 |---|---|---|
-| **Frontend** | React + Vite | Framework principal |
-| **UI Components** | Shadcn/UI | Componentes de interface (Button, Card, Select, etc.) |
-| **Estilização** | TailwindCSS | Classes utilitárias de CSS |
-| **Estado Servidor** | React Query (TanStack) | Cache, loading states, mutações e invalidação |
-| **Gráficos** | Recharts | LineChart (Financeiro, Avanço Físico) e BarChart (Histograma) |
-| **Roteamento** | React Router | SPA com rotas por módulo |
-| **Backend** | Base44 (BaaS) | Entidades de dados via `base44.entities.[Entidade].[método]` |
-| **Tipografia** | Montserrat (Google Fonts) | Fonte principal — aplicada globalmente via CSS |
+| **Frontend** | React 18.2 + Vite 6.1 | Framework principal |
+| **Linguagem** | JavaScript (JSX) | Sem TypeScript |
+| **UI Components** | Radix UI + shadcn/ui | Primitivos de interface |
+| **Estilização** | Tailwind CSS 3.x | Classes utilitárias |
+| **Estado Servidor** | TanStack React Query 5.x | Cache, loading, mutações |
+| **Gráficos** | Recharts 2.x | Barras, áreas, radares |
+| **Roteamento** | React Router DOM 7.x | SPA com rotas por módulo |
+| **Backend** | Supabase (PostgreSQL + Auth + RLS) | BaaS — sem servidor próprio |
+| **Data Layer** | `src/api/supabaseEntities.js` | Shim com `list/filter/create/update/delete` |
+| **Agentes de IA** | Mastra Framework (Node.js, porta 4111) | 3 agentes SSE em projeto paralelo |
 
-### Métodos disponíveis nas entidades Base44
+### API das Entidades
 
 ```javascript
-base44.entities.NomeDaEntidade.list({ filtro: valor })  // Buscar registros
-base44.entities.NomeDaEntidade.create(data)              // Criar registro
-base44.entities.NomeDaEntidade.update(id, data)          // Atualizar registro
-base44.entities.NomeDaEntidade.delete(id)                // Excluir registro
+import { entities } from "@/api/supabaseEntities";
+
+entities.NomeDaEntidade.list({ filtro: valor })   // SELECT com filtros
+entities.NomeDaEntidade.filter({ filtro: valor })  // alias de list()
+entities.NomeDaEntidade.create(data)               // INSERT
+entities.NomeDaEntidade.update(id, data)           // UPDATE
+entities.NomeDaEntidade.delete(id)                 // DELETE
 ```
 
 ---
 
-### Paleta de Cores Global
+### Padrões Globais de Código
+
+- **Projeto Ativo:** obter via `useProject()` do `@/lib/ProjectContext` — nunca `localStorage.getItem("selectedProjectId")` direto.
+- **Data Fetching:** sempre `useQuery`/`useMutation` do React Query — nunca `useEffect + fetch`.
+- **Enabled guard:** `enabled: !!selectedProjectId` em toda query que depende de projeto.
+- **Filtro de projeto:** `entities.X.filter({ projeto_id: selectedProjectId })`.
+- **Estados:** todo componente com query trata `isPending`, `isError` e `data`. Nunca só `isLoading`.
+- **Formatação de moeda:** `new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)`.
+- **Formatação de datas:** `date-fns` com locale `pt-BR`.
+
+---
+
+### Design System (FuturizeNow)
 
 | Cor | Hex | Uso |
 |---|---|---|
-| Azul Escuro (Primary) | `#26405d` | Títulos, sidebar, destaque principal, gráficos |
-| Terracota (Accent) | `#c35e1e` | Botões de ação, destaques, alertas de custo |
-| Verde-Água (Success) | `#00a49a` | Indicadores positivos, conclusão, gráfico histograma |
-| Vermelho (Error) | `#F44C41` / `#ef4444` | Alertas críticos, exclusão, atraso |
-| Cinza (Background) | `#f2f2f2` | Fundo geral da aplicação |
-| Branco | `#ffffff` | Fundo de cards e painéis |
-| Azul Recharts | `#3b82f6` | Barras de atividade no Gantt |
+| Azul Cobalto | `#102A44` | Sidebar, cards primários |
+| Deep Navy | `#0A1929` | Background dark mode |
+| Ciano Elétrico | `#26FFFF` | Item ativo sidebar, indicadores |
+| Cinza Titânio | `#8195A9` | Bordas, labels secundários |
+| Ocre | `#a98743` | Status atenção |
+| Magenta | `#db4974` | Alertas críticos |
+
+**Botões:**
+- Salvar: `bg-emerald-600 hover:bg-emerald-700` (verde esmeralda — padrão em todos os módulos)
+- Cancelar: `bg-slate-200 text-slate-700`
+- Excluir: `bg-red-600`
+
+**Dual Theme:** claro e escuro em todos os módulos. Toggle com `AnimatedThemeToggler` em `src/components/ui/`.
 
 ---
 
 ### Comportamento Global
 
-- **Seleção de Projeto:** todos os módulos dependem do `selectedProjectId` armazenado em `localStorage`. Cada módulo verifica se há projeto selecionado antes de executar queries e exibe uma tela de aviso caso contrário.
-- **Cache e Estado:** React Query gerencia o cache dos dados. Após cada mutação (create/update/delete), as queries relevantes são invalidadas via `queryClient.invalidateQueries(queryKey)`.
-- **Responsividade:** todos os módulos são responsivos — layouts adaptam para mobile (1 coluna), tablet (2 colunas) e desktop (3+ colunas).
-- **Autenticação:** gerenciada pelo `AuthContext`. Rotas protegidas redirecionam para login quando necessário.
-- **Formatação de moeda:** padrão BRL — `new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)`
-- **Formatação de datas:** biblioteca `date-fns` com locale pt-BR para formatos como `dd/MM/yyyy`, `MMMM/yyyy`, `MMM/yy`
+- **Seleção de Projeto:** todos os módulos dependem de `selectedProjectId` via `useProject()`. Sem projeto selecionado, a query não executa (`enabled: false`).
+- **Cache:** React Query invalida as queries relevantes após cada mutação (create/update/delete).
+- **Paginação server-side:** via `usePaginatedQuery` (hook em `src/hooks/`) + Supabase `.range()`.
+- **Import/Export:** `<ImportExportDialog/>` padronizado em 8+ módulos — usa `xlsx` e `papaparse`.
+- **Autenticação:** `AuthContext` + `ProtectedRoute`. Rotas protegidas redirecionam para `/login`.
 
 ---
 
 ## Estrutura de Navegação
 
-A sidebar fixa à esquerda contém:
-1. Logo FuturizeNow
-2. Selector de Projeto Ativo — dropdown com todos os projetos do usuário (entidade `Projeto`)
-3. Menu de navegação com os módulos principais
+Sidebar accordion à esquerda — configurada em `src/lib/navigationConfig.js`:
 
-**Nota:** 3 módulos (Relacionamentos, Rotinas e Notificações/Ruídos) são implementados como páginas independentes mas **não aparecem no menu lateral** — são acessados via rota direta.
+1. Dashboard
+2. Engenharia → Documentos
+3. Suprimentos → Mapa de Suprimentos
+4. Planejamento → Cronograma / 6WLA / Take-Off / Histogramas / Avanços
+5. Adm. Contratual → Contratos / Medições / RDOs / Registros / Pleitos / Mapa de Impacto
+6. Riscos e Mudanças → Gestão de Riscos / Gestão de Mudanças
+7. Agentes de IA → Executor de Dados / Analista de Negócio / Analista Contratual
+8. Configurações → Usuários / Gerenciar Projeto / Config. Agentes
 
 ---
 
 ## Índice de Módulos
 
-| # | Módulo | Rota | Entidade(s) Backend | Tipo de Exibição |
+| # | Módulo | Rota | Entidade(s) | Arquivo da página |
 |---|---|---|---|---|
-| 01 | [Dashboard](./01-Dashboard.md) | `/Dashboard` | Múltiplas (somente leitura) | Painel de KPIs e resumos |
-| 02 | [Registros](./02-Registros.md) | `/Registros` | `Incidente` | Tabela + Modal |
-| 03 | [Pleitos](./03-Pleitos.md) | `/Pleitos` | `Caso` + `Acao` | Tabela + Card embutido + Detalhe |
-| 04 | [Planos de Ação](./04-PlanosDeAcao.md) | `/PlanosDeAcao` | `Engenharia` (6 áreas) | Abas + Card embutido |
-| 05 | [Financeiro](./05-Financeiro.md) | `/Financeiro` | `Financeiro` | Gráfico + Tabela inline |
-| 06 | [Histograma](./06-Histograma.md) | `/Histograma` | `Histograma` + `Recurso` | Gráfico + Tabela inline |
-| 07 | [Avanço Físico](./07-AvancoFisico.md) | `/AvancoFisico` | `AvancoFisico` | Gráfico + Tabela inline |
-| 08 | [Gestão de Mudanças](./08-GestaoMudancas.md) | `/GestaoMudancas` | `MudancaContratual` | Kanban + Termômetro + Dashboard |
-| 09 | [Contratos](./09-Contratos.md) | `/Contratos` | `Contrato` + `Medicao` | Cards + Tabela + Modal |
-| 10 | [Suprimentos](./10-Suprimentos.md) | `/Suprimentos` | `RequisicaoCompra` + `Cotacao` | Abas + Modal + Mapa |
-| 11 | [Cronograma](./11-Cronograma.md) | `/Cronograma` | `TarefaCronograma` | Gantt customizado + Modal |
-| 12 | [Planejamento](./12-Planejamento.md) | `/Planejamento` | Estado local (sem backend) | Abas + Accordion + Modal |
-| 13 | [Gestão de Riscos](./13-GestaoRiscos.md) | `/GestaoRiscos` | Estado local (mock) | Heat Map + Tabela + Modal |
-| 14 | [Gerenciar Projeto](./14-GerenciarProjeto.md) | `/GerenciarProjeto` | `Projeto` + `DocumentoContratual` | Formulário toggle leitura/edição |
-| 15 | [Relacionamentos](./15-Relacionamentos.md) | `/Relacionamentos` | `Relacionamento` | Tabela + Card embutido |
-| 16 | [Rotinas/Processos](./16-Rotinas.md) | `/Rotinas` | `Rotina` | Tabela + Card embutido |
-| 17 | [Notificações](./17-Notificacoes.md) | `/Ruidos` | `Ruido` + `Caso` | Tabela + Card embutido |
-| 18 | [Diagrama Relacional](./18-DiagramaRelacional.md) | — | Todas as entidades | Referência ER + FKs + campos calculados |
+| 01 | [Dashboard](./01-Dashboard.md) | `/dashboard` | Múltiplas (read-only) | `src/pages/Dashboard.jsx` |
+| 02 | [Engenharia / Documentos](./18a-Engenharia.md) | `/engenharia/documentos` | `DocumentoEngenharia` | `src/pages/Engenharia/Documentos.jsx` |
+| 03 | [Suprimentos / Mapa](./10-Suprimentos.md) | `/suprimentos/mapa` | `ItemMAS` | `src/pages/Suprimentos/MapaSuprimentos.jsx` |
+| 04 | [Planejamento / Cronograma](./11-Cronograma.md) | `/planejamento/cronograma` | `TarefaCronograma` | `src/pages/Planejamento/Cronograma.jsx` |
+| 05 | [Planejamento / 6WLA](./22-SixWLA.md) | `/planejamento/6wla` | `Item6WLA` + `TarefaCronograma` | `src/pages/Planejamento/SixWLA.jsx` |
+| 06 | [Planejamento / Take-Off](./23-TakeOff.md) | `/planejamento/take-off` | `Commodity` + `LancamentoCommodity` | `src/pages/Planejamento/TakeOff.jsx` |
+| 07 | [Planejamento / Histogramas](./06-Histograma.md) | `/planejamento/histograma` | `Histograma` + `Recurso` | `src/pages/Planejamento/Histograma.jsx` |
+| 08 | [Planejamento / Avanços](./07-AvancoFisico.md) | `/planejamento/avancos` | `AvancoFisico` | `src/pages/Planejamento/Avancos.jsx` |
+| 09 | [Adm. Contratual / Contratos](./09-Contratos.md) | `/admin-contratual/contratos` | `Contrato` + `Aditivo` | `src/pages/Contratos.jsx` |
+| 10 | [Adm. Contratual / Medições](./24-Medicoes.md) | `/admin-contratual/medicoes` | `Medicao` | `src/pages/AdminContratual/Medicoes.jsx` |
+| 11 | [Adm. Contratual / RDOs](./20-RDO.md) | `/admin-contratual/rdos` | `RDO` | `src/pages/AdminContratual/RDOs.jsx` |
+| 12 | [Adm. Contratual / Registros](./02-Registros.md) | `/admin-contratual/registros` | `Incidente` | `src/pages/AdminContratual/Registros.jsx` |
+| 13 | [Adm. Contratual / Pleitos](./03-Pleitos.md) | `/admin-contratual/pleitos` | `Caso` + `PlanoAcao` | `src/pages/AdminContratual/Pleitos.jsx` |
+| 14 | [Adm. Contratual / Mapa de Impacto](./21-MapaImpacto.md) | `/admin-contratual/mapa-impacto` | `Incidente` (read) | `src/pages/AdminContratual/MapaImpacto.jsx` |
+| 15 | [Riscos e Mudanças / Gestão de Riscos](./13-GestaoRiscos.md) | `/riscos-mudancas/gestao-riscos` | `Risco` + `PlanoAcao` | `src/pages/RiscosMudancas/GestaoRiscos.jsx` |
+| 16 | [Riscos e Mudanças / Gestão de Mudanças](./08-GestaoMudancas.md) | `/riscos-mudancas/gestao-mudancas` | `MudancaContratual` | `src/pages/RiscosMudancas/GestaoMudancas.jsx` |
+| 17 | [Agentes / Executor de Dados](./19-Agentes.md) | `/agentes/executor` | — (Mastra SSE) | `src/pages/Agentes/ExecutorDados.jsx` |
+| 18 | [Agentes / Analista de Negócio](./19-Agentes.md) | `/agentes/analista-negocio` | — (Mastra SSE) | `src/pages/Agentes/AnalistaNegocio.jsx` |
+| 19 | [Agentes / Analista Contratual](./19-Agentes.md) | `/agentes/analista-contratual` | — (Mastra SSE) | `src/pages/Agentes/AnalistaContratual.jsx` |
+| 20 | [Configurações / Usuários](./25-Usuarios.md) | `/configuracoes/usuarios` | `Usuario` | `src/pages/Configuracoes/Usuarios.jsx` |
+| 21 | [Configurações / Gerenciar Projeto](./14-GerenciarProjeto.md) | `/configuracoes/gerenciar-projeto` | `Projeto` | `src/pages/Configuracoes/GerenciarProjeto.jsx` |
+| 22 | [Configurações / Config. Agentes](./19-Agentes.md) | `/configuracoes/agente-config` | — | `src/pages/Configuracoes/AgenteConfig.jsx` |
+
+### Módulos removidos
+
+| Módulo | Rota anterior | Status |
+|---|---|---|
+| Qualidade (RNCs, Lições) | `/qualidade/*` | **Removido** — Milestone Refatoração 2026-Q2 |
+| Suprimentos / Requisições | `/suprimentos/requisicoes` | **Removido** — UI dropada (tabela mantida no BD) |
+| Suprimentos / Cotações | `/suprimentos/cotacoes` | **Removido** — UI dropada (tabela mantida no BD) |
+| Financeiro | `/Financeiro` | **Removido** — redirect para `/planejamento/avancos` |
+| Relacionamentos | `/Relacionamentos` | **Removido da sidebar** — rota legada sem UI ativa |
+| Rotinas | `/Rotinas` | **Removido da sidebar** — rota legada sem UI ativa |
+| Notificações/Ruídos | `/Ruidos` | **Removido da sidebar** — rota legada sem UI ativa |
 
 ---
 
 ## Entidades Backend (Referência Completa)
 
-| Entidade | Módulo Principal | Campos Chave |
+| Entidade (código) | Tabela Supabase | Módulo Principal |
 |---|---|---|
-| `Projeto` | Gerenciar Projeto | `nome`, `valor_contrato`, `status`, `projeto_id` |
-| `DocumentoContratual` | Gerenciar Projeto | `titulo`, `tipo`, `arquivo_url`, `projeto_id` |
-| `Incidente` | Registros | `tipo_registro`, `status`, `caso_id`, `projeto_id` |
-| `Caso` | Pleitos | `titulo`, `status`, `prioridade`, `categorias`, `projeto_id` |
-| `Acao` | Pleitos (Plano de Ação) | `descricao`, `status`, `caso_id`, `projeto_id` |
-| `Engenharia` | Planos de Ação | `nome` (área), `descricao_acao`, `status`, `projeto_id` |
-| `Financeiro` | Financeiro | `mes_referencia`, `faturamento_*`, `projeto_id` |
-| `Recurso` | Histograma | `nome_recurso`, `projeto_id` |
-| `Histograma` | Histograma | `recurso_id`, `mes_referencia`, `quantidade_*`, `projeto_id` |
-| `AvancoFisico` | Avanço Físico | `mes_referencia`, `avanco_*`, `projeto_id` |
-| `MudancaContratual` | Gestão de Mudanças | `status`, `origem`, `impacto_custo`, `impacto_prazo_dias`, `projeto_id` |
-| `Contrato` | Contratos | `numero`, `fornecedor`, `valor_total`, `status`, `projeto_id` |
-| `Medicao` | Contratos | `contrato_id`, `valor_bruto`, `valor_liquido`, `status`, `projeto_id` |
-| `RequisicaoCompra` | Suprimentos | `numero`, `itens`, `status`, `projeto_id` |
-| `Cotacao` | Suprimentos | `numero`, `propostas`, `fornecedor_selecionado`, `projeto_id` |
-| `TarefaCronograma` | Cronograma | `codigo_wbs`, `tipo`, `pai_id`, `caminho_critico`, `projeto_id` |
-| `Relacionamento` | Relacionamentos | `data_interacao`, `classificacao`, `partes_envolvidas`, `projeto_id` |
-| `Rotina` | Rotinas | `periodicidade`, `proxima_data_execucao`, `status`, `projeto_id` |
-| `Ruido` | Notificações | `descricao`, `status`, `caso_id`, `projeto_id` |
+| `Projeto` | `projetos` | Gerenciar Projeto |
+| `Incidente` | `incidentes` | Registros / Mapa de Impacto |
+| `Caso` | `casos` | Pleitos |
+| `PlanoAcao` | `plano_acao` | Gestão de Riscos / Pleitos |
+| `Financeiro` | `financeiros` | (sem UI ativa — legado) |
+| `Histograma` | `histogramas` | Planejamento / Histogramas |
+| `AvancoFisico` | `avanco_fisico` | Planejamento / Avanços |
+| `MudancaContratual` | `mudancas_contratuais` | Riscos e Mudanças / Gestão de Mudanças |
+| `Contrato` | `contratos` | Adm. Contratual / Contratos |
+| `Medicao` | `medicoes` | Adm. Contratual / Medições |
+| `Aditivo` | `aditivos` | Adm. Contratual / Contratos |
+| `TarefaCronograma` | `tarefas_cronograma` | Planejamento / Cronograma / 6WLA |
+| `Commodity` | `commodities` | Planejamento / Take-Off |
+| `LancamentoCommodity` | `lancamentos_commodity` | Planejamento / Take-Off |
+| `ItemMAS` | `itens_mas` | Suprimentos / Mapa |
+| `DocumentoEngenharia` | `documentos_engenharia` | Engenharia / Documentos |
+| `Item6WLA` | `itens_6wla` | Planejamento / 6WLA |
+| `Risco` | `riscos` | Riscos e Mudanças / Gestão de Riscos |
+| `Usuario` | `usuarios` | Configurações / Usuários |
+| `RDO` *(via supabase direto)* | `rdo` | Adm. Contratual / RDOs |
+| `unidades_medida` *(lookup global)* | `unidades_medida` | Suprimentos / Take-Off |
+
+> **Nota:** `RDO` não está no `TABLE_MAP` de `supabaseEntities.js` — o módulo faz chamadas diretas ao `supabase` client. Adicionar ao shim se necessário.
 
 ---
 
@@ -120,37 +166,36 @@ A sidebar fixa à esquerda contém:
 ```
 Projeto Selecionado
         │
-        ├── Registros (documentar ocorrências → evidências)
-        │       └── Vincular a Pleitos como evidência
+        ├── Cronograma (linha de base do projeto)
+        │       ├── 6WLA (look-ahead das próximas 6 semanas)
+        │       └── RDO (produção diária vinculada a tarefas)
         │
-        ├── Notificações/Ruídos (monitorar sinais)
-        │       └── Promover → cria Pleito automaticamente
+        ├── Take-Off → lançamentos semanais de quantitativos
         │
-        ├── Pleitos (gestão formal de disputas)
-        │       └── Plano de Ação por Pleito (ações de resolução)
+        ├── Histogramas (MO e Equipamentos por mês)
         │
-        ├── Planos de Ação por Área (ações operacionais)
+        ├── Avanços (previsto × real × projetado)
         │
-        ├── Gestão de Mudanças (alterações ao contrato base)
-        │       └── Termômetro de Desvio (vs. valor_contrato do Projeto)
+        ├── Engenharia (documentos técnicos — emissão e revisão)
         │
-        ├── Contratos + Medições (subcontratados e pagamentos)
+        ├── Suprimentos (mapa de acompanhamento)
         │
-        ├── Suprimentos (requisições e cotações de compras)
+        ├── Contratos → Medições (subcontratados e pagamentos)
+        │       └── Aditivos (prazo e valor)
         │
-        ├── Cronograma (Gantt com WBS e caminho crítico)
+        ├── Registros → Pleitos (ocorrências → pleitos formais)
+        │       └── Plano de Ação (por pleito)
         │
-        ├── Financeiro + Avanço Físico + Histograma (curvas de controle)
+        ├── Mapa de Impacto (heatmap Contratada × Contratante)
         │
-        ├── Planejamento (atas, lições, 6WLA, take-off)
+        ├── Gestão de Mudanças (tabela + cards de desvio)
+        │       └── Plano de Ação (por mudança)
         │
-        ├── Gestão de Riscos (matriz e planos de mitigação)
+        ├── Gestão de Riscos (impacto múltiplo + plano de ação)
         │
-        ├── Gerenciar Projeto (ficha técnica do contrato)
+        ├── Agentes de IA (Mastra — análise e consulta)
         │
-        ├── Relacionamentos (log de interações com stakeholders)
-        │
-        ├── Rotinas (processos administrativos recorrentes)
+        ├── Configurações (Usuários, Projeto, Config. Agentes)
         │
         └── Dashboard (visão consolidada de todos os módulos)
 ```
@@ -163,28 +208,16 @@ Projeto Selecionado
 
 | Tipo | Quando usar | Exemplos |
 |---|---|---|
-| **Modal flutuante** | Formulários complexos com muitos campos | Contratos, Medições, Suprimentos, Cronograma, Riscos |
-| **Card embutido** | Formulários que contextualizam com a lista abaixo | Pleitos, Planos de Ação, Relacionamentos, Rotinas, Ruídos |
-| **Edição inline** | Tabelas com poucos campos editáveis | Financeiro, Histograma, Avanço Físico, Take-Off |
+| **Modal flutuante** | Formulários complexos com muitos campos | Contratos, Medições, Cronograma, Riscos, Mudanças |
+| **Card embutido** | Formulários que contextualizam com a lista | Pleitos, Planos de Ação |
+| **Edição inline** | Tabelas com poucos campos editáveis | Histograma, Avanço, Take-Off |
 | **Toggle leitura/edição** | Tela única com um registro principal | Gerenciar Projeto |
-
-### Padrão de Cores por Ação
-
-| Ação | Cor do Botão |
-|---|---|
-| Criar / Salvar / Confirmar | Verde (`bg-green-600`) |
-| Principal / Editar (destaque) | Terracota (`bg-[#c35e1e]`) |
-| Cancelar / Voltar | Outline sem fill |
-| Excluir | Vermelho (`bg-red-600`) ou ícone vermelho |
-| Navegação | Azul (`bg-blue-600`) |
 
 ### Padrão de Estado Vazio
 
-Todos os módulos seguem este padrão quando não há projeto selecionado:
-- Ícone representativo do módulo em cinza ou na cor da área
-- Título: "Nenhum Projeto Selecionado"
-- Mensagem orientativa para selecionar um projeto
+Sem projeto selecionado: ícone + "Selecione um projeto na barra lateral".
+Sem dados: ícone + "Nenhum [entidade] cadastrado" + botão para criar.
 
-Quando há projeto mas sem dados:
-- Ícone + título "Nenhum [entidade] cadastrado"
-- Botão para criar o primeiro registro
+### Import/Export
+
+Módulos com `<ImportExportDialog/>`: Cronograma, Take-Off, Histograma, Avanços, Engenharia, Suprimentos, Medições e Contratos.

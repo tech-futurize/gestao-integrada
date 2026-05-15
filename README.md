@@ -31,7 +31,8 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
 
 4. **Configure o banco de dados:**
    - No painel do Supabase, vá em SQL Editor
-   - Execute o conteúdo de `supabase-migration.sql` (cria as 25 tabelas + RLS)
+   - Execute o conteúdo de `supabase-migration.sql` (schema inicial — cria as tabelas base + RLS)
+   - Execute o conteúdo de `supabase-migration-2026-q2.sql` (Refatoração Q2 — novas tabelas, drops, alters)
    - Execute o conteúdo de `supabase-seed.sql` (dados de exemplo para todos os projetos)
 
 5. **Rode o projeto:**
@@ -72,16 +73,34 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
 
 | Módulo | Rota | Descrição |
 |--------|------|-----------|
-| Dashboard | `/Dashboard` | KPIs consolidados de todos os módulos |
-| Engenharia | `/Engenharia` | Gestão documental — emissão, revisão e aprovação |
-| Suprimentos | `/Suprimentos` | Requisições, cotações e mapa de suprimentos (MAS) |
-| Planejamento | `/Planejamento` | Cronograma, 6WLA, Take-Off, Contratos, Medições, RDO |
-| Histograma | `/Histograma` | Controle de mão de obra e equipamentos |
-| Avanço | `/AvancoFisico` | Avanço físico e financeiro previsto vs. realizado |
-| Pleitos | `/Pleitos` | Pleitos contratuais, registros e mapa de impacto |
-| Qualidade | `/PlanosDeAcao` | RNCs, planos de ação corretiva e lições aprendidas |
-| Gestão de Mudanças | `/GestaoMudancas` | Workflow de mudanças contratuais e termômetro |
-| Gestão de Riscos | `/GestaoRiscos` | Identificação e monitoramento de riscos |
+| Dashboard | `/dashboard` | KPIs consolidados de todos os módulos |
+| Engenharia / Documentos | `/engenharia/documentos` | Gestão documental — emissão, revisão, aprovação, histórico |
+| Suprimentos / Mapa | `/suprimentos/mapa` | Mapa de acompanhamento de suprimentos (MAS) |
+| Planejamento / Cronograma | `/planejamento/cronograma` | Gantt WBS 9 níveis, baseline, filtro status |
+| Planejamento / 6WLA | `/planejamento/6wla` | Look-ahead 6 semanas vinculado ao cronograma |
+| Planejamento / Take-Off | `/planejamento/take-off` | Quantitativos por disciplina, import/export |
+| Planejamento / Histogramas | `/planejamento/histograma` | MO e equipamentos por mês com acumulados |
+| Planejamento / Avanços | `/planejamento/avancos` | Avanço físico previsto × real × projetado |
+| Adm. Contratual / Contratos | `/admin-contratual/contratos` | Contratos + aditivos com datas calculadas |
+| Adm. Contratual / Medições | `/admin-contratual/medicoes` | Medições com itens e soma automática |
+| Adm. Contratual / RDOs | `/admin-contratual/rdos` | Relatório Diário de Obra |
+| Adm. Contratual / Registros | `/admin-contratual/registros` | Ocorrências e notificações |
+| Adm. Contratual / Pleitos | `/admin-contratual/pleitos` | Pleitos contratuais com plano de ação |
+| Adm. Contratual / Mapa de Impacto | `/admin-contratual/mapa-impacto` | Heatmap 6 níveis Contratada × Contratante |
+| Riscos e Mudanças / Gestão de Riscos | `/riscos-mudancas/gestao-riscos` | Riscos com impacto múltiplo e plano de ação |
+| Riscos e Mudanças / Gestão de Mudanças | `/riscos-mudancas/gestao-mudancas` | Mudanças contratuais em tabela |
+| Agentes de IA (3 agentes Mastra) | `/agentes/*` | Executor, Analista de Negócio, Analista Contratual |
+| Configurações | `/configuracoes/*` | Usuários, Gerenciar Projeto, Config. Agentes |
+
+> **Mastra (agentes de IA):** rodar separado em `Agents Mastra/` na porta 4111 antes de usar os agentes.
+
+```bash
+# Terminal 1 — Mastra
+cd "Agents Mastra" && npm run dev
+
+# Terminal 2 — App React
+npm run dev
+```
 
 ---
 

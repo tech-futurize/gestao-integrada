@@ -76,16 +76,31 @@
 
 ### Projeto Ativo
 
-- O `selectedProjectId` é armazenado em `localStorage` e lido em cada página
-- Padrão: `const selectedProjectId = localStorage.getItem("selectedProjectId")`
+- **SEMPRE** usar `useProject()` de `@/lib/ProjectContext` para obter `selectedProjectId`
+- **NUNCA** chamar `localStorage.getItem("selectedProjectId")` diretamente em componentes — viola DRY e dificulta testes (L006)
 - Nunca hardcode de project ID
+- Padrão: `const { selectedProjectId } = useProject()`
 
 ### Qualidade
 
-- Todo componente interativo deve ter loading state (`isLoading`), empty state e error state
+- Todo componente interativo deve ter loading state (`isPending`), empty state e error state — desestruturar `{ data, isPending, isError }` de `useQuery`; nunca apenas `isLoading` sem tratar `isError` (L003)
 - Nenhum mock data em produção — usar dados reais do Supabase
 - Sem `// TODO`, `// FIXME` ou comentários temporários commitados
 - Commits seguem Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`
+
+### Drop de Módulo
+
+Ao remover qualquer módulo da UI, verificar obrigatoriamente estes 6 pontos antes de fechar a task (L007):
+1. Componentes (`src/components/<dominio>/`)
+2. Página (`src/pages/`)
+3. Rota em `App.jsx`
+4. Item em `src/lib/navigationConfig.js`
+5. Entidade em `src/api/supabaseEntities.js` (TABLE_MAP)
+6. Referências no Dashboard e outros módulos (`grep -r "NomeModulo" src/`)
+
+### Documentação
+
+Ao refatorar qualquer módulo, incluir como subtarefa: "atualizar `docs/modulos/<X>.md`". Doc desatualizado é dívida técnica tão real quanto código morto (L008).
 
 ### Lições Aprendidas (obrigatório)
 

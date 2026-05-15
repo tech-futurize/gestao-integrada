@@ -2,225 +2,167 @@
 
 ## Visão Geral
 
-O Dashboard é a **tela inicial do sistema após o login**. Ele apresenta um painel consolidado com resumo visual de todos os módulos do projeto selecionado. O objetivo é dar ao gestor uma visão rápida e integrada do estado atual do contrato em um único olhar — destacando pontos críticos, desvios e o status geral de cada área sem precisar navegar módulo a módulo.
-
-A filosofia do Dashboard é **somente leitura**: não há formulários, modais ou ações de criação/edição nessa tela. Toda a interação é de navegação.
+O Dashboard é a **tela inicial após o login**. Exibe um painel consolidado de KPIs de todos os módulos ativos do projeto selecionado. A filosofia é **somente leitura** — não há formulários nem criação de dados nesta tela.
 
 ---
 
 ## Acesso
 
-Rota: `/Dashboard`  
-Menu lateral: item de topo (ícone `LayoutDashboard` ou equivalente)  
-Após login bem-sucedido, o sistema redireciona automaticamente para esta rota.
+Rota: `/dashboard`
+Menu lateral: item de topo (ícone `LayoutDashboard`)
+Após login bem-sucedido, o sistema redireciona automaticamente para `/dashboard`.
 
 ---
 
-## Pré-requisito Obrigatório
+## Pré-requisito
 
-Para que o Dashboard funcione, o usuário **deve ter selecionado um projeto ativo** na barra lateral (dropdown de projetos). O identificador é armazenado em `localStorage` sob a chave `selectedProjectId`.
+O usuário deve ter selecionado um projeto ativo. O ID é armazenado em `localStorage` sob a chave `selectedProjectId`, fornecido pelo `useProject()` de `src/lib/ProjectContext.jsx`.
 
-**Comportamento quando não há projeto selecionado:**
-- O componente `ModulosResumo` não é renderizado
-- Exibe um card de aviso com:
-  - Ícone: `AlertCircle` em cor terracota (`#c35e1e`)
-  - Título: "Nenhum Projeto Selecionado"
-  - Mensagem: "Por favor, selecione um projeto na barra lateral para visualizar o dashboard."
-  - Fundo: azul claro com borda azul (`bg-blue-50 border border-blue-200`)
+**Sem projeto selecionado:** exibe card de aviso com ícone `AlertCircle`, mensagem orientando a selecionar um projeto na sidebar.
 
 ---
 
 ## Componente Principal: `ModulosResumo`
 
-O `ModulosResumo` é responsável por carregar e consolidar dados de **todas as entidades** do sistema para o projeto selecionado. Ele faz múltiplas chamadas simultâneas via React Query (queries paralelas), cada uma buscando dados de um módulo diferente.
+Localizado em `src/components/dashboard/ModulosResumo.jsx`. Executa múltiplas queries paralelas via React Query e renderiza os cards de resumo de cada módulo.
 
 ### Estratégia de Carregamento
 
-- Todas as queries rodam em paralelo com `useQuery` do React Query
-- Enquanto os dados carregam, o componente exibe **skeletons de loading** nos cards
-- Se uma query falhar, o card correspondente exibe um estado de erro sem bloquear os demais
+- Queries paralelas com `useQuery` — `enabled: !!selectedProjectId`
+- Skeletons animados enquanto carregam
+- Falha em uma query não bloqueia os demais cards
 
 ---
 
-## Conteúdo Exibido por Área
+## Cards de Resumo (por Módulo)
 
-Cada área do sistema aparece como um **card de resumo** com métricas-chave. Abaixo o detalhamento de cada card:
+Cada card exibe métricas calculadas a partir dos dados reais do Supabase. Sem mock data.
 
-### 1. Registros (Incidentes e RDOs)
+### 1. Registros (Incidente)
 - Total de registros do projeto
-- Quantidade de RDOs registrados
-- Quantidade "Em Análise"
-- Quantidade "Associados a Pleito"
-- Indicador visual: badge de alerta se houver itens em análise há mais de 7 dias
+- RDOs registrados
+- Em Análise (count)
+- Associados a Pleito (count via `caso_id IS NOT NULL`)
 
-### 2. Pleitos
-- Total de pleitos do projeto
-- Por status: Aberto / Em Análise / Em Andamento / Resolvido / Fechado / Cancelado
-- Destaque visual: contagem de pleitos com prioridade "Crítica"
-- Link para navegar ao módulo de Pleitos
+### 2. Pleitos (Caso)
+- Total de pleitos
+- Abertos / Em Análise / Em Andamento
+- Resolvidos
 
-### 3. Planos de Ação (por Área)
-- Resumo consolidado das ações de todas as 6 áreas (Engenharia, Suprimentos, Construção, Planejamento, Contratos, Qualidade/SSMA)
-- Contagem por status: Iniciado / Em Andamento / Concluído
-- Barra de progresso geral (% concluído do total)
+### 3. Gestão de Mudanças (MudancaContratual)
+- Total de mudanças
+- Impacto financeiro aprovado (Σ `impacto_custo` onde `status = "Aprovada"`)
+- Adição vs. Redução de escopo (por `impacto_escopo_tipo`)
+- Desvio de prazo aprovado (Σ `impacto_prazo_dias`)
 
-### 4. Financeiro
-- Último mês com dado registrado
-- Faturamento Previsto Acumulado vs. Realizado Acumulado
-- Índice de aderência financeira (%)
-- Mini gráfico de linha (sparkline) se disponível
+### 4. Contratos + Medições
+- Total contratado (Σ `valor_total` dos contratos)
+- Pago em medições (Σ `valor_liquido` onde status = "Paga")
+- Contratos ativos (count)
+- Medições pendentes (Em Revisão + Em Aprovação)
 
-### 5. Histograma de Recursos
+### 5. Histograma (MO e Equipamentos)
 - Total de recursos cadastrados
 - Mês de referência mais recente
-- Aderência média de mobilização (Qtd Realizada / Qtd Prevista)
+- Aderência média (Qtd Real / Qtd Prevista)
 
-### 6. Avanço Físico
-- Avanço Previsto Acumulado (%) vs. Realizado Acumulado (%)
-- Desvio em pontos percentuais (positivo = adiantado, negativo = atrasado)
-- Coloração do desvio: verde (adiantado ou em dia), vermelho (atrasado)
+### 6. Avanço Físico (AvancoFisico)
+- Avanço previsto acumulado (%) mais recente
+- Avanço realizado acumulado (%)
+- Desvio em pontos percentuais — verde se adiantado, vermelho se atrasado
 
-### 7. Gestão de Mudanças
-- Total de mudanças registradas
-- Mudanças aprovadas: impacto financeiro total (R$) e de prazo (dias)
-- Mudanças pendentes (Em Análise + Em Negociação)
-- Alertas: se houver mudanças com impacto financeiro > X% do contrato
-
-### 8. Contratos (Subcontratados)
-- Total contratado em R$ (soma de todos os contratos ativos)
-- Total pago em medições (soma das medições com status "Paga")
-- Medições pendentes de aprovação
-- Contratos encerrados/cancelados
-
-### 9. Suprimentos
-- Requisições aprovadas vs. total
-- Cotações abertas (aguardando análise)
-- Total aprovado em compras (R$)
-- Alertas de data de necessidade vencida
-
-### 10. Cronograma
-- Total de tarefas (excluindo tipo Resumo)
+### 7. Cronograma (TarefaCronograma)
+- Total de tarefas (excluindo tipo "Resumo")
 - Em Andamento / Concluídas / Atrasadas
-- Percentual de conclusão geral
-- Próxima tarefa crítica a vencer
+- % conclusão geral
 
-### 11. Planejamento
-- Número de atas registradas e aprovadas
-- Lições aprendidas registradas
-- PPC médio do 6WLA (se disponível)
-- Itens do Take-Off em atraso
+### 8. Suprimentos (ItemMAS)
+- Total de itens no MAS
+- Itens com data prevista vencida e sem entrega real
 
-### 12. Gestão de Riscos
-- Riscos ativos por nível: Críticos / Médios / Baixos
-- Riscos em monitoramento
-- Último risco identificado
+### 9. Gestão de Riscos (Risco)
+- Riscos críticos (score ≥ 9)
+- Riscos médios
+- Em monitoramento
 
-### 13. Notificações (Ruídos)
-- Total de ruídos identificados
-- Em Análise / Promovidos a Pleito / Descartados
-- Alertas: ruídos com probabilidade Alta ainda não promovidos ou descartados
+### 10. Planejamento / 6WLA (Item6WLA)
+- Itens planejados vs. concluídos
+- PPC médio (se disponível)
 
 ---
 
 ## Design e Layout
 
 ### Grid de Cards
-- **Desktop (≥ 1280px):** 3 colunas
-- **Tablet (768px - 1279px):** 2 colunas
-- **Mobile (< 768px):** 1 coluna
-- Gap entre cards: `gap-6`
+- Desktop (≥ 1280px): 3 colunas
+- Tablet (768–1279px): 2 colunas
+- Mobile (< 768px): 1 coluna
+- Gap: `gap-6`
 
-### Anatomia de um Card de Resumo
+### Anatomia de um Card
+
 ```
-┌─────────────────────────────────┐
-│ [Ícone] Título do Módulo        │  ← cabeçalho com cor da área
-├─────────────────────────────────┤
-│  Métrica 1    │  Métrica 2      │  ← valores principais
-│  Métrica 3    │  Métrica 4      │
-├─────────────────────────────────┤
-│  [Link "Ver detalhes →"]        │  ← navegação
-└─────────────────────────────────┘
+┌──────────────────────────────────┐
+│ [Ícone] Título do Módulo         │  ← cabeçalho com cor da área
+├──────────────────────────────────┤
+│  Métrica 1     │  Métrica 2      │
+│  Métrica 3     │  Métrica 4      │
+├──────────────────────────────────┤
+│  [Ver detalhes →]                │
+└──────────────────────────────────┘
 ```
+
+Cada card tem link "Ver detalhes →" que navega para a rota do módulo correspondente.
 
 ### Paleta de Cores
+
 | Cor | Hex | Uso |
 |---|---|---|
-| Azul Escuro (Primary) | `#26405d` | Títulos, cabeçalhos de cards |
-| Terracota (Accent) | `#c35e1e` | Destaques negativos, alertas de custo |
+| Azul Escuro (Primary) | `#26405d` | Títulos, headers de cards |
+| Terracota (Accent) | `#c35e1e` | Destaques negativos, alertas |
 | Verde-Água (Success) | `#00a49a` | Indicadores positivos |
 | Vermelho (Error) | `#F44C41` | Alertas críticos |
 | Cinza (Background) | `#f2f2f2` | Fundo geral |
 | Branco | `#ffffff` | Fundo de cards |
 
-### Tipografia
-- **Fonte:** Montserrat (Google Fonts), aplicada globalmente via CSS
-- **Títulos de módulo:** Montserrat 600 (Semi-Bold)
-- **Valores numéricos:** Montserrat 700 (Bold), tamanho maior
-- **Labels:** Montserrat 400 (Regular), tamanho menor, cor cinza
-
 ### Cards
-- `border-radius: 8px` (arredondamento)
-- `box-shadow: 0 1px 3px rgba(0,0,0,0.1)` (sombra suave — `shadow-sm`)
-- Fundo branco (`#ffffff`)
-- Padding interno: `p-6`
-- Hover: leve elevação de sombra
+- `rounded-lg`, `shadow-sm`, fundo branco, `p-6`
+- Hover: `hover:shadow-md` com transição suave
 
 ---
 
 ## Comportamento e Estado
 
 ### Ciclo de Vida
-1. Componente monta → verifica `localStorage.getItem('selectedProjectId')`
-2. Se `null` → renderiza card de aviso, não executa queries
-3. Se presente → executa todas as queries paralelas
-4. React Query gerencia cache com `staleTime` de 30 segundos
-5. Ao trocar de projeto no dropdown da sidebar → `selectedProjectId` muda → queries são refeitas automaticamente
+1. Componente monta → lê `selectedProjectId` do `ProjectContext`
+2. Se nulo → exibe aviso, não executa queries
+3. Se presente → dispara todas as queries em paralelo
+4. Troca de projeto → queries são invalidadas e refeitas automaticamente
 
-### Atualização Automática
-- Não há polling automático (refresh em intervalo)
-- Dados são atualizados quando o usuário navega de outro módulo de volta ao Dashboard (refetch on window focus ativado por padrão no React Query)
+### Atualização
+- Sem polling automático
+- Refetch on window focus ativado por padrão no React Query
+- `staleTime` de 30s nas queries do dashboard
 
-### Loading Skeleton
-- Enquanto qualquer query está carregando, o card correspondente exibe um skeleton animado (pulsando) no lugar dos valores
-- O skeleton tem o mesmo shape do card para evitar layout shift
-
-### Navegação a partir do Dashboard
-- Cada card possui um link "Ver detalhes →" que redireciona para a rota do módulo correspondente
-- Exemplos: card de Pleitos → `/Pleitos`, card de Cronograma → `/Cronograma`
+### Estado Vazio por Card
+- Card exibe ícone cinza + "Nenhum dado cadastrado"
+- Link para adicionar o primeiro registro no módulo correspondente
 
 ---
 
-## Integração com Outros Módulos
+## Entidades Consultadas
 
-O Dashboard não escreve dados em nenhuma entidade. Ele **apenas lê**. As entidades consultadas são:
-
-| Entidade Backend | Módulo |
+| Entidade | Módulo |
 |---|---|
 | `Incidente` | Registros |
 | `Caso` | Pleitos |
-| `Engenharia` (6 áreas) | Planos de Ação |
-| `Financeiro` | Financeiro |
-| `Histograma` | Histograma |
-| `AvancoFisico` | Avanço Físico |
 | `MudancaContratual` | Gestão de Mudanças |
 | `Contrato` + `Medicao` | Contratos |
-| `RequisicaoCompra` + `Cotacao` | Suprimentos |
+| `Histograma` | Histograma |
+| `AvancoFisico` | Avanço Físico |
 | `TarefaCronograma` | Cronograma |
-| `Ruido` | Notificações |
+| `ItemMAS` | Suprimentos |
+| `Risco` | Gestão de Riscos |
+| `Item6WLA` | Planejamento 6WLA |
 
----
-
-## Estado Vazio por Card
-
-Quando o projeto está selecionado mas um módulo não possui dados cadastrados:
-- O card exibe ícone cinza + texto "Nenhum dado cadastrado"
-- Um botão "Adicionar primeiro registro" pode ser exibido com link para a rota do módulo
-- O card não exibe erro — apenas estado vazio
-
----
-
-## Considerações de Performance
-
-- Usar `select` no `useQuery` para extrair apenas os campos necessários de cada entidade (evitar trazer todos os campos desnecessários para o Dashboard)
-- Priorizar a renderização dos cards mais importantes (Pleitos, Financeiro, Avanço Físico) com maior staleTime para evitar refetches frequentes
-- Cards de dados mais voláteis (Registros, Notificações) podem ter staleTime menor
+O Dashboard **não escreve dados** em nenhuma entidade.

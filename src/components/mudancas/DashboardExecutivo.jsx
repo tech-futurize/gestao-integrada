@@ -27,9 +27,9 @@ function KpiCard({ icon: Icon, label, value, sub, color }) {
           <Icon className="w-6 h-6" style={{ color }} />
         </div>
         <div>
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-0.5">{label}</p>
-          <p className="text-2xl font-bold" style={{ color: "#26405d" }}>{value}</p>
-          {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-0.5">{label}</p>
+          <p className="text-2xl font-bold text-foreground">{value}</p>
+          {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
         </div>
       </CardContent>
     </Card>
@@ -40,12 +40,12 @@ const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const d = payload[0].payload;
     return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-xs max-w-[200px]">
-        <p className="font-bold text-gray-800 mb-1">{d.titulo}</p>
-        <p className="text-gray-500">Custo: <span className="font-semibold text-gray-700">R$ {d.custo?.toLocaleString("pt-BR") ?? 0}</span></p>
-        <p className="text-gray-500">Prazo: <span className="font-semibold text-gray-700">{d.prazo ?? 0} dias</span></p>
-        <p className="text-gray-500">Escopo: <span className="font-semibold text-gray-700">{d.escopo ? "Sim" : "Não"}</span></p>
-        <p className="text-gray-500">Status: <span className="font-semibold" style={{ color: STATUS_COLORS[d.status] }}>{d.status}</span></p>
+      <div className="bg-card border border-border rounded-lg shadow-lg p-3 text-xs max-w-[200px]">
+        <p className="font-bold text-foreground mb-1">{d.titulo}</p>
+        <p className="text-muted-foreground">Custo: <span className="font-semibold text-foreground">R$ {d.custo?.toLocaleString("pt-BR") ?? 0}</span></p>
+        <p className="text-muted-foreground">Prazo: <span className="font-semibold text-foreground">{d.prazo ?? 0} dias</span></p>
+        <p className="text-muted-foreground">Escopo: <span className="font-semibold text-foreground">{d.escopo ? "Sim" : "Não"}</span></p>
+        <p className="text-muted-foreground">Status: <span className="font-semibold" style={{ color: STATUS_COLORS[d.status] }}>{d.status}</span></p>
       </div>
     );
   }
@@ -137,8 +137,8 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
       {/* Four-quadrant chart */}
       <Card>
         <CardContent className="p-6">
-          <h4 className="text-sm font-bold text-gray-700 mb-1">Mapa de Impacto das Mudanças</h4>
-          <p className="text-xs text-gray-400 mb-4">
+          <h4 className="text-sm font-bold text-foreground mb-1">Mapa de Impacto das Mudanças</h4>
+          <p className="text-xs text-muted-foreground mb-4">
             Eixo horizontal = Custo · Eixo vertical = Prazo · Tamanho do círculo = impacto de Escopo
           </p>
           {/* Legend */}
@@ -146,11 +146,11 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
             {Object.entries(STATUS_COLORS).map(([s, c]) => (
               <div key={s} className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c }} />
-                <span className="text-xs text-gray-500">{s}</span>
+                <span className="text-xs text-muted-foreground">{s}</span>
               </div>
             ))}
-            <div className="h-4 w-px bg-gray-200 mx-2" />
-            <span className="text-xs text-gray-400 font-medium mr-1">Escopo:</span>
+            <div className="h-4 w-px bg-border mx-2" />
+            <span className="text-xs text-muted-foreground font-medium mr-1">Escopo:</span>
             {[
               { label: "Alto", size: 22, color: "#c35e1e" },
               { label: "Médio", size: 14, color: "#c35e1e" },
@@ -159,7 +159,7 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
             ].map(({ label, size, color }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <div className="rounded-full" style={{ width: size, height: size, backgroundColor: color, opacity: 0.75 }} />
-                <span className="text-xs text-gray-500">{label}</span>
+                <span className="text-xs text-muted-foreground">{label}</span>
               </div>
             ))}
           </div>
@@ -188,7 +188,7 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
             </ScatterChart>
           </ResponsiveContainer>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
             {[
               { label: "Baixo Custo / Baixo Prazo", desc: "Mudanças de menor impacto", color: "#22c55e" },
               { label: "Alto Custo / Baixo Prazo", desc: "Impacto financeiro alto", color: "#f59e0b" },
@@ -198,8 +198,8 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
               <div key={q.label} className="flex items-start gap-2">
                 <div className="w-3 h-3 rounded-full mt-0.5 shrink-0" style={{ backgroundColor: q.color }} />
                 <div>
-                  <p className="text-xs font-semibold text-gray-700">{q.label}</p>
-                  <p className="text-xs text-gray-400">{q.desc}</p>
+                  <p className="text-xs font-semibold text-foreground">{q.label}</p>
+                  <p className="text-xs text-muted-foreground">{q.desc}</p>
                 </div>
               </div>
             ))}

@@ -15,7 +15,7 @@ Projetos de construção industrial são gerenciados com ferramentas fragmentada
 
 ## Proposta de Valor
 
-Plataforma integrada onde todos os módulos do projeto (Engenharia, Suprimentos, Planejamento, Avanço, Qualidade, Pleitos, Riscos) estão conectados em um único sistema multiempresa, com dados em tempo real via Supabase, filtráveis por projeto ativo.
+Plataforma integrada onde todos os módulos do projeto (Engenharia, Suprimentos, Planejamento, Avanço Físico, Pleitos, Riscos e Mudanças) estão conectados em um único sistema multiempresa, com dados em tempo real via Supabase, filtráveis por projeto ativo.
 
 ---
 
@@ -29,18 +29,30 @@ Plataforma integrada onde todos os módulos do projeto (Engenharia, Suprimentos,
 
 ## Módulos do Sistema
 
-| Módulo | Rota | Descrição |
-|--------|------|-----------|
-| Dashboard | `/Dashboard` | Visão consolidada de todos os módulos com KPIs |
-| Engenharia | `/Engenharia` | Gestão documental — emissão, revisão e aprovação de documentos |
-| Suprimentos | `/Suprimentos` | Requisições de compra, cotações e mapa de suprimentos (MAS) |
-| Planejamento | `/Planejamento` | Cronograma, 6WLA, Take-Off, Contratos, Medições, RDO |
-| Histograma | `/Histograma` | Controle de mão de obra e equipamentos por período |
-| Avanço | `/AvancoFisico` | Avanço físico e financeiro previsto vs. realizado |
-| Pleitos | `/Pleitos` | Gestão de pleitos contratuais, registros e mapa de impacto |
-| Qualidade | `/PlanosDeAcao` | RNCs, planos de ação corretiva e lições aprendidas |
-| Gestão de Mudanças | `/GestaoMudancas` | Workflow de mudanças contratuais, termômetro e dashboard |
-| Gestão de Riscos | `/GestaoRiscos` | Identificação e monitoramento de riscos do projeto |
+| Domínio | Módulo | Rota | Descrição |
+|---------|--------|------|-----------|
+| — | Dashboard | `/dashboard` | Visão consolidada de todos os módulos com KPIs por área |
+| Engenharia | Documentos | `/engenharia/documentos` | Gestão documental — emissão, revisão, aprovação, histórico |
+| Suprimentos | Mapa de Suprimentos | `/suprimentos/mapa` | Mapa de acompanhamento de suprimentos (MAS) com paginação |
+| Planejamento | Cronograma | `/planejamento/cronograma` | Gantt WBS 9 níveis, baseline, filtro status |
+| Planejamento | 6WLA | `/planejamento/6wla` | Look-ahead 6 semanas vinculado ao cronograma |
+| Planejamento | Take-Off | `/planejamento/take-off` | Quantitativos por disciplina, gráficos, import/export |
+| Planejamento | Histogramas | `/planejamento/histograma` | MO e Equipamentos por mês, acumulados, bloqueio Real |
+| Planejamento | Avanços | `/planejamento/avancos` | Avanço físico previsto × real × projetado por semana/mês |
+| Adm. Contratual | Contratos | `/admin-contratual/contratos` | Contratos + aditivos + datas atuais calculadas |
+| Adm. Contratual | Medições | `/admin-contratual/medicoes` | Medições vinculadas a contratos com itens (soma auto) |
+| Adm. Contratual | RDOs | `/admin-contratual/rdos` | Relatório Diário de Obra — disciplinas, MO, equipamentos |
+| Adm. Contratual | Registros | `/admin-contratual/registros` | Ocorrências e notificações com cards KPI e filtros |
+| Adm. Contratual | Pleitos | `/admin-contratual/pleitos` | Pleitos contratuais com plano de ação integrado |
+| Adm. Contratual | Mapa de Impacto | `/admin-contratual/mapa-impacto` | Heatmap de impacto 6 níveis (Contratada × Contratante) |
+| Riscos e Mudanças | Gestão de Riscos | `/riscos-mudancas/gestao-riscos` | Riscos com impacto múltiplo e plano de ação |
+| Riscos e Mudanças | Gestão de Mudanças | `/riscos-mudancas/gestao-mudancas` | Mudanças em tabela com cards de desvio |
+| Agentes de IA | Executor de Dados | `/agentes/executor` | Agente Mastra para consultas ao banco em linguagem natural |
+| Agentes de IA | Analista de Negócio | `/agentes/analista-negocio` | Análise integrada de dados reais (Mastra AI) |
+| Agentes de IA | Analista Contratual | `/agentes/analista-contratual` | Análise jurídico-contratual com workflow inter-agente |
+| Configurações | Usuários | `/configuracoes/usuarios` | CRUD básico de usuários — listar, criar, editar, desativar |
+| Configurações | Gerenciar Projeto | `/configuracoes/gerenciar-projeto` | Ficha técnica do projeto, documentos contratuais |
+| Configurações | Config. Agentes | `/configuracoes/agente-config` | Configuração de perfis e parâmetros dos agentes de IA |
 
 ---
 
@@ -50,17 +62,21 @@ Plataforma integrada onde todos os módulos do projeto (Engenharia, Suprimentos,
 
 - Autenticação via Supabase Auth (email/senha)
 - Multi-projeto: seletor de projeto ativo na sidebar
-- Todos os 10 módulos listados acima funcionais com dados reais do Supabase
-- Seed de dados de exemplo para demonstração
+- 22 módulos/submódulos ativos com dados reais do Supabase
+- 3 Agentes de IA via Mastra Framework (SSE, porta 4111)
+- Dual theme claro/escuro com AnimatedThemeToggler
+- Import/Export (XLSX/CSV) em 8+ módulos
+- Cadastro básico de usuários (CRUD)
 - Build Docker para deploy
 
 ### Fora do MVP (backlog futuro)
 
 - Notificações em tempo real (Supabase Realtime)
 - Exportação de relatórios PDF
-- Controle de permissões por usuário/projeto
+- RBAC granular por usuário/projeto/módulo
 - App mobile
 - Integração com ERP/SAP
+- Importação de RDO via PDF
 
 ---
 

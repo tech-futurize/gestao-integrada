@@ -17,8 +17,8 @@ import {
 const DISCIPLINAS = ["Civil", "Mecânica", "Tubulação", "Elétrica", "Estrutura Metálica", "Instrumentação", "Pintura", "Outros"];
 const UNIDADES = ["m³", "kg", "m", "un", "m²", "ton", "l", "hr"];
 
-const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200";
-const selectCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200";
+const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-background text-foreground";
+const selectCls = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-200";
 
 function calcStatus(realizado, contrato) {
   if (!contrato) return "Normal";
@@ -30,16 +30,16 @@ function calcStatus(realizado, contrato) {
 }
 
 const STATUS_CFG = {
-  "Normal":   { bg: "#dcfce7", text: "#16a34a", bar: "#16a34a" },
-  "Atenção":  { bg: "#fef3c7", text: "#d97706", bar: "#d97706" },
-  "Crítico":  { bg: "#fee2e2", text: "#dc2626", bar: "#dc2626" },
-  "Excedido": { bg: "#f3e8ff", text: "#9333ea", bar: "#9333ea" },
+  "Normal":   { bg: "#dcfce7", text: "#16a34a", bar: "#16a34a", cls: "bg-status-positive/15 text-status-positive" },
+  "Atenção":  { bg: "#fef3c7", text: "#d97706", bar: "#d97706", cls: "bg-status-attention/15 text-status-attention" },
+  "Crítico":  { bg: "#fee2e2", text: "#dc2626", bar: "#dc2626", cls: "bg-status-critical/15 text-status-critical" },
+  "Excedido": { bg: "#f3e8ff", text: "#9333ea", bar: "#9333ea", cls: "bg-purple-100/80 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
 };
 
 function Field({ label, children }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>
+      <label className="text-xs font-semibold text-foreground uppercase tracking-wide">{label}</label>
       {children}
     </div>
   );
@@ -55,9 +55,9 @@ function ItemModal({ item, onSave, onClose, totalItems }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="font-bold" style={{ color: "#26405d" }}>{item ? "Editar Item" : "Novo Item"}</h3>
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="font-bold text-foreground">{item ? "Editar Item" : "Novo Item"}</h3>
           <CloseButton onClick={onClose} />
         </div>
         <div className="p-6 space-y-4">
@@ -81,8 +81,7 @@ function ItemModal({ item, onSave, onClose, totalItems }) {
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={() => onSave({ ...form, qtd_contrato: Number(form.qtd_contrato), qtd_takeoff: Number(form.qtd_takeoff) || null })}
-              style={{ backgroundColor: "#c35e1e" }}>
+            <Button variant="save" onClick={() => onSave({ ...form, qtd_contrato: Number(form.qtd_contrato), qtd_takeoff: Number(form.qtd_takeoff) || null })}>
               <Save className="w-4 h-4 mr-1" />Salvar
             </Button>
           </div>
@@ -102,9 +101,9 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose, 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b">
-          <h3 className="font-bold" style={{ color: "#26405d" }}>{lancamento ? "Editar Lançamento" : "Lançar Realizado"}</h3>
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <h3 className="font-bold text-foreground">{lancamento ? "Editar Lançamento" : "Lançar Realizado"}</h3>
           <CloseButton onClick={onClose} />
         </div>
         <div className="p-6 space-y-4">
@@ -120,8 +119,7 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose, 
           <Field label="Observação"><input className={inputCls} value={form.observacao} onChange={e => set("observacao", e.target.value)} /></Field>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={() => onSave({ ...form, quantidade: Number(form.quantidade), commodity_id: commodityId, projeto_id: projetoId })}
-              style={{ backgroundColor: "#26405d" }}>
+            <Button variant="save" onClick={() => onSave({ ...form, quantidade: Number(form.quantidade), commodity_id: commodityId, projeto_id: projetoId })}>
               <Save className="w-4 h-4 mr-1" />Salvar
             </Button>
           </div>
@@ -159,53 +157,53 @@ function ItemDetalhe({ item, lancamentos, projetoId, onBack, onAddLancamento, on
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4" />Voltar à lista
         </button>
       </div>
 
       {/* Cabeçalho */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-5">
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <div className="text-xs font-bold" style={{ color: "#c35e1e" }}>{item.codigo}</div>
-            <h2 className="text-xl font-bold mt-1" style={{ color: "#26405d" }}>{item.descricao}</h2>
+            <div className="text-xs font-bold text-ocre">{item.codigo}</div>
+            <h2 className="text-xl font-bold mt-1 text-foreground">{item.descricao}</h2>
             <div className="flex gap-2 mt-2">
-              <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5">{item.disciplina}</span>
-              <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{item.unidade}</span>
+              <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 dark:bg-blue-900/30 dark:text-blue-300">{item.disciplina}</span>
+              <span className="text-xs bg-muted text-muted-foreground rounded-full px-2 py-0.5">{item.unidade}</span>
             </div>
           </div>
-          <span className="text-sm font-semibold rounded-full px-3 py-1" style={{ backgroundColor: stCfg.bg, color: stCfg.text }}>{status}</span>
+          <span className={`text-sm font-semibold rounded-full px-3 py-1 ${stCfg.cls}`}>{status}</span>
         </div>
 
         {/* KPI cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
           {[
-            { label: "Qtd. Contrato", value: item.qtd_contrato?.toLocaleString("pt-BR"), color: "#26405d" },
-            { label: "Qtd. Take-Off", value: item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—", color: "#6b7280" },
-            { label: "Qtd. Realizado", value: realizado.toLocaleString("pt-BR"), color: "#c35e1e" },
-            { label: "Saldo", value: saldo.toLocaleString("pt-BR"), color: saldo >= 0 ? "#16a34a" : "#dc2626" },
-            { label: "% Avanço", value: `${pct}%`, color: stCfg.text },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-xs text-gray-500 mb-1">{label}</div>
-              <div className="text-lg font-bold" style={{ color }}>{value}</div>
+            { label: "Qtd. Contrato", value: item.qtd_contrato?.toLocaleString("pt-BR"), colorCls: "text-foreground" },
+            { label: "Qtd. Take-Off", value: item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—", colorCls: "text-muted-foreground" },
+            { label: "Qtd. Realizado", value: realizado.toLocaleString("pt-BR"), colorCls: "text-ocre" },
+            { label: "Saldo", value: saldo.toLocaleString("pt-BR"), colorCls: saldo >= 0 ? "text-status-positive" : "text-status-critical" },
+            { label: "% Avanço", value: `${pct}%`, colorCls: stCfg.cls.split(" ").find(c => c.startsWith("text-")) },
+          ].map(({ label, value, colorCls }) => (
+            <div key={label} className="bg-muted rounded-lg p-3 text-center">
+              <div className="text-xs text-muted-foreground mb-1">{label}</div>
+              <div className={`text-lg font-bold ${colorCls}`}>{value}</div>
             </div>
           ))}
         </div>
 
         {/* Progress bar */}
         <div className="mt-4">
-          <div className="flex justify-between text-xs text-gray-500 mb-1"><span>Progresso</span><span>{pct}%</span></div>
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1"><span>Progresso</span><span>{pct}%</span></div>
+          <div className="h-3 bg-muted rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: stCfg.bar }} />
           </div>
         </div>
       </div>
 
       {/* Gráfico */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <h3 className="font-semibold mb-4" style={{ color: "#26405d" }}>Curva de Evolução</h3>
+      <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+        <h3 className="font-semibold mb-4 text-foreground">Curva de Evolução</h3>
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={chartData}>
             <defs>
@@ -230,38 +228,38 @@ function ItemDetalhe({ item, lancamentos, projetoId, onBack, onAddLancamento, on
       </div>
 
       {/* Lançamentos */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-card rounded-xl border border-border shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold" style={{ color: "#26405d" }}>Lançamentos Semanais</h3>
-          <Button size="sm" onClick={onAddLancamento} style={{ backgroundColor: "#26405d" }}>
+          <h3 className="font-semibold text-foreground">Lançamentos Semanais</h3>
+          <Button size="sm" onClick={onAddLancamento}>
             <Plus className="w-4 h-4 mr-1" />Lançar Realizado
           </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b">
+              <tr className="bg-muted border-b border-border">
                 {["Semana", "Data Início", "Data Fim", "Qtd. Lançada", "Acumulado", "Responsável", ""].map(h => (
-                  <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                  <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {lancSorted.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400 text-sm">Nenhum lançamento ainda</td></tr>
+                <tr><td colSpan={7} className="px-4 py-6 text-center text-muted-foreground text-sm">Nenhum lançamento ainda</td></tr>
               )}
               {lancSorted.map((l, i) => (
-                <tr key={l.id} className={`border-b border-gray-50 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}>
-                  <td className="px-4 py-2 font-bold text-xs" style={{ color: "#c35e1e" }}>{l.semana}</td>
-                  <td className="px-4 py-2 text-xs text-gray-600">{l.data_inicio || "—"}</td>
-                  <td className="px-4 py-2 text-xs text-gray-600">{l.data_fim || "—"}</td>
-                  <td className="px-4 py-2 font-semibold">{l.quantidade.toLocaleString("pt-BR")} <span className="text-xs text-gray-400">{item.unidade}</span></td>
-                  <td className="px-4 py-2 font-semibold text-gray-700">{l.acumulado.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-2 text-xs text-gray-500">{l.responsavel || "—"}</td>
+                <tr key={l.id} className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
+                  <td className="px-4 py-2 font-bold text-xs text-ocre">{l.semana}</td>
+                  <td className="px-4 py-2 text-xs text-foreground">{l.data_inicio || "—"}</td>
+                  <td className="px-4 py-2 text-xs text-foreground">{l.data_fim || "—"}</td>
+                  <td className="px-4 py-2 font-semibold">{l.quantidade.toLocaleString("pt-BR")} <span className="text-xs text-muted-foreground">{item.unidade}</span></td>
+                  <td className="px-4 py-2 font-semibold text-foreground">{l.acumulado.toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-2 text-xs text-muted-foreground">{l.responsavel || "—"}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-1">
-                      <button onClick={() => onEditLancamento(l)} className="text-gray-400 hover:text-blue-600 p-1"><Edit className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => onDeleteLancamento(l.id)} className="text-gray-400 hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => onEditLancamento(l)} className="text-muted-foreground hover:text-blue-600 p-1"><Edit className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => onDeleteLancamento(l.id)} className="text-muted-foreground hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </td>
                 </tr>
@@ -366,7 +364,7 @@ export default function TakeOffCommodities() {
   };
 
   const SortIcon = ({ col }) => {
-    if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 inline ml-1 text-gray-300" />;
+    if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 inline ml-1 text-muted-foreground" />;
     return sortDir === "asc" ? <ChevronUp className="w-3 h-3 inline ml-1" /> : <ChevronDown className="w-3 h-3 inline ml-1" />;
   };
 
@@ -401,25 +399,25 @@ export default function TakeOffCommodities() {
 
   // KPIs
   const kpis = [
-    { label: "Total de Itens", value: enriched.length, color: "#26405d", icon: BarChart2 },
-    { label: "Itens em Dia", value: enriched.filter(i => i.status === "Normal").length, color: "#16a34a", icon: CheckCircle },
-    { label: "Em Atenção", value: enriched.filter(i => i.status === "Atenção" || i.status === "Crítico").length, color: "#d97706", icon: AlertTriangle },
-    { label: "Excedidos", value: enriched.filter(i => i.status === "Excedido").length, color: "#9333ea", icon: XCircle },
+    { label: "Total de Itens", value: enriched.length, colorCls: "text-foreground", bgCls: "bg-foreground/10", icon: BarChart2 },
+    { label: "Itens em Dia", value: enriched.filter(i => i.status === "Normal").length, colorCls: "text-status-positive", bgCls: "bg-status-positive/10", icon: CheckCircle },
+    { label: "Em Atenção", value: enriched.filter(i => i.status === "Atenção" || i.status === "Crítico").length, colorCls: "text-status-attention", bgCls: "bg-status-attention/10", icon: AlertTriangle },
+    { label: "Excedidos", value: enriched.filter(i => i.status === "Excedido").length, colorCls: "text-purple-600 dark:text-purple-400", bgCls: "bg-purple-100/80 dark:bg-purple-900/30", icon: XCircle },
   ];
 
   return (
     <div className="space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, color, icon: Icon }) => (
-          <Card key={label} className="bg-white shadow-sm border-0">
+        {kpis.map(({ label, value, colorCls, bgCls, icon: Icon }) => (
+          <Card key={label} className="bg-card shadow-sm border-0">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + "18" }}>
-                <Icon className="w-5 h-5" style={{ color }} />
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bgCls}`}>
+                <Icon className={`w-5 h-5 ${colorCls}`} />
               </div>
               <div>
-                <p className="text-xs text-gray-500">{label}</p>
-                <p className="text-2xl font-bold" style={{ color }}>{value}</p>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className={`text-2xl font-bold ${colorCls}`}>{value}</p>
               </div>
             </CardContent>
           </Card>
@@ -430,30 +428,30 @@ export default function TakeOffCommodities() {
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="flex flex-wrap gap-2">
           <input
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-52"
+            className="border border-border rounded-lg px-3 py-1.5 text-sm w-52 bg-background text-foreground"
             placeholder="Buscar código ou descrição..."
             value={busca} onChange={e => setBusca(e.target.value)}
           />
-          <select className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white" value={filtroDisciplina} onChange={e => setFiltroDisciplina(e.target.value)}>
+          <select className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground" value={filtroDisciplina} onChange={e => setFiltroDisciplina(e.target.value)}>
             <option value="">Todas as Disciplinas</option>
             {DISCIPLINAS.map(d => <option key={d}>{d}</option>)}
           </select>
-          <select className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+          <select className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
             <option value="">Todos os Status</option>
             {["Normal", "Atenção", "Crítico", "Excedido"].map(s => <option key={s}>{s}</option>)}
           </select>
         </div>
-        <Button onClick={() => { setEditingItem(null); setShowItemModal(true); }} style={{ backgroundColor: "#c35e1e" }}>
+        <Button onClick={() => { setEditingItem(null); setShowItemModal(true); }}>
           <Plus className="w-4 h-4 mr-2" />Novo Item
         </Button>
       </div>
 
       {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b">
+              <tr className="bg-muted border-b border-border">
                 {[
                   { key: "codigo", label: "Código" },
                   { key: "descricao", label: "Descrição" },
@@ -469,7 +467,7 @@ export default function TakeOffCommodities() {
                 ].map(({ key, label }) => (
                   <th
                     key={key}
-                    className={`px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase whitespace-nowrap ${key !== "_actions" ? "cursor-pointer select-none hover:text-gray-700" : ""}`}
+                    className={`px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap ${key !== "_actions" ? "cursor-pointer select-none hover:text-foreground" : ""}`}
                     onClick={() => key !== "_actions" && handleSort(key)}
                   >
                     {label}{key !== "_actions" && <SortIcon col={key} />}
@@ -478,38 +476,38 @@ export default function TakeOffCommodities() {
               </tr>
             </thead>
             <tbody>
-              {isLoading && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">Carregando...</td></tr>}
-              {!isLoading && filtered.length === 0 && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">Nenhum item cadastrado</td></tr>}
+              {isLoading && <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">Carregando...</td></tr>}
+              {!isLoading && filtered.length === 0 && <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">Nenhum item cadastrado</td></tr>}
               {filtered.map((item, i) => {
                 const stCfg = STATUS_CFG[item.status];
                 return (
-                  <tr key={item.id} className={`border-b border-gray-50 hover:bg-blue-50/30 cursor-pointer transition-colors ${i % 2 === 0 ? "bg-white" : "bg-gray-50/20"}`}
+                  <tr key={item.id} className={`border-b border-border hover:bg-blue-50/30 dark:hover:bg-blue-900/10 cursor-pointer transition-colors ${i % 2 === 0 ? "bg-card" : "bg-muted/20"}`}
                     onClick={() => setSelectedItem(item)}>
-                    <td className="px-4 py-3 font-bold text-xs" style={{ color: "#c35e1e" }}>{item.codigo}</td>
-                    <td className="px-4 py-3 font-medium text-gray-700 max-w-xs truncate">{item.descricao}</td>
+                    <td className="px-4 py-3 font-bold text-xs text-ocre">{item.codigo}</td>
+                    <td className="px-4 py-3 font-medium text-foreground max-w-xs truncate">{item.descricao}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5">{item.disciplina}</span>
+                      <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 dark:bg-blue-900/30 dark:text-blue-300">{item.disciplina}</span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{item.unidade}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{item.unidade}</td>
                     <td className="px-4 py-3 text-right font-medium">{item.qtd_contrato?.toLocaleString("pt-BR")}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—"}</td>
-                    <td className="px-4 py-3 text-right font-medium" style={{ color: "#c35e1e" }}>{item.realizado.toLocaleString("pt-BR")}</td>
-                    <td className="px-4 py-3 text-right font-semibold" style={{ color: item.saldo >= 0 ? "#16a34a" : "#dc2626" }}>{item.saldo.toLocaleString("pt-BR")}</td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">{item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—"}</td>
+                    <td className="px-4 py-3 text-right font-medium text-ocre">{item.realizado.toLocaleString("pt-BR")}</td>
+                    <td className={`px-4 py-3 text-right font-semibold ${item.saldo >= 0 ? "text-status-positive" : "text-status-critical"}`}>{item.saldo.toLocaleString("pt-BR")}</td>
                     <td className="px-4 py-3 min-w-36">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
                           <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(item.pct, 100)}%`, backgroundColor: stCfg.bar }} />
                         </div>
-                        <span className="text-xs font-bold w-12 text-right" style={{ color: stCfg.text }}>{item.pct.toFixed(1)}%</span>
+                        <span className={`text-xs font-bold w-12 text-right ${stCfg.cls.split(" ").find(c => c.startsWith("text-"))}`}>{item.pct.toFixed(1)}%</span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-semibold rounded-full px-2 py-0.5 whitespace-nowrap" style={{ backgroundColor: stCfg.bg, color: stCfg.text }}>{item.status}</span>
+                      <span className={`text-xs font-semibold rounded-full px-2 py-0.5 whitespace-nowrap ${stCfg.cls}`}>{item.status}</span>
                     </td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       <div className="flex gap-1">
-                        <button onClick={() => { setEditingItem(item); setShowItemModal(true); }} className="text-gray-400 hover:text-blue-600 p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => deleteItem.mutate(item.id)} className="text-gray-400 hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => { setEditingItem(item); setShowItemModal(true); }} className="text-muted-foreground hover:text-blue-600 p-1"><Edit className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => deleteItem.mutate(item.id)} className="text-muted-foreground hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>

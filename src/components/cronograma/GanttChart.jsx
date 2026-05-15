@@ -119,56 +119,56 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
 
   if (!tarefas.length) return (
     <Card className="text-center p-12">
-      <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-      <p className="text-gray-500 font-medium">Nenhuma tarefa cadastrada</p>
-      <p className="text-gray-400 text-sm mt-1">Clique em "Nova Tarefa" para começar o cronograma.</p>
+      <Calendar className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+      <p className="text-muted-foreground font-medium">Nenhuma tarefa cadastrada</p>
+      <p className="text-muted-foreground/60 text-sm mt-1">Clique em "Nova Tarefa" para começar o cronograma.</p>
     </Card>
   );
 
   const ganttWidth = headers.length * CELL_W;
 
   return (
-    <Card className="bg-white shadow-sm overflow-hidden">
+    <Card className="bg-card shadow-sm overflow-hidden">
       <div className="flex" style={{ minHeight: 400 }}>
         {/* WBS Table */}
-        <div style={{ width: tableWidth, minWidth: tableWidth }} className="border-r border-gray-200 overflow-hidden">
+        <div style={{ width: tableWidth, minWidth: tableWidth }} className="border-r border-border overflow-hidden">
           {/* Header */}
-          <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: 40 }}>
-            <div className="px-3 flex items-center text-xs font-semibold text-gray-500 flex-1">Tarefa</div>
-            <div className="w-24 flex items-center justify-center text-xs font-semibold text-gray-500">Início</div>
-            <div className="w-24 flex items-center justify-center text-xs font-semibold text-gray-500 border-l border-gray-200">Término</div>
-            <div className="w-14 flex items-center justify-center text-xs font-semibold text-gray-500 border-l border-gray-200">%</div>
-            <div className="w-10 flex items-center justify-center text-xs font-semibold text-gray-500 border-l border-gray-200"></div>
+          <div className="flex border-b border-border bg-muted" style={{ height: 40 }}>
+            <div className="px-3 flex items-center text-xs font-semibold text-muted-foreground flex-1">Tarefa</div>
+            <div className="w-24 flex items-center justify-center text-xs font-semibold text-muted-foreground">Início</div>
+            <div className="w-24 flex items-center justify-center text-xs font-semibold text-muted-foreground border-l border-border">Término</div>
+            <div className="w-14 flex items-center justify-center text-xs font-semibold text-muted-foreground border-l border-border">%</div>
+            <div className="w-10 flex items-center justify-center text-xs font-semibold text-muted-foreground border-l border-border"></div>
           </div>
           {visibleTarefas.map(t => {
             const atrasada = isAtrasada(t);
             const isCritical = showCritical && t.caminho_critico;
             return (
-              <div key={t.id} className={`flex border-b border-gray-100 ${isCritical ? "bg-red-50" : ""}`} style={{ height: 36 }}>
+              <div key={t.id} className={`flex border-b border-border ${isCritical ? "bg-status-critical/5" : ""}`} style={{ height: 36 }}>
                 <div className="flex items-center flex-1 px-2 gap-1.5 overflow-hidden" style={{ paddingLeft: 8 + (INDENT[t.nivel] || 0) }}>
                   {hasChildren(t) ? (
-                    <button onClick={() => toggleCollapse(t.id)} className="shrink-0 text-gray-400 hover:text-gray-600">
+                    <button onClick={() => toggleCollapse(t.id)} className="shrink-0 text-muted-foreground hover:text-foreground">
                       {collapsed.has(t.id) ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
                   ) : <span className="w-3.5 shrink-0" />}
-                  {atrasada && <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />}
-                  {t.tipo === "Marco" && <Diamond className="w-3 h-3 shrink-0" style={{ color: "#c35e1e" }} />}
-                  <span className={`text-xs truncate ${t.tipo === "Resumo" ? "font-bold" : ""}`} style={{ color: isCritical ? "#ef4444" : "#26405d" }}>
-                    {t.codigo_wbs && <span className="text-gray-400 mr-1">{t.codigo_wbs}</span>}
+                  {atrasada && <AlertTriangle className="w-3 h-3 text-status-critical shrink-0" />}
+                  {t.tipo === "Marco" && <Diamond className="w-3 h-3 text-ocre shrink-0" />}
+                  <span className={`text-xs truncate ${t.tipo === "Resumo" ? "font-bold" : ""} ${isCritical ? "text-status-critical" : "text-foreground"}`}>
+                    {t.codigo_wbs && <span className="text-muted-foreground mr-1">{t.codigo_wbs}</span>}
                     {t.nome}
                   </span>
                 </div>
                 <div className="w-24 flex items-center justify-center">
-                  <span className="text-xs text-gray-500">{t.data_inicio_planejada ? new Date(t.data_inicio_planejada + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"}</span>
+                  <span className="text-xs text-muted-foreground">{t.data_inicio_planejada ? new Date(t.data_inicio_planejada + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"}</span>
                 </div>
-                <div className="w-24 flex items-center justify-center border-l border-gray-100">
-                  <span className="text-xs text-gray-500">{t.data_fim_planejada ? new Date(t.data_fim_planejada + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"}</span>
+                <div className="w-24 flex items-center justify-center border-l border-border">
+                  <span className="text-xs text-muted-foreground">{t.data_fim_planejada ? new Date(t.data_fim_planejada + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"}</span>
                 </div>
-                <div className="w-14 flex items-center justify-center border-l border-gray-100">
-                  <span className="text-xs font-medium" style={{ color: (t.avanco_realizado || 0) >= 100 ? "#00a49a" : "#26405d" }}>{t.avanco_realizado ?? 0}%</span>
+                <div className="w-14 flex items-center justify-center border-l border-border">
+                  <span className={`text-xs font-medium ${(t.avanco_realizado || 0) >= 100 ? "text-status-positive" : "text-foreground"}`}>{t.avanco_realizado ?? 0}%</span>
                 </div>
-                <div className="w-10 flex items-center justify-center border-l border-gray-100">
-                  <button onClick={() => onEdit(t)} className="p-0.5 hover:bg-gray-100 rounded"><Eye className="w-3 h-3 text-gray-400" /></button>
+                <div className="w-10 flex items-center justify-center border-l border-border">
+                  <button onClick={() => onEdit(t)} className="p-0.5 hover:bg-muted rounded"><Eye className="w-3 h-3 text-muted-foreground" /></button>
                 </div>
               </div>
             );
@@ -179,9 +179,9 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
         <div className="flex-1 overflow-x-auto">
           <div style={{ width: Math.max(ganttWidth, 400) }}>
             {/* Header */}
-            <div className="flex border-b border-gray-200 bg-gray-50" style={{ height: 40 }}>
+            <div className="flex border-b border-border bg-muted" style={{ height: 40 }}>
               {headers.map((h, i) => (
-                <div key={i} className="border-r border-gray-100 flex items-center justify-center text-xs text-gray-500" style={{ width: CELL_W, minWidth: CELL_W }}>
+                <div key={i} className="border-r border-border flex items-center justify-center text-xs text-muted-foreground" style={{ width: CELL_W, minWidth: CELL_W }}>
                   {h.label}
                 </div>
               ))}
@@ -194,10 +194,10 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
               const isCritical = showCritical && t.caminho_critico;
 
               return (
-                <div key={t.id} className={`border-b border-gray-100 relative ${isCritical ? "bg-red-50" : ""}`} style={{ height: 36 }}>
+                <div key={t.id} className={`border-b border-border relative ${isCritical ? "bg-status-critical/5" : ""}`} style={{ height: 36 }}>
                   {/* Grid lines */}
                   <div className="absolute inset-0 flex">
-                    {headers.map((_, i) => <div key={i} className="border-r border-gray-100" style={{ width: CELL_W, minWidth: CELL_W }} />)}
+                    {headers.map((_, i) => <div key={i} className="border-r border-border" style={{ width: CELL_W, minWidth: CELL_W }} />)}
                   </div>
 
                   {/* Today line */}
@@ -227,7 +227,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
       </div>
 
       {/* Legend */}
-      <div className="border-t border-gray-100 px-4 py-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
+      <div className="border-t border-border px-4 py-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded" style={{ backgroundColor: "#26405d" }} /> Resumo</div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded" style={{ backgroundColor: "#3b82f6" }} /> Atividade</div>
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rotate-45" style={{ backgroundColor: "#c35e1e" }} /> Marco</div>

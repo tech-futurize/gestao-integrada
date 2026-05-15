@@ -154,6 +154,54 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L006 — `localStorage.getItem` direto em cada página: dificulta refactor e testes
+
+- **Data:** 2026-05-14
+- **Agente:** Architect
+- **Milestone:** Refatoração Geral 2026-Q2
+- **Categoria:** Arquitetura
+- **Gravidade:** Média
+- **Contexto em 1 frase:** Cada página chamava `localStorage.getItem("selectedProjectId")` diretamente, acoplando todas as páginas ao `localStorage`.
+- **Erro observado:** Durante a Refatoração Q2, quando foi necessário centralizar a lógica de projeto ativo (para futura migração para estado global ou para testes), foi preciso varrer e atualizar ~15 arquivos diferentes.
+- **Causa raiz:** Sem abstração, o "como ler o projeto ativo" estava duplicado em cada página — violando o princípio DRY.
+- **Correção aplicada:** Criar `src/lib/ProjectContext.jsx` com `useProject()` hook — ponto único de leitura e escrita do `selectedProjectId`.
+- **Como evitar em projetos futuros:** Qualquer dado de estado global (sessão, projeto ativo, tema) deve ser exposto via hook/context — nunca lido diretamente do `localStorage` em componentes. Regra em CLAUDE.md: "Usar `useProject()` de `@/lib/ProjectContext` — nunca `localStorage.getItem("selectedProjectId")` direto".
+- **Referências:** `src/lib/ProjectContext.jsx`, `CLAUDE.md §3 — Projeto Ativo`.
+
+---
+
+### L007 — Drop de módulo da UI sem remover entidade do shim data layer
+
+- **Data:** 2026-05-14
+- **Agente:** Builder
+- **Milestone:** Refatoração Geral 2026-Q2
+- **Categoria:** Arquitetura / DX
+- **Gravidade:** Baixa
+- **Contexto em 1 frase:** O módulo Qualidade foi dropado da UI e das rotas, mas as entidades `RNC`, `LicaoAprendida` e `AtaReuniao` permaneceram em `supabaseEntities.js`.
+- **Erro observado:** Código morto no data layer — 3 entidades sem uso referenciadas no TABLE_MAP. Detectado na conferência de verificação do milestone.
+- **Causa raiz:** O checklist de drop do módulo cobria UI (componentes, páginas) e rotas, mas não incluía explicitamente o `supabaseEntities.js`.
+- **Correção aplicada:** Remover as 3 linhas do TABLE_MAP em `src/api/supabaseEntities.js`.
+- **Como evitar em projetos futuros:** Ao dropar qualquer módulo, verificar obrigatoriamente: (1) componentes, (2) páginas, (3) rotas em App.jsx, (4) sidebar/navigationConfig, (5) `supabaseEntities.js`, (6) referências no Dashboard e outros módulos via grep.
+- **Referências:** `src/api/supabaseEntities.js`, `src/App.jsx`.
+
+---
+
+### L008 — Documentação não atualizada junto com o código acumula dívida crítica
+
+- **Data:** 2026-05-14
+- **Agente:** Architect
+- **Milestone:** Refatoração Geral 2026-Q2
+- **Categoria:** Processo / DX
+- **Gravidade:** Média
+- **Contexto em 1 frase:** Ao final da Refatoração Q2, todos os docs de módulos (`docs/modulos/`) ainda referenciavam Base44 (backend antigo), rotas legadas e entidades inexistentes.
+- **Erro observado:** Um novo desenvolvedor lendo `docs/modulos/00-Indice.md` encontraria `base44.entities.NomeDaEntidade` — código que nunca funcionaria, pois o backend foi migrado para Supabase há meses.
+- **Causa raiz:** A documentação foi desacoplada do ciclo de desenvolvimento — nenhuma task do milestone incluía "atualizar doc do módulo X ao refatorá-lo".
+- **Correção aplicada:** Fase Documentação dedicada ao final do milestone, com reescrita completa de todos os docs de módulos.
+- **Como evitar em projetos futuros:** Incluir "atualizar doc do módulo em `docs/modulos/`" como subtarefa de TODA task de refatoração de módulo. Doc desatualizado é dívida técnica tão real quanto código morto.
+- **Referências:** `docs/modulos/`, `PLAN.md — Fase Documentação`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:

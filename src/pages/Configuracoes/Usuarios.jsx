@@ -44,7 +44,7 @@ export default function Usuarios() {
       setShowForm(false);
       setEditing(null);
       setForm(EMPTY_FORM);
-      toast({ description: "Usuário criado com sucesso." });
+      toast({ variant: "success", description: "Usuário criado com sucesso." });
     },
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -56,7 +56,7 @@ export default function Usuarios() {
       setShowForm(false);
       setEditing(null);
       setForm(EMPTY_FORM);
-      toast({ description: "Usuário atualizado." });
+      toast({ variant: "success", description: "Usuário atualizado." });
     },
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -65,7 +65,7 @@ export default function Usuarios() {
     mutationFn: (id) => entities.Usuario.update(id, { status: "Inativo" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["usuarios"] });
-      toast({ description: "Usuário desativado." });
+      toast({ variant: "success", description: "Usuário desativado." });
     },
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });

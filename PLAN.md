@@ -8,6 +8,8 @@
 - **Arquitetura de Navegação** — Sidebar accordion, rotas `/modulo/submodulo`, tabs migradas para páginas independentes, GestaoMudancas unificada
 - **QA Fixes Pós-Audit** — Links do Dashboard corrigidos, 8 componentes dead code removidos, `utils/index.ts` → `.js`, GestaoMudancas fetch otimizado, Skeletons adicionados em GestaoRiscos e ResumoGestaoRiscos
 - **Refatoração Geral 2026-Q2** — Todos os módulos refatorados, nova estrutura de páginas por domínio, migration SQL, import/export, agentes Mastra refinados
+- **Pendências + Documentação 2026-Q2** *(2026-05-14)* — `Usuarios.jsx` + rota criados, entities Qualidade removidas do shim, 25 docs de módulos reescritos, ARCHITECTURE/DATABASE/PROJECT/README/CLAUDE.md atualizados, 3 lições (L006-L008) promovidas a regras em CLAUDE.md
+- **Correções Engenharia 2026-Q2** *(2026-05-15)* — Migration SQL, tabela com novas colunas, modal de edição, histórico de versões em Dialog, import/export atualizado, doc atualizado
 
 ---
 
@@ -38,127 +40,73 @@
 | Configurações | Gerenciar Projeto | `/configuracoes/gerenciar-projeto` |
 | Configurações | Config. Agentes | `/configuracoes/agente-config` |
 
-> **Removidos neste milestone:** `/suprimentos/requisicoes`, `/suprimentos/cotacoes`, `/qualidade/*` (módulo completo dropado).
+> **Removidos:** `/suprimentos/requisicoes`, `/suprimentos/cotacoes`, `/qualidade/*` (módulo completo dropado).
 
 ---
 
-## Milestone Atual: Pendências + QA + Documentação
+## Milestone Atual: Correções de Módulos 2026-Q2
 
-**Status:** 🟡 Pendências fechadas — próximo: QA & Segurança
+**Status:** 🟡 Em andamento — prioridade: QA Engenharia (QA & Segurança em espera)
 
-**Objetivo:** Fechar as 2 pendências reais identificadas na conferência de 2026-05-14, executar QA completo e atualizar toda a documentação do projeto.
-
----
-
-### Fase Pendentes — Itens não concluídos da Refatoração 2026-Q2
-
-- [x] Builder: Criar `src/pages/Configuracoes/Usuarios.jsx` com CRUD básico (listar, criar, editar, desativar usuários) + adicionar rota `/configuracoes/usuarios` em `App.jsx`
-- [x] Builder: Remover entities legadas de Qualidade de `src/api/supabaseEntities.js` — linhas com `RNC`, `LicaoAprendida`, `AtaReuniao`
+**Objetivo:** Validar o módulo Engenharia pós-refatoração e, quando liberado, executar ciclo QA & Segurança geral.
 
 ---
 
-### Fase QA & Segurança
+### Fase Smart Import Flow *(nova prioridade — executar antes do QA)*
 
-- [ ] Tester: `/audit` por módulo — cobrir todos os 21 módulos/submódulos ativos
-- [ ] Tester: regressão do fluxo principal: cronograma → 6WLA → histograma → avanço
-- [ ] Builder: fix findings de audit
-- [ ] Security: `/security-scan` — validação RLS nas novas tabelas da migration 2026-Q2 + Storage policies (RDO evidências)
-- [ ] Builder: fix findings Critical/High do security-scan
-- [ ] Tester: `/audit` final — confirmar scores ≥ 9
+> **Documento de referência (LEITURA OBRIGATÓRIA antes de executar):** `plano-smart-importflow.md` (raiz do projeto)
+>
+> O Builder DEVE abrir e seguir o documento detalhado integralmente — código completo, ordem de tasks e commits estão lá. Não improvisar.
 
----
-
-### Fase Documentação — Executada por último, após QA aprovado
-
-Atualizar toda a documentação do projeto para refletir o estado pós-Refatoração 2026-Q2.
-
-**Architect:**
-- [ ] Atualizar `PROJECT.md` — tabela de módulos (remover Qualidade, corrigir rotas, refletir estrutura atual)
-- [ ] Atualizar `README.md` — tabela de módulos e seções desatualizadas
-- [ ] Atualizar `docs/architecture/ARCHITECTURE.md` — adicionar `ProjectContext` no diagrama de camadas; substituir referências a `localStorage` direto por `useProject()`; documentar nova estrutura `src/pages/<dominio>/`
-- [ ] Atualizar `docs/architecture/DATABASE.md` — refletir schema da `supabase-migration-2026-q2.sql` (novas tabelas, drops, FKs, RLS)
-- [ ] Atualizar `docs/design/DESIGN.md` — tokens atuais (botões verdes, paleta Mapa de Impacto, dual theme)
-- [ ] Reescrever `docs/modulos/00-Indice.md` — substituir Base44 por Supabase, atualizar rotas e entidades
-
-**Builder (por módulo — reescrever docs/modulos/):**
-- [ ] `01-Dashboard.md` — widgets por módulo, rotas corretas
-- [ ] `02-Registros.md` — novo layout cards + filtros, rota `/admin-contratual/registros`
-- [ ] `03-Pleitos.md` — rota `/admin-contratual/pleitos`, PlanoAcao dentro
-- [ ] `04-PlanosDeAcao.md` — módulo removido ou redefinido → atualizar conforme estado atual
-- [ ] `05-Financeiro.md` — módulo removido (redirecionado para Avanços) → marcar como Removido ou deletar
-- [ ] `06-Histograma.md` — nova estrutura MO/Eq separados, rota `/planejamento/histograma`
-- [ ] `07-AvancoFisico.md` — transposição de tabela, rota `/planejamento/avancos`
-- [ ] `08-GestaoMudancas.md` — formato tabela (não Kanban), rota `/riscos-mudancas/gestao-mudancas`
-- [ ] `09-Contratos.md` — aditivos, formatação BR, rota `/admin-contratual/contratos`
-- [ ] `10-Suprimentos.md` — Requisições/Cotações removidos, rota `/suprimentos/mapa`
-- [ ] `11-Cronograma.md` — colunas WBS, status calculado, rota `/planejamento/cronograma`
-- [ ] `12-Planejamento.md` — renomear/subdividir conforme novos submódulos (6WLA, Take-Off)
-- [ ] `13-GestaoRiscos.md` — impacto múltiplo, PlanoAcao integrado, rota `/riscos-mudancas/gestao-riscos`
-- [ ] `14-GerenciarProjeto.md` — rota `/configuracoes/gerenciar-projeto`
-- [ ] `15-Relacionamentos.md` → Verificar se módulo ainda existe; marcar como Removido se aplicável
-- [ ] `16-Rotinas.md` → Verificar se módulo ainda existe; marcar como Removido se aplicável
-- [ ] `17-Notificacoes.md` → Verificar se módulo ainda existe; marcar como Removido se aplicável
-- [ ] Criar `18a-Engenharia.md` — rota `/engenharia/documentos`, modal edição, histórico revisões
-- [ ] Criar `19-Agentes.md` — 3 agentes Mastra, rotas, perfis e workflows
-- [ ] Criar `20-RDO.md` — disciplinas múltiplas, vínculo cronograma, evidências, rota `/admin-contratual/rdos`
-- [ ] Criar `21-MapaImpacto.md` — nova paleta 6 níveis, rota `/admin-contratual/mapa-impacto`
-- [ ] Criar `22-SixWLA.md` — vínculo cronograma, 6 categorias restrição, rota `/planejamento/6wla`
-- [ ] Criar `23-TakeOff.md` — subtotal, gráficos, import/export, rota `/planejamento/take-off`
-- [ ] Criar `24-Medicoes.md` — Valor auto-soma, import/export, rota `/admin-contratual/medicoes`
-- [ ] Criar `25-Usuarios.md` — CRUD básico, rota `/configuracoes/usuarios` (após Fase Pendentes)
-
-**Architect — fechamento:**
-- [ ] Atualizar `docs/LESSONS.md` — registrar lições do milestone Refatoração 2026-Q2
-- [ ] Executar `/milestone-close` — promover lições recorrentes a regras em `CLAUDE.md`
+- [ ] Builder: Task 1 — criar `src/components/ui/column-mapping-dialog.jsx`
+- [ ] Builder: Task 2 — criar `src/components/ui/import-progress-dialog.jsx`
+- [ ] Builder: Task 3 — criar `src/utils/importTypeValidator.js`
+- [ ] Builder: Task 4 — refatorar `src/components/ui/import-export-dialog.jsx`
+- [ ] Builder: Task 5 — atualizar `src/pages/Engenharia/Documentos.jsx`
+- [ ] Builder: Task 6 — atualizar `src/pages/Planejamento/Cronograma.jsx`
+- [ ] Builder: Task 7 — atualizar `src/pages/Planejamento/Avancos.jsx`
+- [ ] Builder: Task 8 — atualizar `src/pages/Suprimentos/MapaSuprimentos.jsx`
+- [ ] Builder: Task 9 — verificar módulos adicionais via `grep -r "ImportExportDialog" src/`
+- [ ] Tester: Task 10 — smoke test manual conforme roteiro em `plano-smart-importflow.md`
 
 ---
 
-## Referência: Histórico de Refatoração 2026-Q2
+### Fase QA Engenharia *(após Smart Import Flow concluído)*
 
-### Fases concluídas (conferência 2026-05-14)
+- [ ] Tester: `/audit` no módulo Engenharia — validar tabela, modal de edição, histórico e import/export.
+- [ ] Builder: fix findings do audit.
 
-**Fase 0 — Preparação**
-- [x] Architect: atualizar PLAN.md
-- [x] Architect: remover páginas legadas de `src/pages/` raiz (Casos, Cronograma, Histograma, AvancoFisico, Planejamento, Suprimentos, GestaoMudancas, GestaoRiscos, GerenciarProjeto, Financeiro, Incidentes, Qualidade, Agente, AgenteConfig)
-- [x] Builder: atualizar `src/api/supabaseEntities.js` (novas entities)
-- [x] Builder: criar `src/hooks/usePaginatedQuery.js`
-- [x] Builder: instalar `xlsx` + `papaparse`; criar `src/components/ui/import-export-dialog.jsx`
+---
 
-**Fase 1 — Schema**
-- [x] Builder: criar `supabase-migration-2026-q2.sql`
+### Fase QA & Segurança ⏸ ON HOLD — não executar
 
-**Fase 2 — Backend / Lógica**
-- [x] Builder: Dashboard (widgets por módulo)
-- [x] Builder: Engenharia (modal edição, histórico revisões, deadline, import/export)
-- [x] Builder: Suprimentos (Requisições/Cotações removidos, paginação, novos campos)
-- [x] Builder: Cronograma (colunas WBS, status calculado, hierarquia 9 níveis, filtro, import)
-- [x] Builder: 6WLA (vínculo cronograma, restrições 6 cat., semanas ativas, cards)
-- [x] Builder: Take-Off (limpeza, subtotal, semana ano, gráficos, import/export)
-- [x] Builder: Histograma (MO/Eq separados, colunas acumulado, bloqueio Real, import/export)
-- [x] Builder: Avanço (transposição, bloqueio, barras mensais, import/export)
-- [x] Builder: Contratos & Aditivos (tipo enum, formatação BR, aditivos 3 campos, datas dinâmicas)
-- [x] Builder: Medições (campos removidos, Valor auto-soma, import/export)
-- [x] Builder: RDO (disciplinas múltiplas via chips, vínculo tarefa_cronograma_id)
-- [x] Builder: Registros (cards KPIs, filtros text/tipo/status, excluir +Pleito e status Fechado)
-- [x] Builder: Mapa de Impacto (nova paleta 6 níveis, corte texto categoria, radar tick)
-- [x] Builder: Drop Qualidade — rotas + componentes UI + páginas removidos *(entities em supabaseEntities.js pendentes — ver Fase Pendentes)*
-- [x] Builder: Riscos (impacto múltiplo, campos novos, cards, Plano de Ação integrado)
-- [x] Builder: Mudanças (tabela em vez de Kanban, campos, cards desvio)
-- [x] Builder: Configurações — CRUD Projetos / GerenciarProjeto *(CRUD Usuários pendente — ver Fase Pendentes)*
+> **⚠ BLOQUEADO POR DECISÃO DO PRODUCT OWNER (2026-05-14).**
+> Nenhum agente deve iniciar ou continuar estas tasks até liberação explícita.
 
-**Fase 3 — Design / UI**
-- [x] Designer: tokens (botões verdes, paleta Mapa Impacto, cards Dashboard)
-- [x] Designer: Gantt (largura, baseline, escala sem Dias, botão 6WLA, filtro Status)
-- [x] Designer: `<ImportExportDialog/>` padronizado nos módulos
-- [x] Designer: Take-Off, Histograma, Avanço (cores, layout)
-- [x] Designer: Mapa de Impacto (nova paleta 6 níveis, truncate categoria)
-- [x] Designer: Mudanças (tabela, cards desvio)
-- [x] Designer: Riscos/Mudanças (botões Salvar verdes)
+- [ ] ~~Tester: `/audit` por módulo — cobrir todos os 21 módulos/submódulos ativos~~
+- [ ] ~~Tester: regressão do fluxo principal: cronograma → 6WLA → histograma → avanço~~
+- [ ] ~~Builder: fix findings de audit~~
+- [ ] ~~Builder: fix findings Critical/High do security-scan~~
+- [ ] ~~Tester: `/audit` final — confirmar scores ≥ 9~~
 
-**Fase 5 — Agentes Mastra**
-- [x] Builder: Analista de Negócio — seção Integridade de Dados inviolável + estrutura 4-blocos
-- [x] Builder: Executor — formato 3-blocos (Consulta / Resultados / Resumo)
-- [x] Builder: Analista Contratual — perfil jurídico + Workflow inter-agente
+#### Findings do /security-scan — 2026-05-14 (registrados, execução suspensa)
+
+**HIGH — Bloqueantes (on hold):**
+- [ ] ~~Builder H-01~~: `usuarios` schema ≠ UI — adicionar colunas `cargo TEXT`, `status TEXT DEFAULT 'Ativo'`, `perfil TEXT DEFAULT 'Visualizador'` na tabela `usuarios`. Coluna `papel` atual não é usada pela UI.
+- [ ] ~~Builder H-02~~: RLS tabela `usuarios` — substituir policy `USING (true)` por policy granular que impeça usuário de escalar o próprio `perfil`.
+- [ ] ~~Architect H-03 (decisão)~~: `xlsx` — aceitar risco documentado (uso exclusivo de export, sem parse de input externo). Ver ADR pendente.
+- [ ] ~~Builder H-03 (execução)~~: `npm audit fix` para fixes automáticos (Vite HIGH + yaml MODERATE).
+
+**MEDIUM (on hold):**
+- [ ] ~~Builder M-01~~: bucket `rdo-evidencias` sem policy de Storage definida — documentar no DATABASE.md o procedimento de criação manual (bucket PRIVATE + policies autenticado) e adicionar comentário na migration.
+- [ ] ~~Builder M-02~~: tabela `unidades_medida` sem RLS — adicionar `ENABLE ROW LEVEL SECURITY` + policy SELECT aberta + escrita restrita a `service_role`.
+
+**LOW (on hold):**
+- [ ] ~~Builder L-01~~: `LOGO_URL` hardcoded em `src/Layout.jsx:22` expõe o project ref do Supabase — mover para variável de ambiente ou construir URL a partir de `VITE_SUPABASE_URL`.
+- [ ] ~~Builder L-02~~: documentar em `.env.example` que `VITE_MASTRA_URL` **deve usar HTTPS em produção** (atualmente `http://localhost:4111`).
+
+**Validação pós-fix (on hold):**
+- [ ] ~~Security~~: validar correções H-01, H-02 e H-03 antes de liberar deploy.
 
 ---
 

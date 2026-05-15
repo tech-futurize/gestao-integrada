@@ -2,7 +2,8 @@
 import { useState, useEffect, createContext, useContext } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 6000;
+const TOAST_REMOVE_DELAY = 400;
+const TOAST_AUTO_CLOSE_DELAY = 4000;
 
 export function friendlyMessage(e) {
   const msg = (e?.message || "").toLowerCase();
@@ -144,6 +145,8 @@ function toast({ ...props }) {
       },
     },
   });
+
+  setTimeout(() => dismiss(), TOAST_AUTO_CLOSE_DELAY);
 
   return {
     id,
