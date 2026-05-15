@@ -9,14 +9,16 @@ import { useProject } from "@/lib/ProjectContext";
 import { entities } from "@/api/supabaseEntities";
 
 const EXPORT_COLUMNS = [
-  { key: "numero_sc", label: "Nº SC" },
-  { key: "descricao", label: "Descrição" },
-  { key: "unidade", label: "Unidade" },
-  { key: "quantidade", label: "Quantidade" },
-  { key: "solicitante", label: "Solicitante" },
-  { key: "status", label: "Status" },
-  { key: "data_necessidade", label: "Data Necessidade" },
-  { key: "observacao", label: "Observação" },
+  { key: "numero_sc",       label: "Nº SC/OC",          type: "string",  required: true },
+  { key: "descricao",       label: "Descrição",          type: "string",  required: true },
+  { key: "fornecedor",      label: "Fornecedor",         type: "string" },
+  { key: "unidade",         label: "Unidade",            type: "string" },
+  { key: "quantidade",      label: "Quantidade",         type: "number" },
+  { key: "responsavel",     label: "Responsável",        type: "string" },
+  { key: "status",          label: "Status",             type: "string" },
+  { key: "data_prevista",   label: "Data Prevista",      type: "date" },
+  { key: "data_cronograma", label: "Data Cronograma",    type: "date" },
+  { key: "observacao",      label: "Observação",         type: "string" },
 ];
 
 export default function MapaSuprimentos() {
@@ -30,10 +32,20 @@ export default function MapaSuprimentos() {
     enabled: !!selectedProjectId,
   });
 
-  const handleImport = async (rows) => {
-    for (const row of rows) {
-      await entities.ItemMAS.create({ ...row, projeto_id: selectedProjectId });
-    }
+  const handleImport = async (row) => {
+    await entities.ItemMAS.create({
+      projeto_id:       selectedProjectId,
+      numero_sc:        row.numero_sc        || "",
+      descricao:        row.descricao        || "",
+      fornecedor:       row.fornecedor       || "",
+      unidade:          row.unidade          || "",
+      quantidade:       row.quantidade       ?? 0,
+      responsavel:      row.responsavel      || "",
+      status:           row.status           || "Pendente",
+      data_prevista:    row.data_prevista    || null,
+      data_cronograma:  row.data_cronograma  || null,
+      observacao:       row.observacao       || "",
+    });
     queryClient.invalidateQueries({ queryKey: ["itemMAS"] });
   };
 

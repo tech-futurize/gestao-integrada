@@ -1,277 +1,289 @@
-import * as React from 'react';
-import * as XLSX from 'xlsx';
-import Papa from 'papaparse';
-import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { useState, useRef } from "react";
+import * as XLSX from "xlsx";
+import Papa from "papaparse";
 import {
-  FileDown, FileUp, FileSpreadsheet, FileText, X, CheckCircle2, Loader2, Upload,
-} from 'lucide-react';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Upload, Download, FileSpreadsheet, X } from "lucide-react";
+import { ColumnMappingDialog } from "@/components/ui/column-mapping-dialog";
+import { ImportProgressDialog } from "@/components/ui/import-progress-dialog";
+import { validateAndConvert } from "@/utils/importTypeValidator";
+
+function parseFileToRows(file) {
+  return new Promise((resolve, reject) => {
+    const ext = file.name.split(".").pop().toLowerCase();
+
+    if (ext === "csv") {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        encoding: "UTF-8",
+        complete: (results) => resolve(results.data),
+        error: reject,
+      });
+    } else if (ext === "xlsx" || ext === "xls") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const workbook = XLSX.read(e.target.result, { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        resolve(rows);
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    } else {
+      reject(new Error("Formato não suportado. Use CSV, XLSX ou XLS."));
+    }
+  });
+}
 
 export function ImportExportDialog({
   open,
   onOpenChange,
   onImport,
   onExport,
-  exportFileName,
-  columns,
-  title,
+  exportFileName = "export",
+  columns = [],
+  title = "Importar / Exportar",
 }) {
-  const [selectedFile, setSelectedFile] = React.useState(null);
-  const [isImporting, setIsImporting] = React.useState(false);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const fileInputRef = React.useRef(null);
+  const [phase, setPhase] = useState("idle"); // idle | mapping | processing | done
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [rawRows, setRawRows] = useState([]);
+  const [fileHeaders, setFileHeaders] = useState([]);
+  const [progress, setProgress] = useState({ processed: 0, errors: [] });
+  const [parseError, setParseError] = useState(null);
+  const [isParsing, setIsParsing] = useState(false);
+  const fileInputRef = useRef(null);
 
-  const buildExportRows = () => {
-    const data = onExport();
-    return data.map((row) => {
-      const mapped = {};
-      columns.forEach(({ key, label }) => {
-        mapped[label] = row[key] ?? '';
-      });
-      return mapped;
-    });
-  };
-
-  const handleExportCSV = () => {
-    const rows = buildExportRows();
-    const csv = Papa.unparse(rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${exportFileName}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success('Arquivo CSV exportado com sucesso.');
-  };
-
-  const handleExportExcel = () => {
-    const rows = buildExportRows();
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Dados');
-    XLSX.writeFile(workbook, `${exportFileName}.xlsx`);
-    toast.success('Arquivo Excel exportado com sucesso.');
-  };
-
-  const parseRows = (rawRows) => {
-    const labelToKey = {};
-    columns.forEach(({ key, label }) => {
-      labelToKey[label] = key;
-    });
-    return rawRows.map((row) => {
-      const mapped = {};
-      Object.entries(row).forEach(([header, value]) => {
-        const key = labelToKey[header];
-        if (key) mapped[key] = value;
-      });
-      return mapped;
-    });
-  };
-
-  const handleImport = async () => {
-    if (!selectedFile) return;
-    setIsImporting(true);
-    try {
-      const ext = selectedFile.name.split('.').pop().toLowerCase();
-      if (ext === 'csv') {
-        const text = await selectedFile.text();
-        const result = Papa.parse(text, { header: true, skipEmptyLines: true });
-        await onImport(parseRows(result.data));
-      } else if (ext === 'xlsx' || ext === 'xls') {
-        const buffer = await selectedFile.arrayBuffer();
-        const workbook = XLSX.read(buffer, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const rawRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
-        await onImport(parseRows(rawRows));
-      } else {
-        toast.error('Formato não suportado. Use .csv ou .xlsx.');
-        setIsImporting(false);
-        return;
-      }
-      toast.success('Importação concluída com sucesso.');
-      clearFile();
-    } catch {
-      toast.error('Erro ao importar arquivo. Verifique o formato e tente novamente.');
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  const clearFile = () => {
+  function reset() {
+    setPhase("idle");
     setSelectedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+    setRawRows([]);
+    setFileHeaders([]);
+    setProgress({ processed: 0, errors: [] });
+    setParseError(null);
+    setIsParsing(false);
+  }
 
-  const handleFileChange = (e) => setSelectedFile(e.target.files[0] ?? null);
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) setSelectedFile(file);
-  };
-
-  const handleClose = () => {
-    clearFile();
+  function handleClose() {
+    reset();
     onOpenChange(false);
-  };
+  }
 
-  const fileExt = selectedFile?.name.split('.').pop().toLowerCase();
-  const isExcel = fileExt === 'xlsx' || fileExt === 'xls';
-  const fileSizeKB = selectedFile ? (selectedFile.size / 1024).toFixed(1) : null;
+  async function handleFileSelected(file) {
+    if (!file) return;
+    setSelectedFile(file);
+    setParseError(null);
+    setIsParsing(true);
+    try {
+      const rows = await parseFileToRows(file);
+      if (rows.length === 0) throw new Error("Arquivo vazio ou sem dados.");
+      const headers = Object.keys(rows[0]);
+      setRawRows(rows);
+      setFileHeaders(headers);
+      setIsParsing(false);
+    } catch (e) {
+      setParseError(e.message);
+      setSelectedFile(null);
+      setIsParsing(false);
+    }
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelected(file);
+  }
+
+  async function processImport(mapping) {
+    setPhase("processing");
+    setProgress({ processed: 0, errors: [] });
+
+    const errors = [];
+
+    for (let i = 0; i < rawRows.length; i++) {
+      const rawRow = rawRows[i];
+      const convertedRow = {};
+      let rowHasError = false;
+
+      for (const col of columns) {
+        const fileHeader = mapping[col.key];
+        const rawValue =
+          fileHeader !== null && fileHeader !== undefined
+            ? rawRow[fileHeader]
+            : undefined;
+        const { ok, value } = validateAndConvert(rawValue, col.type || "string");
+
+        if (!ok) {
+          errors.push({
+            row: i + 1,
+            field: col.label,
+            value: rawValue,
+            expected: col.type || "string",
+          });
+          rowHasError = true;
+          break;
+        }
+        convertedRow[col.key] = value;
+      }
+
+      if (!rowHasError) {
+        try {
+          await onImport(convertedRow);
+        } catch (e) {
+          errors.push({
+            row: i + 1,
+            field: "—",
+            value: "—",
+            expected: `Erro na inserção: ${e.message}`,
+          });
+        }
+      }
+
+      const snapshot = [...errors];
+      setProgress({ processed: i + 1, errors: snapshot });
+    }
+
+    setPhase("done");
+  }
+
+  function handleExport(format) {
+    const data = onExport();
+    if (!data || data.length === 0) return;
+
+    const exportData = data.map((item) => {
+      const row = {};
+      columns.forEach(({ key, label }) => {
+        row[label] = item[key] ?? "";
+      });
+      return row;
+    });
+
+    if (format === "csv") {
+      const csv = Papa.unparse(exportData);
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${exportFileName}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Dados");
+      XLSX.writeFile(wb, `${exportFileName}.xlsx`);
+    }
+  }
+
+  const hasFileReady = selectedFile && rawRows.length > 0 && !isParsing;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-0 overflow-hidden gap-0">
-        {/* Header */}
-        <DialogHeader className="px-6 py-5 border-b border-border bg-muted/30">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <FileDown className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <DialogTitle className="text-base font-semibold leading-tight">{title}</DialogTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">Exportar dados ou importar de planilha</p>
-            </div>
-          </div>
-        </DialogHeader>
+    <>
+      <Dialog open={open && phase === "idle"} onOpenChange={(v) => !v && handleClose()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
 
-        <div className="flex flex-col divide-y divide-border">
-          {/* Seção Exportar */}
-          <div className="px-6 py-5">
-            <div className="flex items-center gap-2 mb-4">
-              <FileDown className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">Exportar</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {/* Botão CSV */}
-              <button
-                onClick={handleExportCSV}
-                className="group flex flex-col items-center gap-2.5 rounded-xl border border-border bg-background p-4 text-center transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
-              >
-                <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/40 transition-colors">
-                  <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">CSV</p>
-                  <p className="text-xs text-muted-foreground">.csv — texto plano</p>
-                </div>
-              </button>
-
-              {/* Botão Excel */}
-              <button
-                onClick={handleExportExcel}
-                className="group flex flex-col items-center gap-2.5 rounded-xl border border-border bg-background p-4 text-center transition-all hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm"
-              >
-                <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
-                  <FileSpreadsheet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Excel</p>
-                  <p className="text-xs text-muted-foreground">.xlsx — planilha</p>
-                </div>
-              </button>
+          {/* Exportar */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Exportar</p>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => handleExport("csv")}>
+                <Download className="h-4 w-4 mr-2" />
+                CSV
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => handleExport("xlsx")}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Excel
+              </Button>
             </div>
           </div>
 
-          {/* Seção Importar */}
-          <div className="px-6 py-5">
-            <div className="flex items-center gap-2 mb-4">
-              <FileUp className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">Importar</span>
-            </div>
+          <hr />
 
-            {/* Drop Zone */}
-            {!selectedFile ? (
-              <div
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={[
-                  "relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-7 text-center cursor-pointer transition-all duration-200",
-                  isDragging
-                    ? "border-primary bg-primary/5 scale-[1.01]"
-                    : "border-border bg-muted/20 hover:border-primary/40 hover:bg-muted/40",
-                ].join(" ")}
-              >
-                <div className={[
-                  "w-11 h-11 rounded-xl flex items-center justify-center transition-colors",
-                  isDragging ? "bg-primary/15" : "bg-muted",
-                ].join(" ")}>
-                  <Upload className={["w-5 h-5 transition-colors", isDragging ? "text-primary" : "text-muted-foreground"].join(" ")} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {isDragging ? "Solte o arquivo aqui" : "Arraste um arquivo ou clique para selecionar"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Suporta <span className="font-medium">.csv</span>, <span className="font-medium">.xlsx</span> e <span className="font-medium">.xls</span>
-                  </p>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleFileChange}
-                  className="sr-only"
-                />
-              </div>
-            ) : (
-              /* Arquivo selecionado */
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3">
-                <div className={[
-                  "w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0",
-                  isExcel ? "bg-blue-50 dark:bg-blue-900/30" : "bg-emerald-50 dark:bg-emerald-900/20",
-                ].join(" ")}>
-                  {isExcel
-                    ? <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    : <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{selectedFile.name}</p>
-                  <p className="text-xs text-muted-foreground">{fileSizeKB} KB</p>
-                </div>
-                <button
-                  onClick={clearFile}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
+          {/* Importar */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Importar</p>
 
-            {/* Botão Importar */}
-            <Button
-              onClick={handleImport}
-              disabled={!selectedFile || isImporting}
-              variant="save"
-              className="w-full mt-3"
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
             >
-              {isImporting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Importando...
-                </>
+              {isParsing ? (
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm">Lendo arquivo...</p>
+                </div>
+              ) : selectedFile && rawRows.length > 0 ? (
+                <div className="flex flex-col items-center gap-1">
+                  <FileSpreadsheet className="h-8 w-8 text-green-500" />
+                  <p className="text-sm font-medium">{selectedFile.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {rawRows.length} linha(s) · {fileHeaders.length} coluna(s)
+                  </p>
+                  <p className="text-xs text-muted-foreground">Clique para trocar o arquivo</p>
+                </div>
               ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Confirmar Importação
-                </>
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <Upload className="h-8 w-8" />
+                  <p className="text-sm">Arraste ou clique para selecionar</p>
+                  <p className="text-xs">CSV, XLSX ou XLS</p>
+                </div>
               )}
-            </Button>
-          </div>
-        </div>
+            </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 bg-muted/20 border-t border-border flex justify-end">
-          <Button variant="outline" size="sm" onClick={handleClose}>
-            Fechar
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+            {parseError && <p className="text-sm text-destructive">{parseError}</p>}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              className="hidden"
+              onChange={(e) => handleFileSelected(e.target.files[0])}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>
+              Cancelar
+            </Button>
+            <Button
+              disabled={!hasFileReady}
+              onClick={() => setPhase("mapping")}
+              className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+            >
+              Próximo: Mapear Colunas →
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ColumnMappingDialog
+        open={phase === "mapping"}
+        onClose={() => setPhase("idle")}
+        onConfirm={processImport}
+        systemColumns={columns}
+        fileHeaders={fileHeaders}
+        fileRowCount={rawRows.length}
+      />
+
+      <ImportProgressDialog
+        open={phase === "processing" || phase === "done"}
+        total={rawRows.length}
+        processed={progress.processed}
+        errors={progress.errors}
+        done={phase === "done"}
+        onClose={handleClose}
+      />
+    </>
   );
 }

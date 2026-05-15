@@ -44,18 +44,18 @@ const ETAPA_COLORS = {
 };
 
 const EXPORT_COLUMNS = [
-  { key: "tag_id", label: "TAG/ID" },
-  { key: "titulo", label: "Título" },
-  { key: "disciplina", label: "Disciplina" },
-  { key: "fornecedor", label: "Fornecedor" },
-  { key: "num_folhas", label: "Nº Folhas" },
-  { key: "progresso", label: "Progresso (%)" },
-  { key: "etapa", label: "Etapa" },
-  { key: "revisao_atual", label: "Revisão Atual" },
-  { key: "id_cronograma", label: "ID Cronograma" },
-  { key: "data_cronograma", label: "Data Cronograma" },
-  { key: "data_projetada", label: "Data Projetada" },
-  { key: "data_real", label: "Data Real" },
+  { key: "tag_id",          label: "TAG/ID",            type: "string",  required: true },
+  { key: "titulo",          label: "Título",             type: "string",  required: true },
+  { key: "disciplina",      label: "Disciplina",         type: "string" },
+  { key: "fornecedor",      label: "Fornecedor",         type: "string" },
+  { key: "num_folhas",      label: "Nº Folhas",          type: "number" },
+  { key: "progresso",       label: "Progresso (%)",      type: "number" },
+  { key: "etapa",           label: "Etapa",              type: "string" },
+  { key: "revisao_atual",   label: "Revisão Atual",      type: "string" },
+  { key: "id_cronograma",   label: "ID Cronograma",      type: "string" },
+  { key: "data_cronograma", label: "Data Cronograma",    type: "date" },
+  { key: "data_projetada",  label: "Data Projetada",     type: "date" },
+  { key: "data_real",       label: "Data Real",          type: "date" },
 ];
 
 const EMPTY_FORM = {
@@ -231,24 +231,22 @@ export default function Documentos() {
     else createMut.mutate(payload);
   };
 
-  const handleImport = async (rows) => {
-    for (const row of rows) {
-      await entities.DocumentoEngenharia.create({
-        projeto_id: selectedProjectId,
-        tag_id: row["TAG/ID"] || "",
-        titulo: row["Título"] || "",
-        disciplina: row["Disciplina"] || "",
-        fornecedor: row["Fornecedor"] || "",
-        num_folhas: Number(row["Nº Folhas"]) || 0,
-        progresso: Number(row["Progresso (%)"]) || 0,
-        etapa: row["Etapa"] || "A Emitir",
-        revisao_atual: row["Revisão Atual"] || "",
-        id_cronograma: row["ID Cronograma"] || null,
-        data_cronograma: row["Data Cronograma"] || null,
-        data_projetada: row["Data Projetada"] || null,
-        data_real: row["Data Real"] || null,
-      });
-    }
+  const handleImport = async (row) => {
+    await entities.DocumentoEngenharia.create({
+      projeto_id:      selectedProjectId,
+      tag_id:          row.tag_id          || "",
+      titulo:          row.titulo          || "",
+      disciplina:      row.disciplina      || "",
+      fornecedor:      row.fornecedor      || "",
+      num_folhas:      row.num_folhas      ?? 0,
+      progresso:       row.progresso       ?? 0,
+      etapa:           row.etapa           || "A Emitir",
+      revisao_atual:   row.revisao_atual   || "",
+      id_cronograma:   row.id_cronograma   || null,
+      data_cronograma: row.data_cronograma || null,
+      data_projetada:  row.data_projetada  || null,
+      data_real:       row.data_real       || null,
+    });
     queryClient.invalidateQueries({ queryKey: ["documentos_engenharia"] });
   };
 

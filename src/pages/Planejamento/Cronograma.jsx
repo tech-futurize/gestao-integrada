@@ -11,19 +11,19 @@ import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Plus, Upload, Eye, GitBranch, ZoomIn, ZoomOut } from "lucide-react";
 
 const EXPORT_COLUMNS = [
-  { key: "codigo_wbs", label: "WBS" },
-  { key: "nome", label: "Nome" },
-  { key: "tipo", label: "Tipo" },
-  { key: "nivel", label: "Nível" },
-  { key: "data_inicio_planejada", label: "Início Planejado" },
-  { key: "data_fim_planejada", label: "Fim Planejado" },
-  { key: "data_inicio_baseline", label: "Início Baseline" },
-  { key: "data_fim_baseline", label: "Fim Baseline" },
-  { key: "avanco_previsto", label: "Avanço Previsto (%)" },
-  { key: "avanco_realizado", label: "Avanço Realizado (%)" },
-  { key: "responsavel", label: "Responsável" },
-  { key: "predecessoras", label: "Predecessoras" },
-  { key: "caminho_critico", label: "Caminho Crítico" },
+  { key: "codigo_wbs",              label: "WBS",                     type: "string",  required: true },
+  { key: "nome",                    label: "Nome",                    type: "string",  required: true },
+  { key: "tipo",                    label: "Tipo",                    type: "string" },
+  { key: "nivel",                   label: "Nível",                   type: "number" },
+  { key: "data_inicio_planejada",   label: "Início Planejado",        type: "date" },
+  { key: "data_fim_planejada",      label: "Fim Planejado",           type: "date" },
+  { key: "data_inicio_baseline",    label: "Início Baseline",         type: "date" },
+  { key: "data_fim_baseline",       label: "Fim Baseline",            type: "date" },
+  { key: "avanco_previsto",         label: "Avanço Previsto (%)",     type: "number" },
+  { key: "avanco_realizado",        label: "Avanço Realizado (%)",    type: "number" },
+  { key: "responsavel",             label: "Responsável",             type: "string" },
+  { key: "predecessoras",           label: "Predecessoras",           type: "string" },
+  { key: "caminho_critico",         label: "Caminho Crítico",         type: "boolean" },
 ];
 
 export default function Cronograma() {
@@ -94,17 +94,23 @@ export default function Cronograma() {
     updateMut.mutate({ id, data: { avanco_realizado } });
   };
 
-  const handleImport = async (rows) => {
-    for (const row of rows) {
-      await entities.TarefaCronograma.create({
-        ...row,
-        projeto_id: selectedProjectId,
-        nivel: Number(row.nivel) || 1,
-        avanco_previsto: Number(row["Avanço Previsto (%)"]) || 0,
-        avanco_realizado: Number(row["Avanço Realizado (%)"]) || 0,
-        caminho_critico: row["Caminho Crítico"] === "true" || row["Caminho Crítico"] === true,
-      });
-    }
+  const handleImport = async (row) => {
+    await entities.TarefaCronograma.create({
+      projeto_id:            selectedProjectId,
+      codigo_wbs:            row.codigo_wbs            || "",
+      nome:                  row.nome                  || "",
+      tipo:                  row.tipo                  || "Tarefa",
+      nivel:                 row.nivel                 ?? 1,
+      data_inicio_planejada: row.data_inicio_planejada || null,
+      data_fim_planejada:    row.data_fim_planejada    || null,
+      data_inicio_baseline:  row.data_inicio_baseline  || null,
+      data_fim_baseline:     row.data_fim_baseline     || null,
+      avanco_previsto:       row.avanco_previsto        ?? 0,
+      avanco_realizado:      row.avanco_realizado       ?? 0,
+      responsavel:           row.responsavel            || "",
+      predecessoras:         row.predecessoras          || "",
+      caminho_critico:       row.caminho_critico        ?? false,
+    });
     queryClient.invalidateQueries({ queryKey: ["tarefas_cronograma"] });
   };
 

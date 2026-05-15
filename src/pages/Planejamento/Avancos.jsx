@@ -15,11 +15,11 @@ import {
 import { TrendingUp, Plus, Upload, Pencil, Trash2, AlertCircle, CheckCircle } from "lucide-react";
 
 const EXPORT_COLUMNS = [
-  { key: "mes_referencia", label: "Mês Referência" },
-  { key: "avanco_previsto_mensal", label: "Avanço Previsto Mensal (%)" },
-  { key: "avanco_realizado_mensal", label: "Avanço Realizado Mensal (%)" },
-  { key: "avanco_previsto_acumulado", label: "Avanço Previsto Acumulado (%)" },
-  { key: "avanco_realizado_acumulado", label: "Avanço Realizado Acumulado (%)" },
+  { key: "mes_referencia",             label: "Mês Referência",                type: "string",  required: true },
+  { key: "avanco_previsto_mensal",     label: "Avanço Previsto Mensal (%)",    type: "number" },
+  { key: "avanco_realizado_mensal",    label: "Avanço Realizado Mensal (%)",   type: "number" },
+  { key: "avanco_previsto_acumulado",  label: "Avanço Previsto Acumulado (%)", type: "number" },
+  { key: "avanco_realizado_acumulado", label: "Avanço Realizado Acumulado (%)",type: "number" },
 ];
 
 const EMPTY_FORM = {
@@ -125,17 +125,15 @@ export default function Avancos() {
     else createMut.mutate(payload);
   };
 
-  const handleImport = async (rows) => {
-    for (const row of rows) {
-      await entities.AvancoFisico.create({
-        projeto_id: selectedProjectId,
-        mes_referencia: row["Mês Referência"] || row.mes_referencia || "",
-        avanco_previsto_mensal: parseFloat(row["Avanço Previsto Mensal (%)"] || row.avanco_previsto_mensal) || 0,
-        avanco_realizado_mensal: parseFloat(row["Avanço Realizado Mensal (%)"] || row.avanco_realizado_mensal) || 0,
-        avanco_previsto_acumulado: parseFloat(row["Avanço Previsto Acumulado (%)"] || row.avanco_previsto_acumulado) || 0,
-        avanco_realizado_acumulado: parseFloat(row["Avanço Realizado Acumulado (%)"] || row.avanco_realizado_acumulado) || 0,
-      });
-    }
+  const handleImport = async (row) => {
+    await entities.AvancoFisico.create({
+      projeto_id:                  selectedProjectId,
+      mes_referencia:              row.mes_referencia              || "",
+      avanco_previsto_mensal:      row.avanco_previsto_mensal      ?? 0,
+      avanco_realizado_mensal:     row.avanco_realizado_mensal     ?? 0,
+      avanco_previsto_acumulado:   row.avanco_previsto_acumulado   ?? 0,
+      avanco_realizado_acumulado:  row.avanco_realizado_acumulado  ?? 0,
+    });
     queryClient.invalidateQueries({ queryKey: ["avanco_fisico"] });
   };
 
