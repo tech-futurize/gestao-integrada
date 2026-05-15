@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import FilterBar from "@/components/ui/FilterBar";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart3, Plus, Save, X, Upload, Edit, Trash2 } from "lucide-react";
@@ -33,7 +34,7 @@ export default function HistogramaEquipamentos() {
   const [editData, setEditData] = useState({});
   const [showNewRow, setShowNewRow] = useState(false);
   const [newRow, setNewRow] = useState({ tipo_equipamento: "", mes_referencia: "", quantidade_prevista_mensal: "", quantidade_rdo_mensal: "" });
-  const [filtroTipo, setFiltroTipo] = useState("__none__");
+  const [filtros, setFiltros] = useState({});
 
   const { data: histogramas = [] } = useQuery({
     queryKey: ["histogramas-equip", selectedProjectId],
@@ -41,9 +42,10 @@ export default function HistogramaEquipamentos() {
     enabled: !!selectedProjectId,
   });
 
+  const tp = filtros.tipo || [];
   const sorted = [...histogramas]
     .filter(h => h.tipo_equipamento)
-    .filter(h => filtroTipo === "__none__" || h.tipo_equipamento === filtroTipo)
+    .filter(h => tp.length === 0 || tp.includes(h.tipo_equipamento))
     .sort((a, b) => new Date(a.mes_referencia) - new Date(b.mes_referencia));
 
   const createMutation = useMutation({
@@ -78,18 +80,18 @@ export default function HistogramaEquipamentos() {
     <div className="space-y-6">
       <Card className="border-0 shadow-md">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" style={{ color: "#c35e1e" }} />
+              <BarChart3 className="w-5 h-5 text-ocre" />
               Histograma de Equipamentos
             </CardTitle>
-            <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-              <SelectTrigger className="w-60"><SelectValue placeholder="Filtrar por equipamento" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">Todos os equipamentos</SelectItem>
-                {TIPOS_EQUIPAMENTO.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <FilterBar
+              storageKey="histograma-filtros"
+              filters={[
+                { key: "tipo", label: "Equipamento", options: TIPOS_EQUIPAMENTO },
+              ]}
+              onChange={setFiltros}
+            />
           </div>
         </CardHeader>
         <CardContent>
@@ -112,7 +114,7 @@ export default function HistogramaEquipamentos() {
           <div className="flex items-center justify-between">
             <CardTitle>Detalhamento de Equipamentos</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" className="border-gray-300"><Upload className="w-4 h-4 mr-2" />Importar</Button>
+              <Button variant="outline"><Upload className="w-4 h-4 mr-2" />Importar</Button>
               <Button onClick={() => setShowNewRow(true)} className="bg-green-600 hover:bg-green-700" disabled={showNewRow}>
                 <Plus className="w-4 h-4 mr-2" />Adicionar
               </Button>
@@ -123,7 +125,7 @@ export default function HistogramaEquipamentos() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50">
+                <TableRow className="bg-muted">
                   <TableHead>Semana/Mês</TableHead>
                   <TableHead>Tipo de Equipamento</TableHead>
                   <TableHead className="text-right">Qtd Prevista</TableHead>
@@ -134,7 +136,7 @@ export default function HistogramaEquipamentos() {
               </TableHeader>
               <TableBody>
                 {showNewRow && (
-                  <TableRow className="bg-green-50">
+                  <TableRow className="bg-status-positive/10">
                     <TableCell>
                       <Input type="month" value={newRow.mes_referencia} onChange={(e) => setNewRow({ ...newRow, mes_referencia: e.target.value })} className="w-36" />
                     </TableCell>
@@ -189,7 +191,7 @@ export default function HistogramaEquipamentos() {
                           : Math.round(h.quantidade_rdo_mensal || 0).toLocaleString("pt-BR")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className={`font-semibold ${aderencia >= 90 ? "text-green-600" : aderencia >= 70 ? "text-yellow-600" : "text-red-600"}`}>{aderencia}%</span>
+                        <span className={`font-semibold ${aderencia >= 90 ? "text-status-positive" : aderencia >= 70 ? "text-status-attention" : "text-status-critical"}`}>{aderencia}%</span>
                       </TableCell>
                       <TableCell className="text-center">
                         {isEditing ? (
@@ -203,11 +205,11 @@ export default function HistogramaEquipamentos() {
                           </div>
                         ) : (
                           <div className="flex justify-center gap-1">
-                            <Button size="sm" variant="outline" className="text-gray-600"
+                            <Button size="sm" variant="outline" className="text-foreground"
                               onClick={() => { setEditingId(h.id); setEditData({ mes_referencia: h.mes_referencia, tipo_equipamento: h.tipo_equipamento, quantidade_prevista_mensal: h.quantidade_prevista_mensal, quantidade_rdo_mensal: h.quantidade_rdo_mensal }); }}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button size="sm" variant="outline" className="text-red-600 border-red-300 hover:bg-red-50" onClick={() => deleteMutation.mutate(h.id)}>
+                            <Button size="sm" variant="outline" className="text-status-critical border-status-critical/40 hover:bg-status-critical/10" onClick={() => deleteMutation.mutate(h.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
