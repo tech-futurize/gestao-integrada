@@ -50,10 +50,11 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
-      extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json']
+      extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json'],
+      dedupe: ['react', 'react-dom'],
     },
     optimizeDeps: {
-      include: ['react', 'react-dom'],
+      include: ['react', 'react-dom', '@tanstack/react-virtual'],
       esbuildOptions: {
         loader: {
           '.js': 'jsx',

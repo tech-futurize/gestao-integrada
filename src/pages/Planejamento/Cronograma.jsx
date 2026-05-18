@@ -89,9 +89,9 @@ export default function Cronograma() {
   const criticas     = tarefas.filter(t => t.caminho_critico).length;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 flex flex-col gap-4 h-[calc(100vh-64px)]">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Cronograma</h1>
           <p className="text-sm text-muted-foreground">Gráfico de Gantt com hierarquia WBS e avanço físico</p>
@@ -104,7 +104,7 @@ export default function Cronograma() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
         {[
           { label: "Total de Tarefas",  value: totalTarefas, color: "#26405d" },
           { label: "Concluídas",        value: concluidas,   color: "#16a34a" },
@@ -119,7 +119,7 @@ export default function Cronograma() {
       </div>
 
       {/* Controles */}
-      <div className="flex gap-2 flex-wrap items-center">
+      <div className="flex gap-2 flex-wrap items-center shrink-0">
         <div className="flex rounded-lg border border-border overflow-hidden">
           <button
             onClick={() => setZoom("semanas")}
@@ -142,15 +142,17 @@ export default function Cronograma() {
         </Button>
       </div>
 
-      {/* Gantt */}
-      <GanttChart
-        tarefas={tarefas}
-        isLoading={isLoading}
-        zoom={zoom}
-        showBaseline={showBaseline}
-        showCritical={showCritical}
-        onView={setViewingTarefa}
-      />
+      {/* Gantt — flex-1 min-h-0 para ocupar o restante da altura disponível */}
+      <div className="flex-1 min-h-0">
+        <GanttChart
+          tarefas={tarefas}
+          isLoading={isLoading}
+          zoom={zoom}
+          showBaseline={showBaseline}
+          showCritical={showCritical}
+          onView={setViewingTarefa}
+        />
+      </div>
 
       {/* Modal de visualização */}
       {viewingTarefa && (
