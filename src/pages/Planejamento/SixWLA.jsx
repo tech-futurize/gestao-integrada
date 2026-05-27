@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Plus, Info, X } from "lucide-react";
+import { CalendarRange, Plus, Info, X, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -33,26 +33,40 @@ export default function SixWLAPage() {
   const [novasAtividades, setNovasAtividades] = useState([]);
   const bannerChecked = useRef(false);
 
-  // Q1 — registros 6WLA
-  const { data: itens = [], isLoading: loadingItens } = useQuery({
+  // Q1 — registros 6WLA do projeto
+  const {
+    data: itens = [],
+    isPending: pendingItens,
+    isError: errorItens,
+  } = useQuery({
     queryKey: ["itens_6wla", selectedProjectId],
     queryFn: () => entities.Item6WLA.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
 
-  // Q2 — atividades do cronograma
-  const { data: tarefas = [], isLoading: loadingTarefas } = useQuery({
+  // Q2 — atividades do cronograma (tipo=Atividade; sobreposição com janela calculada no front)
+  const {
+    data: tarefas = [],
+    isPending: pendingTarefas,
+    isError: errorTarefas,
+  } = useQuery({
     queryKey: ["tarefas_cronograma_atividades", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId, tipo: "Atividade" }),
     enabled: !!selectedProjectId,
   });
+
+  // Atividades com sobreposição nas próximas 6 semanas (hoje até +42 dias)
+  const tarefasNaJanela = useMemo(
+    () => tarefas.filter(t => getSemanasBadge(t, semanas).length > 0),
+    [tarefas, semanas]
+  );
 
   const existingTarefaIds = useMemo(
     () => new Set(itens.map(i => i.tarefa_cronograma_id)),
     [itens]
   );
 
-  // Merge + calcular badges de semana
+  // Merge: itens_6wla ← tarefa + semanasBadge calculados
   const merged = useMemo(() => {
     return itens.map(item => {
       const tarefa = tarefas.find(t => t.id === item.tarefa_cronograma_id) || null;
@@ -64,21 +78,18 @@ export default function SixWLAPage() {
     });
   }, [itens, tarefas, semanas]);
 
-  // Auto-sync: detectar atividades novas nas próximas 6 semanas
+  // Auto-sync: detectar atividades da janela sem registro em itens_6wla
   useEffect(() => {
-    if (loadingItens || loadingTarefas || bannerChecked.current) return;
+    if (pendingItens || pendingTarefas || bannerChecked.current) return;
     bannerChecked.current = true;
-    const novas = tarefas.filter(t => {
-      if (existingTarefaIds.has(t.id)) return false;
-      return getSemanasBadge(t, semanas).length > 0;
-    });
+    const novas = tarefasNaJanela.filter(t => !existingTarefaIds.has(t.id));
     if (novas.length > 0) {
       setNovasAtividades(novas);
       setShowBanner(true);
     }
-  }, [loadingItens, loadingTarefas, tarefas, existingTarefaIds, semanas]);
+  }, [pendingItens, pendingTarefas, tarefasNaJanela, existingTarefaIds]);
 
-  // Filtrar por semanas ativas
+  // Filtrar tabela pelas semanas ativas (pills S1–S6)
   const filtered = useMemo(() => {
     if (semanasAtivas.length === semanas.length) return merged;
     return merged.filter(item =>
@@ -86,13 +97,12 @@ export default function SixWLAPage() {
     );
   }, [merged, semanasAtivas, semanas.length]);
 
-  // KPIs
+  // KPIs — 7 cards: Total + 1 por categoria de restrição
   const kpis = useMemo(() => ({
     total: merged.length,
     ...Object.fromEntries(RESTRICOES.map(r => [r.key, merged.filter(i => i[r.key]).length])),
   }), [merged]);
 
-  // Mutations
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => entities.Item6WLA.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
@@ -154,7 +164,22 @@ export default function SixWLAPage() {
     );
   }
 
-  const isLoading = loadingItens || loadingTarefas;
+  if (errorItens || errorTarefas) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2 text-destructive">
+            <AlertCircle className="w-8 h-8" />
+            <p className="text-sm font-medium">Erro ao carregar dados do 6WLA.</p>
+            <p className="text-xs text-muted-foreground">Verifique a conexão e recarregue a página.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isPending = pendingItens || pendingTarefas;
 
   return (
     <div className="flex flex-col h-full">
@@ -194,21 +219,26 @@ export default function SixWLAPage() {
           </div>
         )}
 
-        {/* KPIs */}
+        {/* KPIs — Total + 6 categorias de restrição */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          <div className="bg-card rounded-xl border border-border p-3">
-            <p className="text-xs text-muted-foreground">Total</p>
-            <p className="text-2xl font-bold text-foreground">{kpis.total}</p>
+          <div className="rounded-xl border p-3 bg-[#102A44] border-[#1e4a6e]">
+            <p className="text-xs font-medium text-[#8195A9]">Total Atividades</p>
+            <p className="text-2xl font-bold text-[#26FFFF]">{kpis.total}</p>
+            <p className="text-[10px] text-[#8195A9]/70 mt-0.5">no 6WLA</p>
           </div>
           {RESTRICOES.map(r => (
-            <div key={r.key} className="bg-card rounded-xl border border-border p-3" title={r.full}>
-              <p className="text-xs text-muted-foreground truncate">{r.label}</p>
-              <p className="text-2xl font-bold text-amber-600">{kpis[r.key]}</p>
+            <div
+              key={r.key}
+              className="rounded-xl border p-3 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40"
+              title={r.full}
+            >
+              <p className="text-xs font-medium text-amber-900/70 dark:text-amber-500/80 truncate">{r.label}</p>
+              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{kpis[r.key]}</p>
             </div>
           ))}
         </div>
 
-        {/* Pills S1–S6 */}
+        {/* Pills S1–S6 — filtro multi-select da tabela */}
         <div className="flex flex-wrap gap-2">
           {semanas.map(s => {
             const ativa = semanasAtivas.includes(s.label);
@@ -230,11 +260,11 @@ export default function SixWLAPage() {
           })}
         </div>
 
-        {/* Tabela */}
+        {/* Visualização — pills S1–S6 por linha, 6 checkboxes de restrição, observacao */}
         <SixWLATable
           items={filtered}
           restricoes={RESTRICOES}
-          isLoading={isLoading}
+          isLoading={isPending}
           onUpdate={(id, data) => updateMut.mutate({ id, data })}
           onDelete={(id) => deleteMut.mutate(id)}
         />
