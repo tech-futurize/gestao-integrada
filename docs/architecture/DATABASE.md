@@ -238,16 +238,22 @@ Quantidade e valor de recursos por mês (histograma de MOD/equipamentos).
 ---
 
 ### avanco_fisico
-Avanço físico previsto vs. realizado por mês.
+Avanço físico previsto / realizado / projetado por semana ISO.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
 | projeto_id | UUID FK → projetos | CASCADE |
-| mes_referencia | DATE NOT NULL | |
-| avanco_previsto_mensal | NUMERIC | |
-| avanco_realizado_mensal | NUMERIC | |
-| avanco_previsto_acumulado | NUMERIC | |
-| avanco_realizado_acumulado | NUMERIC | |
+| semana_iso | TEXT NOT NULL | Formato ISO 8601 "YYYY-Www" ex: "2025-W01". Chave de negócio. |
+| avanco_previsto_mensal | NUMERIC | % previsto na semana (nome mantido por compatibilidade) |
+| avanco_realizado_mensal | NUMERIC | % realizado na semana — bloqueado para semanas futuras na UI |
+| avanco_projetado | NUMERIC DEFAULT 0 | % projetado — zerado automaticamente ao salvar Real na mesma semana |
+| mes_referencia | DATE | **Deprecada** — preenchida por dados históricos convertidos; novos registros não usam |
+| avanco_previsto_acumulado | NUMERIC | **Deprecada** — acumulado calculado no front, não persistido |
+| avanco_realizado_acumulado | NUMERIC | **Deprecada** — acumulado calculado no front, não persistido |
+
+> **Constraint:** `UNIQUE (projeto_id, semana_iso)`
+> **Acumulados:** calculados no front em `Avancos.jsx` — não persistidos.
+> **Migration:** `docs/database/supabase-migration-m8-avanco.sql`
 
 ---
 
@@ -587,6 +593,7 @@ Look-ahead de 6 semanas — vínculo obrigatório com o cronograma.
 | 2026-Q1 | `supabase-migration.sql` | Criação inicial do schema (~30 tabelas) | Todas as tabelas base |
 | 2026-Q2 | `supabase-migration-2026-q2.sql` | Refatoração Geral: Drop Qualidade, criação de `unidades_medida`, `plano_acao`, `rdo`, `usuarios`; ALTER em 10+ tabelas | Ver seção "Tabelas removidas/adicionadas" acima |
 | 2026-05-27 | `supabase-migration-m4-cronograma.sql` | M4.4 — Adiciona `area TEXT` e `disciplina TEXT` em `tarefas_cronograma` | `tarefas_cronograma` |
+| 2026-05-27 | `supabase-migration-m8-avanco.sql` | M8 — Adiciona `semana_iso TEXT` e `avanco_projetado NUMERIC`; converte histórico; depreca `mes_referencia` | `avanco_fisico` |
 
 ---
 
