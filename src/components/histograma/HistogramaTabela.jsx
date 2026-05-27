@@ -367,6 +367,11 @@ export default function HistogramaTabela({ tipo }) {
                         onSave={updateCelula}
                       />
                     );
+                    if (cells.length === 0) {
+                      cells.push(
+                        <td key={`${mk}-empty`} className="px-2 py-2 border-l border-border w-12" />
+                      );
+                    }
                     return cells;
                   })}
                   <td className="px-3 py-2 text-center font-semibold text-blue-700 dark:text-blue-300 border-l-2 border-border">{recurso.totalPrev}</td>
@@ -378,7 +383,12 @@ export default function HistogramaTabela({ tipo }) {
                   <td className="px-3 py-2 text-center font-semibold text-muted-foreground">{recurso.pctProj}%</td>
                   <td className="px-2 py-2">
                     <button
-                      onClick={() => deleteRecurso(recurso.nome)}
+                      onClick={() => {
+                        if (window.confirm(`Excluir "${recurso.nome}"? Esta ação removerá todos os registros mensais e não pode ser desfeita.`)) {
+                          deleteRecurso(recurso.nome);
+                        }
+                      }}
+                      aria-label={`Excluir ${recurso.nome}`}
                       className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -402,6 +412,11 @@ export default function HistogramaTabela({ tipo }) {
                     if (showPrev) cells.push(<td key={`${mk}-prev`} className="px-2 py-2 text-center text-blue-700 dark:text-blue-300 border-l border-border">{tPrev || "·"}</td>);
                     if (showReal) cells.push(<td key={`${mk}-real`} className="px-2 py-2 text-center text-green-700 dark:text-green-300 border-l border-border">{tReal || "·"}</td>);
                     if (showProj) cells.push(<td key={`${mk}-proj`} className="px-2 py-2 text-center text-yellow-700 dark:text-yellow-300 border-l border-border">{tProj || "·"}</td>);
+                    if (cells.length === 0) {
+                      cells.push(
+                        <td key={`${mk}-empty`} className="px-2 py-2 border-l border-border w-12" />
+                      );
+                    }
                     return cells;
                   })}
                   {(() => {
@@ -445,45 +460,64 @@ export default function HistogramaTabela({ tipo }) {
               {showPrev && <Bar yAxisId="left" dataKey="prev" name="Previsto" fill="#3b82f6" opacity={0.8} />}
               {showReal && <Bar yAxisId="left" dataKey="real" name="Real" fill="#16a34a" opacity={0.8} />}
               {showProj && <Bar yAxisId="left" dataKey="proj" name="Projetado" fill="#f59e0b" opacity={0.8} />}
-              <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Acum. Prev"
-                stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-              <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Acum. Real"
-                stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
+              {showPrev && (
+                <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Acum. Prev"
+                  stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+              )}
+              {showReal && (
+                <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Acum. Real"
+                  stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         </div>
       )}
 
       {/* Dialog novo recurso */}
-      <Dialog open={showNovoDialog} onOpenChange={setShowNovoDialog}>
+      <Dialog open={showNovoDialog} onOpenChange={(open) => { setShowNovoDialog(open); if (!open) setNovoNome(""); }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Novo {tipo === "MO" ? "Função (MO)" : "Equipamento"}</DialogTitle>
           </DialogHeader>
-          <div className="py-2 space-y-3">
-            <div className="space-y-1">
-              <Label>{tipo === "MO" ? "Nome da função" : "Tipo de equipamento"} *</Label>
-              <Input
-                value={novoNome}
-                onChange={(e) => setNovoNome(e.target.value)}
-                placeholder={tipo === "MO" ? "Ex: Soldador, Montador" : "Ex: Guindaste, Munck"}
-                onKeyDown={(e) => e.key === "Enter" && novoNome.trim() && createRecurso.mutate(novoNome.trim())}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Serão criados {projectMonths.length} registros mensais com valores zerados.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNovoDialog(false)}>Cancelar</Button>
-            <Button
-              variant="save"
-              disabled={!novoNome.trim() || createRecurso.isPending}
-              onClick={() => createRecurso.mutate(novoNome.trim())}
-            >
-              {createRecurso.isPending ? "Criando..." : "Criar"}
-            </Button>
-          </DialogFooter>
+          {(() => {
+            const isDuplicate = recursos.some(
+              (r) => r.nome.toLowerCase() === novoNome.trim().toLowerCase()
+            );
+            return (
+              <>
+                <div className="py-2 space-y-3">
+                  <div className="space-y-1">
+                    <Label>{tipo === "MO" ? "Nome da função" : "Tipo de equipamento"} *</Label>
+                    <Input
+                      value={novoNome}
+                      onChange={(e) => setNovoNome(e.target.value)}
+                      placeholder={tipo === "MO" ? "Ex: Soldador, Montador" : "Ex: Guindaste, Munck"}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && novoNome.trim() && !isDuplicate) {
+                          createRecurso.mutate(novoNome.trim());
+                        }
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Serão criados {projectMonths.length} registros mensais com valores zerados.
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => { setShowNovoDialog(false); setNovoNome(""); }}>Cancelar</Button>
+                  <Button
+                    variant="save"
+                    disabled={!novoNome.trim() || createRecurso.isPending || isDuplicate}
+                    onClick={() => {
+                      if (!isDuplicate) createRecurso.mutate(novoNome.trim());
+                    }}
+                  >
+                    {createRecurso.isPending ? "Criando..." : isDuplicate ? "Já existe" : "Criar"}
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
