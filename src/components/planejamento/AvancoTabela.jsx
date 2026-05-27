@@ -1,24 +1,9 @@
 // src/components/planejamento/AvancoTabela.jsx
 import React, { useMemo } from "react";
-import {
-  eachWeekOfInterval, format, parseISO,
-  subMonths, addYears, getISOWeek, getISOWeekYear, startOfISOWeek,
-} from "date-fns";
+import { format, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function getProjectWeeks(dataInicio, dataFim) {
-  if (!dataInicio || !dataFim) return [];
-  try {
-    return eachWeekOfInterval(
-      { start: subMonths(parseISO(dataInicio), 3), end: addYears(parseISO(dataFim), 1) },
-      { weekStartsOn: 1 }
-    );
-  } catch {
-    return [];
-  }
-}
 
 function weekKey(monday) {
   // ISO week key: "2026-W05" — must match Builder A1 migration format
@@ -139,7 +124,7 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave }) {
           className="w-10 text-center border rounded text-xs p-0"
         />
       ) : (
-        <span className="text-xs">{valor || "0"}</span>
+        <span className="text-xs">{valor ? Number(valor).toFixed(1) : "0"}</span>
       )}
     </td>
   );

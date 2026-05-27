@@ -50,6 +50,9 @@ export default function Avancos() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showImportExport, setShowImportExport] = React.useState(false);
+  const [showPrev, setShowPrev] = React.useState(true);
+  const [showReal, setShowReal] = React.useState(true);
+  const [showProj, setShowProj] = React.useState(true);
 
   // ── Queries ──
 
@@ -259,9 +262,28 @@ export default function Avancos() {
       {/* Gráfico Curva S */}
       {chartData.length > 0 && (
         <div className="bg-card rounded-xl border border-border shadow-sm p-5">
-          <h3 className="font-semibold mb-4 text-foreground text-sm">
-            Evolução Semanal de Avanço Físico
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-foreground text-sm">
+              Evolução Semanal de Avanço Físico
+            </h3>
+            <div className="flex gap-1.5">
+              {[
+                { key: "prev", label: "Previsto", show: showPrev, setShow: setShowPrev, color: "#3b82f6" },
+                { key: "real", label: "Real",     show: showReal, setShow: setShowReal, color: "#16a34a" },
+                { key: "proj", label: "Projetado", show: showProj, setShow: setShowProj, color: "#f59e0b" },
+              ].map(({ key, label, show, setShow, color }) => (
+                <button
+                  key={key}
+                  onClick={() => setShow((v) => !v)}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-opacity ${show ? "opacity-100" : "opacity-40"}`}
+                  style={{ background: color + "22", color }}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -270,13 +292,13 @@ export default function Avancos() {
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} unit="%" />
               <Tooltip formatter={(v) => `${v.toFixed(1)}%`} />
               <Legend />
-              <Bar yAxisId="left" dataKey="prev" name="Previsto sem." fill="#3b82f6" opacity={0.7} />
-              <Bar yAxisId="left" dataKey="real" name="Real sem." fill="#16a34a" opacity={0.7} />
-              <Bar yAxisId="left" dataKey="proj" name="Projetado sem." fill="#f59e0b" opacity={0.7} />
+              <Bar yAxisId="left" dataKey="prev" name="Previsto sem." fill="#3b82f6" opacity={0.7} hide={!showPrev} />
+              <Bar yAxisId="left" dataKey="real" name="Real sem." fill="#16a34a" opacity={0.7} hide={!showReal} />
+              <Bar yAxisId="left" dataKey="proj" name="Projetado sem." fill="#f59e0b" opacity={0.7} hide={!showProj} />
               <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Acum. Prev"
-                stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} hide={!showPrev} />
               <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Acum. Real"
-                stroke="#16a34a" strokeWidth={2} dot={{ r: 2 }} />
+                stroke="#16a34a" strokeWidth={2} dot={{ r: 2 }} hide={!showReal} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
