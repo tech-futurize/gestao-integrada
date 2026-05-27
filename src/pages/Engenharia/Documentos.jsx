@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import PageHeader from "@/components/ui/PageHeader";
 import FilterBar from "@/components/ui/FilterBar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
@@ -287,26 +288,49 @@ export default function Documentos() {
   const overdue = docs.filter(d => d.data_projetada && d.data_projetada < new Date().toISOString().split("T")[0] && d.etapa !== "Aprovado");
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={FileText} description="Selecione um projeto na barra lateral para ver os documentos de engenharia." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={FileText} description="Selecione um projeto na barra lateral para ver os documentos de engenharia." />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-5">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Documentos de Engenharia</h1>
-          <p className="text-sm text-muted-foreground">Gestão de documentos técnicos por disciplina</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowImportExport(true)} disabled={importing}>
-            <Upload className="w-4 h-4 mr-2" />{importing ? "Importando..." : "Importar / Exportar"}
-          </Button>
-          <Button onClick={handleOpenNew}>
-            <Plus className="w-4 h-4 mr-2" />Novo Documento
-          </Button>
-        </div>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setShowImportExport(true)} disabled={importing}>
+              <Upload className="w-4 h-4 mr-2" />{importing ? "Importando..." : "Importar / Exportar"}
+            </Button>
+            <Button onClick={handleOpenNew}>
+              <Plus className="w-4 h-4 mr-2" />Novo Documento
+            </Button>
+          </>
+        }
+        filters={
+          <>
+            <input
+              className="border border-border rounded-lg px-3 py-1.5 text-sm w-56 bg-background text-foreground"
+              placeholder="Buscar TAG/ID ou título..."
+              value={busca}
+              onChange={e => { setBusca(e.target.value); setPage(1); }}
+            />
+            <FilterBar
+              storageKey="documentos-filtros"
+              filters={[
+                { key: "disciplina", label: "Disciplina", options: ["MEC", "CIV", "ELE", "TUB", "INS", "AUT", "EST", "PRC", "HSE"] },
+                { key: "fornecedor", label: "Fornecedor", options: fornecedorOptions },
+              ]}
+              onChange={setFiltros}
+            />
+          </>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-5">
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -329,24 +353,6 @@ export default function Documentos() {
             </CardContent>
           </Card>
         ))}
-      </div>
-
-      {/* Filtros */}
-      <div className="flex flex-wrap items-start gap-2">
-        <input
-          className="border border-border rounded-lg px-3 py-1.5 text-sm w-56 bg-background text-foreground"
-          placeholder="Buscar TAG/ID ou título..."
-          value={busca}
-          onChange={e => { setBusca(e.target.value); setPage(1); }}
-        />
-        <FilterBar
-          storageKey="documentos-filtros"
-          filters={[
-            { key: "disciplina", label: "Disciplina", options: ["MEC", "CIV", "ELE", "TUB", "INS", "AUT", "EST", "PRC", "HSE"] },
-            { key: "fornecedor", label: "Fornecedor", options: fornecedorOptions },
-          ]}
-          onChange={setFiltros}
-        />
       </div>
 
       {/* Tabela */}
@@ -699,6 +705,7 @@ export default function Documentos() {
         onExport={() => docs}
         onImport={handleImport}
       />
+      </div>
     </div>
   );
 }
