@@ -13,6 +13,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
 import { TrendingUp, Plus, Upload, Pencil, Trash2 } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 
 const EXPORT_COLUMNS = [
   { key: "mes_referencia",             label: "Mês Referência",                type: "string",  required: true },
@@ -148,23 +149,20 @@ export default function Avancos() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Avanço Físico</h1>
-          <p className="text-sm text-muted-foreground">Curva S — previsto vs. realizado acumulado</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowImportExport(true)}>
-            <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
-          </Button>
-          <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" /> Novo Registro
-          </Button>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowImportExport(true)}>
+              <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+            </Button>
+            <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" /> Novo Registro
+            </Button>
+          </div>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
@@ -317,6 +315,7 @@ export default function Avancos() {
         onExport={() => sorted}
         onImport={handleImport}
       />
+      </div>
     </div>
   );
 }

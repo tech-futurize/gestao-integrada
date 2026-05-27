@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarRange, Plus, Pencil, Trash2 } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 
 const CATEGORIAS = [
   "Projeto/Engenharia",
@@ -165,14 +166,15 @@ export default function SixWLAPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Controles de topo */}
-      <div className="flex items-center justify-end">
-        <Button onClick={handleOpenNew}>
-          <Plus className="w-4 h-4 mr-2" /> Nova Atividade
-        </Button>
-      </div>
-
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button onClick={handleOpenNew}>
+            <Plus className="w-4 h-4 mr-2" /> Nova Atividade
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-card rounded-xl border border-border p-4">
@@ -371,6 +373,7 @@ export default function SixWLAPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }
