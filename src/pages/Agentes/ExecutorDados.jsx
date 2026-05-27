@@ -1,5 +1,6 @@
 import { Bot } from "lucide-react";
 import AgenteChat from "@/components/agentes/AgenteChat";
+import PageHeader from "@/components/ui/PageHeader";
 
 const AGENT = {
   id: "supabase-analyst-agent",
@@ -20,5 +21,12 @@ const AGENT = {
 };
 
 export default function ExecutorDados() {
-  return <AgenteChat agent={AGENT} />;
+  return (
+    <div className="flex flex-col h-full">
+      <PageHeader />
+      <div className="flex-1 overflow-hidden">
+        <AgenteChat agent={AGENT} />
+      </div>
+    </div>
+  );
 }

@@ -132,7 +132,7 @@ export default function AgenteChat({ agent }) {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
+    <div className="flex flex-col h-full">
       {/* Barra de contexto */}
       <div className="bg-muted border-b border-border px-4 py-2 flex items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">{agent.description}</p>
