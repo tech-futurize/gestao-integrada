@@ -102,7 +102,7 @@ function CelulaEditavel({ registro, campo, onSave }) {
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               cancelRef.current = false;
-              handleBlur();
+              e.target.blur(); // triggers onBlur naturally, which calls handleBlur once
             }
             if (e.key === "Escape") {
               cancelRef.current = true;

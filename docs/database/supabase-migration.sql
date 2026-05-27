@@ -149,11 +149,15 @@ CREATE TABLE IF NOT EXISTS histogramas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   projeto_id UUID REFERENCES projetos(id) ON DELETE CASCADE,
   recurso_id UUID REFERENCES recursos(id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL DEFAULT 'Equipamento',
+  nome_recurso TEXT,
   mes_referencia DATE NOT NULL,
   quantidade_prevista_mensal NUMERIC,
   quantidade_realizada_mensal NUMERIC,
+  qtd_projetado NUMERIC DEFAULT 0,
   valor_previsto_mensal NUMERIC,
   valor_realizado_mensal NUMERIC,
+  quantidade_rdo_mensal NUMERIC,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -693,11 +697,14 @@ CREATE POLICY "Authenticated users full access" ON itens_takeof
 -- Execute este bloco separadamente se as tabelas já existem.
 -- ─────────────────────────────────────────────────────────────────────────────
 
--- histogramas: coluna para quantidade proveniente do RDO e tipo de equipamento
+-- histogramas: colunas adicionadas no M7 (para bancos criados antes do M7)
+-- O CREATE TABLE acima já inclui todas estas colunas para inicializações novas.
+ALTER TABLE histogramas ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'Equipamento';
+ALTER TABLE histogramas ADD COLUMN IF NOT EXISTS nome_recurso TEXT;
+ALTER TABLE histogramas ADD COLUMN IF NOT EXISTS qtd_projetado NUMERIC DEFAULT 0;
 ALTER TABLE histogramas ADD COLUMN IF NOT EXISTS quantidade_rdo_mensal NUMERIC;
-ALTER TABLE histogramas ADD COLUMN IF NOT EXISTS tipo_equipamento TEXT;
 
--- histogramas: torna recurso_id opcional (equipamentos não usam FK de recurso)
+-- histogramas: torna recurso_id opcional (recursos sem FK de recurso)
 ALTER TABLE histogramas ALTER COLUMN recurso_id DROP NOT NULL;
 
 -- incidentes: colunas específicas do módulo RDO
