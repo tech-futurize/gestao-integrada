@@ -883,10 +883,6 @@ function ResumoPlanejamento({ projetoId }) {
 export default function ModulosResumo({ projetoId }) {
   return (
     <div className="space-y-5">
-      <div className="pb-1">
-        <h2 className="text-xl font-bold text-foreground">Resumo por Módulo</h2>
-        <p className="text-sm text-muted-foreground">Visão consolidada de todos os módulos do projeto</p>
-      </div>
       <ResumoCronograma projetoId={projetoId} />
       <ResumoContratos projetoId={projetoId} />
       <ResumoSuprimentos projetoId={projetoId} />
