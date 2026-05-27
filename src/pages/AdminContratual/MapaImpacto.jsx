@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MapPin } from "lucide-react";
 import MapaRegistroImpacto from "@/components/pleitos/MapaRegistroImpacto";
 import PageEmptyState from "@/components/ui/PageEmptyState";
+import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 
 export default function MapaImpacto() {
@@ -15,13 +16,21 @@ export default function MapaImpacto() {
   });
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={MapPin} description="Selecione um projeto na barra lateral para ver o mapa de impacto." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1"><PageEmptyState icon={MapPin} description="Selecione um projeto na barra lateral para ver o mapa de impacto." /></div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        <MapaRegistroImpacto incidentes={incidentes} />
+    <div className="flex flex-col h-full">
+      <PageHeader />
+      <div className="flex-1 overflow-auto p-6 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <MapaRegistroImpacto incidentes={incidentes} />
+        </div>
       </div>
     </div>
   );
