@@ -9,6 +9,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import { Plus, AlertTriangle, Search, Edit, Trash2 } from "lucide-react";
 import RegistroForm from "@/components/pleitos/RegistroForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
+import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
@@ -107,27 +108,30 @@ export default function Registros() {
 
   if (!selectedProjectId) {
     return (
-      <PageEmptyState
-        icon={AlertTriangle}
-        description="Selecione um projeto na barra lateral para ver os registros."
-      />
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState
+            icon={AlertTriangle}
+            description="Selecione um projeto na barra lateral para ver os registros."
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Registros</h2>
-          <Button
-            onClick={() => { setEditingRegistro(null); setShowForm(true); }}
-          >
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button onClick={() => { setEditingRegistro(null); setShowForm(true); }}>
             <Plus className="w-5 h-5 mr-2" />
             Novo Registro
           </Button>
-        </div>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Form inline */}
         {showForm && (
@@ -279,6 +283,7 @@ export default function Registros() {
           </div>
         )}
 
+      </div>
       </div>
     </div>
   );

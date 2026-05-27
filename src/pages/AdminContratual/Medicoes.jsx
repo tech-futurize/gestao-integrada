@@ -6,6 +6,7 @@ import { Plus, ClipboardList } from "lucide-react";
 import MedicoesList from "@/components/contratos/MedicoesList";
 import MedicaoForm from "@/components/contratos/MedicaoForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
+import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import FilterBar from "@/components/ui/FilterBar";
@@ -62,44 +63,56 @@ export default function Medicoes() {
   };
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={ClipboardList} description="Selecione um projeto no menu lateral para acessar as medições." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState
+            icon={ClipboardList}
+            description="Selecione um projeto no menu lateral para acessar as medições."
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Medições</h2>
-        <Button onClick={() => { setEditMedicao(null); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Medição
-        </Button>
-      </div>
-
-      <FilterBar
-        storageKey="medicoes-filtros"
-        filters={[
-          { key: "status", label: "Status", options: ["Elaboração", "Em Revisão", "Em Aprovação", "Aprovada", "Paga", "Rejeitada"] },
-        ]}
-        onChange={setFiltros}
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button onClick={() => { setEditMedicao(null); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Medição
+          </Button>
+        }
       />
-      <MedicoesList
-        medicoes={medicoesFiltradas}
-        contratos={contratos}
-        isLoading={isLoading}
-        onEdit={(m) => { setEditMedicao(m); setShowForm(true); }}
-        onDelete={(id) => deleteMedicao.mutate(id)}
-        onUpdateStatus={(id, status) => updateMedicao.mutate({ id, data: { status } })}
-      />
-
-      {showForm && (
-        <MedicaoForm
-          key={editMedicao?.id || "new-medicao"}
-          medicao={editMedicao}
-          contratos={contratos}
-          onSave={handleSave}
-          onClose={() => { setShowForm(false); setEditMedicao(null); }}
+      <div className="flex-1 overflow-auto p-6 space-y-4">
+        <FilterBar
+          storageKey="medicoes-filtros"
+          filters={[
+            { key: "status", label: "Status", options: ["Elaboração", "Em Revisão", "Em Aprovação", "Aprovada", "Paga", "Rejeitada"] },
+          ]}
+          onChange={setFiltros}
         />
-      )}
+        <MedicoesList
+          medicoes={medicoesFiltradas}
+          contratos={contratos}
+          isLoading={isLoading}
+          onEdit={(m) => { setEditMedicao(m); setShowForm(true); }}
+          onDelete={(id) => deleteMedicao.mutate(id)}
+          onUpdateStatus={(id, status) => updateMedicao.mutate({ id, data: { status } })}
+        />
+
+        {showForm && (
+          <MedicaoForm
+            key={editMedicao?.id || "new-medicao"}
+            medicao={editMedicao}
+            contratos={contratos}
+            onSave={handleSave}
+            onClose={() => { setShowForm(false); setEditMedicao(null); }}
+          />
+        )}
+      </div>
     </div>
   );
 }

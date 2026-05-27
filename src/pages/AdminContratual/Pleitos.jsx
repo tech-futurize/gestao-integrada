@@ -7,6 +7,7 @@ import PleitoForm from "@/components/pleitos/PleitoForm";
 import PleitosList from "@/components/pleitos/PleitosList";
 import PleitoDetalhes from "@/components/pleitos/PleitoDetalhes";
 import PageEmptyState from "@/components/ui/PageEmptyState";
+import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -49,36 +50,43 @@ export default function Pleitos() {
 
   if (selectedPleito) {
     return (
-      <PleitoDetalhes
-        pleito={selectedPleito}
-        onBack={() => setSelectedPleito(null)}
-        onEdit={(pleito) => { setEditingPleito(pleito); setShowForm(true); setSelectedPleito(null); }}
-      />
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1 overflow-auto">
+          <PleitoDetalhes
+            pleito={selectedPleito}
+            onBack={() => setSelectedPleito(null)}
+            onEdit={(pleito) => { setEditingPleito(pleito); setShowForm(true); setSelectedPleito(null); }}
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-foreground">Pleitos</h2>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
           <Button onClick={() => { setEditingPleito(null); setShowForm(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             Novo Pleito
           </Button>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-4">
+          {showForm && (
+            <PleitoForm
+              key={editingPleito?.id || "new-pleito"}
+              pleito={editingPleito}
+              onSubmit={handleSubmit}
+              onCancel={() => { setShowForm(false); setEditingPleito(null); }}
+              isSubmitting={createMutation.isPending || updateMutation.isPending}
+            />
+          )}
+
+          <PleitosList casos={casos} isLoading={isLoading} onSelect={setSelectedPleito} />
         </div>
-
-        {showForm && (
-          <PleitoForm
-            key={editingPleito?.id || "new-pleito"}
-            pleito={editingPleito}
-            onSubmit={handleSubmit}
-            onCancel={() => { setShowForm(false); setEditingPleito(null); }}
-            isSubmitting={createMutation.isPending || updateMutation.isPending}
-          />
-        )}
-
-        <PleitosList casos={casos} isLoading={isLoading} onSelect={setSelectedPleito} />
       </div>
     </div>
   );
