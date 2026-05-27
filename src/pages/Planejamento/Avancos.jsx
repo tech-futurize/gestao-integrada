@@ -1,5 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
+import { TrendingUp, Plus, Upload, Pencil, Trash2 } from "lucide-react";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import PageEmptyState from "@/components/ui/PageEmptyState";
@@ -9,10 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from "recharts";
-import { TrendingUp, Plus, Upload, Pencil, Trash2 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 
 const EXPORT_COLUMNS = [
@@ -145,7 +145,14 @@ export default function Avancos() {
   };
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={TrendingUp} description="Selecione um projeto na barra lateral para ver o avanço físico." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={TrendingUp} description="Selecione um projeto na barra lateral para ver o avanço físico." />
+        </div>
+      </div>
+    );
   }
 
   return (

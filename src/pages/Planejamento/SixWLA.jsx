@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CalendarRange, Plus, Pencil, Trash2 } from "lucide-react";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import PageEmptyState from "@/components/ui/PageEmptyState";
@@ -10,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { CalendarRange, Plus, Pencil, Trash2 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 
 const CATEGORIAS = [
@@ -162,7 +162,14 @@ export default function SixWLAPage() {
   };
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={CalendarRange} description="Selecione um projeto no menu lateral para acessar o 6WLA." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={CalendarRange} description="Selecione um projeto no menu lateral para acessar o 6WLA." />
+        </div>
+      </div>
+    );
   }
 
   return (
