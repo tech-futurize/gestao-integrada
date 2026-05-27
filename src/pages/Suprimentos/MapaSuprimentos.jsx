@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import MapaSuprimentosComponent from "@/components/suprimentos/MapaSuprimentos";
 import PageEmptyState from "@/components/ui/PageEmptyState";
+import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { entities } from "@/api/supabaseEntities";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
@@ -64,28 +65,34 @@ export default function MapaSuprimentos() {
     }
   };
 
+  const headerActions = (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+        <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+      </Button>
+      <Button size="sm" onClick={() => setTriggerNew(t => t + 1)}>
+        <Plus className="w-4 h-4 mr-1" /> Novo Item
+      </Button>
+    </>
+  );
+
   if (!selectedProjectId) {
-    return <PageEmptyState icon={ShoppingCart} description="Selecione um projeto no menu lateral para ver o mapa de suprimentos." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={ShoppingCart} description="Selecione um projeto no menu lateral para ver o mapa de suprimentos." />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Mapa de Suprimentos</h1>
-          <p className="text-sm text-muted-foreground">Pipeline de aquisição — Requisição até Fornecimento</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowImportExport(true)}>
-            <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
-          </Button>
-          <Button onClick={() => setTriggerNew(t => t + 1)}>
-            <Plus className="w-4 h-4 mr-1" /> Novo Item
-          </Button>
-        </div>
+    <div className="flex flex-col h-full">
+      <PageHeader actions={headerActions} />
+      <div className="flex-1 overflow-auto p-6">
+        <MapaSuprimentosComponent selectedProjectId={selectedProjectId} triggerNew={triggerNew} />
       </div>
-
-      <MapaSuprimentosComponent selectedProjectId={selectedProjectId} triggerNew={triggerNew} />
 
       <ImportExportDialog
         open={showImportExport}
