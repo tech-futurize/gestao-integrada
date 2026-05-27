@@ -21,7 +21,7 @@ const tipoColors = {
   "Notificação": "bg-status-critical/15 text-status-critical",
 };
 
-export default function IncidentesList({ incidentes, casos, isLoading, onEdit, onDelete }) {
+export default function RegistrosList({ incidentes, casos, isLoading, onEdit, onDelete }) {
   if (isLoading) {
     return (
       <Card className="border-0 shadow-md">
@@ -69,7 +69,7 @@ export default function IncidentesList({ incidentes, casos, isLoading, onEdit, o
             </TableHeader>
             <TableBody>
               {incidentes.map((incidente) => {
-                const casoAssociado = casos?.find((c) => c.id === incidente.caso_id);
+                const casoAssociado = casos?.find((c) => c.id === incidente.pleito_id);
                 const isRDO = incidente.tipo_registro === "RDO";
                 return (
                   <TableRow key={incidente.id} className="hover:bg-muted/50 transition-colors">

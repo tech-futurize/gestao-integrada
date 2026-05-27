@@ -171,12 +171,8 @@ export default function SixWLAPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">6 Semanas (6WLA)</h1>
-          <p className="text-sm text-muted-foreground">Planejamento de restrições e controle de PPC</p>
-        </div>
+      {/* Controles de topo */}
+      <div className="flex items-center justify-end">
         <Button onClick={handleOpenNew}>
           <Plus className="w-4 h-4 mr-2" /> Nova Atividade
         </Button>

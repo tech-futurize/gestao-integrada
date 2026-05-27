@@ -30,7 +30,7 @@ const EMPTY_RDO = {
   horario_inicio: "", horario_fim: "",
   mao_de_obra: [], equipamentos_rdo: [], atividades: "",
   ocorrencias: "", responsabilidade: "", impacto_ocorrencia: [],
-  caso_id: null, tarefa_cronograma_id: null,
+  pleito_id: null, tarefa_cronograma_id: null,
 };
 
 // ── Clima Button ───────────────────────────────────────────────────────────────
@@ -85,8 +85,8 @@ function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSaved }) {
         // campo legado (coluna disciplina — string) mantido para compatibilidade; deriva do primeiro item de disciplinas[]
         disciplina: form.disciplinas?.[0] ?? "",
       };
-      if (rdo?.id) await entities.Incidente.update(rdo.id, data);
-      else await entities.Incidente.create(data);
+      if (rdo?.id) await entities.Registro.update(rdo.id, data);
+      else await entities.Registro.create(data);
       onSaved();
     } finally {
       setLoading(false);
@@ -272,7 +272,7 @@ function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSaved }) {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">Vincular a Pleito</label>
-                    <select className={inputCls} value={form.caso_id || ""} onChange={e => set("caso_id", e.target.value || null)}>
+                    <select className={inputCls} value={form.pleito_id || ""} onChange={e => set("pleito_id", e.target.value || null)}>
                       <option value="">Nenhum</option>
                       {(casos || []).map(c => <option key={c.id} value={c.id}>{c.titulo?.substring(0, 40)}</option>)}
                     </select>
@@ -309,7 +309,7 @@ function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSaved }) {
 
 // ── RDO Detail Modal ───────────────────────────────────────────────────────────
 function RDODetail({ rdo, casos, tarefas, onClose }) {
-  const caso = (casos || []).find(c => c.id === rdo.caso_id);
+  const pleito = (casos || []).find(c => c.id === rdo.pleito_id);
   const tarefa = (tarefas || []).find(t => t.id === rdo.tarefa_cronograma_id);
   const climaLabel = (v) => {
     if (!v) return <span className="text-muted-foreground/40">—</span>;
@@ -408,10 +408,10 @@ function RDODetail({ rdo, casos, tarefas, onClose }) {
           )}
 
           {/* Pleito */}
-          {caso && (
+          {pleito && (
             <div className="bg-blue-50 rounded-lg p-3">
               <p className="text-xs font-bold text-blue-600 mb-1">🔗 Pleito Vinculado</p>
-              <p className="text-sm text-blue-800 font-medium">{caso.titulo}</p>
+              <p className="text-sm text-blue-800 font-medium">{pleito.titulo}</p>
             </div>
           )}
         </div>
@@ -445,13 +445,13 @@ export default function RDOModule({ selectedProjectId }) {
 
   const { data: rdos = [], isLoading } = useQuery({
     queryKey: ["rdos_module", selectedProjectId],
-    queryFn: () => entities.Incidente.filter({ projeto_id: selectedProjectId, tipo_registro: "RDO" }),
+    queryFn: () => entities.Registro.filter({ projeto_id: selectedProjectId, tipo_registro: "RDO" }),
     enabled: !!selectedProjectId,
   });
 
   const { data: casos = [] } = useQuery({
-    queryKey: ["casos", selectedProjectId],
-    queryFn: () => entities.Caso.filter({ projeto_id: selectedProjectId }),
+    queryKey: ["pleitos", selectedProjectId],
+    queryFn: () => entities.Pleito.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
 
@@ -462,7 +462,7 @@ export default function RDOModule({ selectedProjectId }) {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id) => entities.Incidente.delete(id),
+    mutationFn: (id) => entities.Registro.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rdos_module"] });
       queryClient.invalidateQueries({ queryKey: ["inc_dash2"] });
@@ -541,7 +541,7 @@ export default function RDOModule({ selectedProjectId }) {
               </tr>
             )}
             {filtered.map(rdo => {
-              const caso = casos.find(c => c.id === rdo.caso_id);
+              const pleito = casos.find(c => c.id === rdo.pleito_id);
               const nMdo = (rdo.mao_de_obra || []).reduce((s, m) => s + (parseInt(m.quantidade) || 0), 0);
               const nEquip = (rdo.equipamentos_rdo || []).reduce((s, e) => s + (parseInt(e.quantidade) || 0), 0);
               return (
@@ -588,7 +588,7 @@ export default function RDOModule({ selectedProjectId }) {
                     ) : <span className="text-muted-foreground/50 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">
-                    {caso ? <span className="text-xs text-blue-600 dark:text-blue-400 font-medium line-clamp-1 max-w-24">{caso.titulo.substring(0, 20)}…</span>
+                    {caso ? <span className="text-xs text-blue-600 dark:text-blue-400 font-medium line-clamp-1 max-w-24">{pleito.titulo.substring(0, 20)}…</span>
                       : <span className="text-muted-foreground/50 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">

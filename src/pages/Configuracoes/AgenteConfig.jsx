@@ -92,7 +92,7 @@ export default function AgenteConfig() {
           {mastraStatus === "offline" && (
             <div className="ml-auto p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-700 dark:text-amber-300 max-w-sm">
               <p className="font-medium mb-1">Como iniciar o Mastra:</p>
-              <code className="block bg-black/10 px-2 py-1 rounded font-mono text-xs">cd "Agents Mastra" && npm run dev</code>
+              <code className="block bg-black/10 px-2 py-1 rounded font-mono text-xs">npm run dev</code>
             </div>
           )}
         </CardContent>

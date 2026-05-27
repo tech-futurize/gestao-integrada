@@ -15,8 +15,8 @@ O projeto é desenvolvido por 6 agentes especializados, cada um com um domínio 
 Os agentes são acionados **sequencialmente em cascata** — o Architect gera uma Sequência de Execução
 e o usuário aciona cada agente na ordem, um por vez.
 
-> **Skills transversais.** Todos os agentes podem aplicar playbooks de
-> [/docs/skills/](./skills/) dentro dos workflows — ex.: Builder usa `systematic-debugging`
+> **Skills transversais.** Todos os agentes podem aplicar skills disponíveis globalmente via Skill tool
+> dentro dos workflows — ex.: Builder usa `systematic-debugging`
 > em `/debug`, Tester usa `test-driven-development` e `verification-before-completion`,
 > Architect usa `writing-plans` em `/milestone-start`.
 
@@ -409,6 +409,6 @@ O mesmo agente pode aparecer múltiplas vezes. A sequência reflete a execução
 | Matriz Agentes × Workflows | [PLAN.md](../PLAN.md) (seção fixa) |
 | Workflows detalhados | [WORKFLOWS.md](./WORKFLOWS.md) |
 | Lições aprendidas (obrigatório registrar) | [LESSONS.md](./LESSONS.md) |
-| Playbooks reutilizáveis | [skills/](./skills/) |
+| Playbooks reutilizáveis | Skills disponíveis globalmente via Skill tool |
 | Estratégia de testes | [testing/TESTING.md](./testing/TESTING.md) |
 | Índice completo de documentos | [CLAUDE.md §7](../CLAUDE.md#7-documentos-do-projeto) (fonte canônica) |

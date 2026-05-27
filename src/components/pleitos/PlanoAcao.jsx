@@ -31,19 +31,20 @@ const emptyForm = {
   observacoes: "",
 };
 
-export default function PlanoAcao({ casoId }) {
+export default function PlanoAcao({ pleitoId }) {
   const [showForm, setShowForm] = useState(false);
   const [editingAcao, setEditingAcao] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
   const queryClient = useQueryClient();
 
   const { data: acoes = [] } = useQuery({
-    queryKey: ["acoes", casoId],
-    queryFn: () => entities.Acao.filter({ caso_id: casoId }),
+    queryKey: ["acoes", pleitoId],
+    queryFn: () => entities.Acao.filter({ pleito_id: pleitoId }),
+    enabled: !!pleitoId,
   });
 
   const createAcaoMutation = useMutation({
-    mutationFn: (data) => entities.Acao.create({ ...data, caso_id: casoId }),
+    mutationFn: (data) => entities.Acao.create({ ...data, pleito_id: pleitoId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acoes"] });
       setShowForm(false);

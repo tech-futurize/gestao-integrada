@@ -72,7 +72,7 @@ export default function RDOsList({ rdos, casos, isLoading, onEdit, onDelete, onC
             </TableHeader>
             <TableBody>
               {rdos.map((rdo) => {
-                const casoAssociado = casos?.find((c) => c.id === rdo.caso_id);
+                const casoAssociado = casos?.find((c) => c.id === rdo.pleito_id);
                 return (
                   <TableRow key={rdo.id} className="hover:bg-muted/50 transition-colors">
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
@@ -124,7 +124,7 @@ export default function RDOsList({ rdos, casos, isLoading, onEdit, onDelete, onC
                         <Button size="sm" variant="outline" onClick={() => onEdit(rdo)} className="text-foreground">
                           <Edit className="w-4 h-4" />
                         </Button>
-                        {!rdo.caso_id && onCriarCaso && (
+                        {!rdo.pleito_id && onCriarCaso && (
                           <Button size="sm" variant="secondary" onClick={() => onCriarCaso(rdo)} disabled={isCriandoCaso}
                             className="text-xs px-2">
                             <Plus className="w-3 h-3 mr-1" />Pleito

@@ -31,8 +31,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-brand-bg flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-lg p-10 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-brand-primary mb-1">Sistema de Gestão Integrada</h1>
-        <p className="text-sm text-gray-500 mb-8">Faça login para continuar</p>
+        <h1 className="text-2xl font-bold text-cobalt mb-8">Sistema de Gestão Integrada</h1>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <div>
@@ -66,7 +65,7 @@ export default function Login() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-primary hover:bg-brand-primary/90 text-white"
+            className="w-full bg-cobalt hover:bg-cobalt/90 text-white"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>

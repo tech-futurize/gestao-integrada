@@ -2,8 +2,8 @@ import { supabase } from '@/lib/supabaseClient';
 
 const TABLE_MAP = {
   Projeto: 'projetos',
-  Incidente: 'incidentes',
-  Caso: 'casos',
+  Registro: 'registros',
+  Pleito: 'pleitos',
   Acao: 'acoes',
   Financeiro: 'financeiros',
   Histograma: 'histogramas',

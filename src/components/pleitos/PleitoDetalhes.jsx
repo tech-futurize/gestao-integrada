@@ -19,10 +19,11 @@ const statusColors = {
   Cancelado: "bg-status-critical/15 text-status-critical",
 };
 
-export default function PleitoDetalhes({ caso, onBack, onEdit }) {
+export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
   const { data: incidentes = [] } = useQuery({
-    queryKey: ["incidentes", caso.id],
-    queryFn: () => entities.Incidente.filter({ caso_id: caso.id }),
+    queryKey: ["registros", pleito.id],
+    queryFn: () => entities.Registro.filter({ pleito_id: pleito.id }),
+    enabled: !!pleito.id,
   });
 
   return (
@@ -33,19 +34,19 @@ export default function PleitoDetalhes({ caso, onBack, onEdit }) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <h2 className="text-3xl font-bold text-foreground">{caso.titulo}</h2>
+            <h2 className="text-3xl font-bold text-foreground">{pleito.titulo}</h2>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Badge className={statusColors[caso.status]}>{caso.status}</Badge>
-              {(caso.categorias || []).map((cat) => (
+              <Badge className={statusColors[pleito.status]}>{pleito.status}</Badge>
+              {(pleito.categorias || []).map((cat) => (
                 <Badge key={cat} variant="outline" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{cat}</Badge>
               ))}
               <span className="text-sm text-muted-foreground">
                 Aberto em{" "}
-                {caso.data_abertura && format(new Date(caso.data_abertura), "dd/MM/yyyy", { locale: ptBR })}
+                {pleito.data_abertura && format(new Date(pleito.data_abertura), "dd/MM/yyyy", { locale: ptBR })}
               </span>
             </div>
           </div>
-          <Button onClick={() => onEdit(caso)} variant="outline" className="text-foreground">
+          <Button onClick={() => onEdit(pleito)} variant="outline" className="text-foreground">
             <Edit className="w-4 h-4 mr-2" />
             Editar
           </Button>
@@ -74,37 +75,37 @@ export default function PleitoDetalhes({ caso, onBack, onEdit }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Descrição do Problema</label>
-                    <p className="mt-2 text-foreground whitespace-pre-wrap">{caso.descricao_problema}</p>
+                    <p className="mt-2 text-foreground whitespace-pre-wrap">{pleito.descricao_problema}</p>
                   </div>
 
-                  {caso.contexto && (
+                  {pleito.contexto && (
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Contexto</label>
-                      <p className="mt-2 text-foreground whitespace-pre-wrap">{caso.contexto}</p>
+                      <p className="mt-2 text-foreground whitespace-pre-wrap">{pleito.contexto}</p>
                     </div>
                   )}
 
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Responsável</label>
-                    <p className="mt-2 text-foreground">{caso.responsavel || "-"}</p>
+                    <p className="mt-2 text-foreground">{pleito.responsavel || "-"}</p>
                   </div>
 
-                  {(caso.categorias || []).length > 0 && (
+                  {(pleito.categorias || []).length > 0 && (
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Categorias</label>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {caso.categorias.map((cat) => (
+                        {pleito.categorias.map((cat) => (
                           <Badge key={cat} variant="outline" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{cat}</Badge>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {(caso.partes_envolvidas || []).length > 0 && (
+                  {(pleito.partes_envolvidas || []).length > 0 && (
                     <div className="md:col-span-2">
                       <label className="text-sm font-medium text-muted-foreground">Partes Envolvidas</label>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {caso.partes_envolvidas.map((parte, index) => {
+                        {pleito.partes_envolvidas.map((parte, index) => {
                           const label = typeof parte === "object" && parte !== null
                             ? `${parte.nome}${parte.papel ? ` (${parte.papel})` : ""}`
                             : String(parte);
@@ -119,7 +120,7 @@ export default function PleitoDetalhes({ caso, onBack, onEdit }) {
           </TabsContent>
 
           <TabsContent value="acoes">
-            <PlanoAcao casoId={caso.id} />
+            <PlanoAcao pleitoId={pleito.id} />
           </TabsContent>
 
           <TabsContent value="incidentes">

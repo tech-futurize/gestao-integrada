@@ -9,24 +9,32 @@
 ## Visão Geral
 
 - **Banco:** Supabase PostgreSQL
-- **Total de tabelas:** 28 (após Milestone Refatoração Geral 2026-Q2)
+- **Total de tabelas:** ~25 (após Milestone Refatoração Geral 2026-Q2)
 - **Auth:** Supabase Auth (tabela `auth.users` gerenciada pelo Supabase)
 - **RLS:** Habilitado em todas as tabelas com policy aberta para `authenticated`
 - **UUID:** `gen_random_uuid()` como PK padrão
 - **Timestamps:** `created_at` e `updated_at` em todas as tabelas
 - **Migration ativa:** `supabase-migration-2026-q2.sql` (aplicar antes de rodar o app)
 
-### Tabelas removidas neste milestone
+### Tabelas removidas
 - ~~`rncs`~~ — módulo Qualidade dropado
 - ~~`licoes_aprendidas`~~ — módulo Qualidade dropado
 - ~~`atas_reuniao`~~ — módulo Qualidade dropado
-- ~~`acoes`~~ — migrado para `plano_acao` (genérico, aceita riscos e mudanças)
+- ~~`requisicoes_compra`~~ — submódulo Suprimentos dropado da UI
+- ~~`cotacoes`~~ — submódulo Suprimentos dropado da UI
 
-### Tabelas adicionadas neste milestone
-- `unidades_medida` — tabela global de unidades de medida
-- `plano_acao` — plano de ação genérico (vincula risco ou mudança)
-- `rdo` — RDO desacoplado de `incidentes`
+### Tabelas adicionadas (Q2)
+- `unidades_medida` — tabela de lookup global de unidades de medida
+- `plano_acao` — plano de ação para riscos e mudanças contratuais
+- `rdo` — RDO desacoplado de `registros`
 - `usuarios` — cadastro básico de usuários
+
+> **Nota:** `acoes` **NÃO foi removida**. Continua ativa para Pleitos (`pleitos`). A tabela `plano_acao` é distinta — serve exclusivamente a Riscos e Mudanças.
+> **Migration pendente (se não aplicada):** `ALTER TABLE incidentes RENAME TO registros; ALTER TABLE casos RENAME TO pleitos;`
+
+### Tabelas no banco sem acesso via TABLE_MAP (sem UI ativa)
+As tabelas abaixo existem no Supabase mas não estão mapeadas em `supabaseEntities.js` — não são acessadas pelo código atual:
+- `documentos_contratuais`, `engenharias`, `recursos`, `relacionamentos`, `rotinas`, `ruidos`, `plano_acao`, `unidades_medida`
 
 ---
 
@@ -34,34 +42,27 @@
 
 ```
 projetos (1)
-  ├── documentos_contratuais (N)
-  ├── incidentes (N)                         ← Registros (desacoplado do RDO)
-  ├── rdo (N)                                ← RDO próprio (desacoplado de incidentes)
-  ├── casos (N)                              ← Pleitos contratuais
-  ├── engenharias (N)
+  ├── registros (N)                          ← Registros de ocorrências
+  ├── rdo (N)                                ← RDO próprio (desacoplado de registros)
+  ├── pleitos (N)                            ← Pleitos contratuais
+  │   └── acoes (N)                          ← Plano de ação dos pleitos
   ├── financeiros (N)
-  ├── recursos (N) → histogramas (N)
   ├── avanco_fisico (N)
   ├── mudancas_contratuais (N)
   ├── riscos (N)
-  ├── plano_acao (N) ──→ riscos (FK opcional)
-  │                └──→ mudancas_contratuais (FK opcional)
   ├── contratos (N) → medicoes (N)
   │              └── aditivos (N)
   ├── tarefas_cronograma (N, self-ref pai_id)
   │   └── itens_6wla (N) via tarefa_cronograma_id
-  ├── relacionamentos (N)
-  ├── rotinas (N)
-  ├── ruidos (N)
   ├── commodities (N) → lancamentos_commodity (N)
-  ├── itens_mas (N) → unidades_medida (FK)
+  ├── itens_mas (N)
   ├── documentos_engenharia (N) → tarefas_cronograma (FK opcional)
+  ├── histogramas (N) via recurso_id
   └── usuarios (N)
-
-unidades_medida (lookup global, sem projeto_id)
 ```
 
-> **Removidos:** `acoes`, `requisicoes_compra`, `cotacoes`, `rncs`, `licoes_aprendidas`, `atas_reuniao`
+> **Removidos (UI + DB):** `requisicoes_compra`, `cotacoes`, `rncs`, `licoes_aprendidas`, `atas_reuniao`
+> **Existem no DB sem UI ativa:** `documentos_contratuais`, `engenharias`, `recursos`, `relacionamentos`, `rotinas`, `ruidos`, `plano_acao`, `unidades_medida`
 
 ---
 
@@ -97,9 +98,9 @@ Documentos formais do contrato (Contrato, Aditivos, OS, etc).
 
 ---
 
-### incidentes
+### registros
 Registros de ocorrências / notificações (módulo Registros na UI).
-> RDO foi desacoplado para a tabela `rdo` separada neste milestone.
+> Tabela renomeada de `incidentes` para `registros`. RDO foi desacoplado para a tabela `rdo`.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
@@ -111,7 +112,7 @@ Registros de ocorrências / notificações (módulo Registros na UI).
 | gravidade | TEXT | Baixa / Média / Alta |
 | status | TEXT | Registrado / Em Análise / Resolvido (status "Fechado" removido) |
 | responsavel_registro | TEXT | |
-| caso_id | UUID FK → casos | SET NULL |
+| pleito_id | UUID FK → pleitos | SET NULL |
 | atividades_vinculadas | JSONB | IDs de tarefas_cronograma vinculadas |
 | anexos | JSONB | URLs do Supabase Storage (bucket `registros-anexos`) |
 
@@ -120,7 +121,7 @@ Registros de ocorrências / notificações (módulo Registros na UI).
 ---
 
 ### rdo
-Relatórios Diários de Obra — desacoplado de `incidentes`.
+Relatórios Diários de Obra — desacoplado de `registros`.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
@@ -139,8 +140,9 @@ Relatórios Diários de Obra — desacoplado de `incidentes`.
 
 ---
 
-### casos
+### pleitos
 Pleitos contratuais — o core do módulo de Pleitos.
+> Tabela renomeada de `casos` para `pleitos`.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
@@ -159,8 +161,8 @@ Pleitos contratuais — o core do módulo de Pleitos.
 
 ---
 
-### plano_acao
-Plano de ação genérico — substitui `acoes` (que era exclusivo de pleitos). Vincula um risco ou uma mudança.
+### plano_acao *(sem UI ativa — existe no DB)*
+Plano de ação para Riscos e Mudanças Contratuais. Distinto de `acoes` (que continua ativo para Pleitos).
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
@@ -249,25 +251,6 @@ Avanço físico previsto vs. realizado por mês.
 
 ---
 
-### mudancas_contratuais
-Gestão de mudanças de escopo, prazo e valor do contrato.
-
-| Coluna | Tipo | Notas |
-|--------|------|-------|
-| projeto_id | UUID FK → projetos | CASCADE |
-| titulo | TEXT | |
-| descricao | TEXT | |
-| origem | TEXT | Contratante / Contratado / Regulatório / Técnico |
-| status | TEXT | Identificada / Em Análise / Aprovada / Rejeitada / Implementada |
-| impacto_custo | NUMERIC | |
-| impacto_prazo_dias | NUMERIC | |
-| impacto_escopo | TEXT | |
-| data_ocorrencia | DATE | |
-| responsavel | TEXT | |
-| categorias | JSONB | |
-
----
-
 ### contratos
 Contratos com fornecedores e prestadores de serviço.
 
@@ -326,7 +309,7 @@ Aditivos de prazo e/ou valor de contratos.
 
 ---
 
-### requisicoes_compra
+### ~~requisicoes_compra~~ *(REMOVIDA da UI — submódulo Suprimentos dropado)*
 Solicitações de compra de materiais e serviços.
 
 | Coluna | Tipo | Notas |
@@ -342,7 +325,7 @@ Solicitações de compra de materiais e serviços.
 
 ---
 
-### cotacoes
+### ~~cotacoes~~ *(REMOVIDA da UI — submódulo Suprimentos dropado)*
 Cotações vinculadas a requisições de compra.
 
 | Coluna | Tipo | Notas |
@@ -373,8 +356,8 @@ Estrutura WBS do cronograma com hierarquia pai/filho (até 9 níveis).
 | data_inicio_real / data_fim_real | DATE | Datas efetivas |
 | inicio_baseline / termino_baseline | DATE | Linha de base |
 | inicio_previsto / termino_previsto | DATE | Previsão de conclusão (atualizada) |
-| percentual_previsto | NUMERIC | 0–100 |
-| percentual_real | NUMERIC | 0–100 |
+| avanco_previsto | NUMERIC | 0–100 |
+| avanco_realizado | NUMERIC | 0–100 |
 | area | TEXT | |
 | disciplina | TEXT | |
 | caminho_critico | BOOLEAN | default false |
@@ -385,7 +368,7 @@ Estrutura WBS do cronograma com hierarquia pai/filho (até 9 níveis).
 
 ---
 
-### relacionamentos
+### relacionamentos *(sem UI ativa — existe no DB)*
 Registro de interações com stakeholders.
 
 | Coluna | Tipo | Notas |
@@ -399,7 +382,7 @@ Registro de interações com stakeholders.
 
 ---
 
-### rotinas
+### rotinas *(sem UI ativa — existe no DB)*
 Rotinas de gestão com periodicidade e controle de execução.
 
 | Coluna | Tipo | Notas |
@@ -414,13 +397,13 @@ Rotinas de gestão com periodicidade e controle de execução.
 
 ---
 
-### ruidos
+### ruidos *(sem UI ativa — existe no DB)*
 Riscos/sinais fracos identificados no projeto.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
 | projeto_id | UUID FK → projetos | CASCADE |
-| caso_id | UUID FK → casos | SET NULL |
+| pleito_id | UUID FK → pleitos | SET NULL |
 | descricao | TEXT NOT NULL | |
 | causas_potenciais | TEXT | |
 | impacto_potencial | TEXT | |
@@ -521,7 +504,7 @@ Gestão documental de engenharia (emissão, revisões, aprovações).
 >
 ---
 
-### mudancas_contratuais (alterada)
+### mudancas_contratuais
 Gestão de mudanças de escopo, prazo e valor do contrato.
 
 | Coluna | Tipo | Notas |

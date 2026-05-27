@@ -509,8 +509,8 @@ function ResumoAvancoFisico({ projetoId }) {
 // ── PLEITOS ───────────────────────────────────────────────────────────────────
 function ResumoPleitos({ projetoId }) {
   const { data: casos = [], isLoading } = useQuery({
-    queryKey: ["casos_dash2", projetoId],
-    queryFn: () => entities.Caso.filter({ projeto_id: projetoId }),
+    queryKey: ["pleitos_dash2", projetoId],
+    queryFn: () => entities.Pleito.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
 
@@ -607,8 +607,8 @@ function ResumoPleitos({ projetoId }) {
 // ── REGISTROS ─────────────────────────────────────────────────────────────────
 function ResumoRegistros({ projetoId }) {
   const { data: incidentes = [], isLoading } = useQuery({
-    queryKey: ["inc_dash2", projetoId],
-    queryFn: () => entities.Incidente.filter({ projeto_id: projetoId }),
+    queryKey: ["registros_dash2", projetoId],
+    queryFn: () => entities.Registro.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
 

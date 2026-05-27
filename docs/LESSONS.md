@@ -32,7 +32,7 @@ Registre **apenas erros relevantes** — aqueles que, em retrospecto, você gost
 1. Abra este arquivo e adicione uma entrada ao final da seção **5. Registro de lições**, usando o formato da seção **4. Template de entrada**.
 2. Numere sequencialmente (`L001`, `L002`, ...). Nunca renumere entradas antigas.
 3. Se a lição gerar uma regra nova, abra um PR também em CLAUDE.md (ou no doc apropriado) e cite o ID da lição no commit.
-4. Se a lição apontar para uma skill (`/docs/skills/`) que deveria ter sido invocada e não foi, atualize o mapa em [/README.md — Guia das pastas de `/docs/`](../README.md#guia-das-pastas-de-docs).
+4. Se a lição apontar para uma skill (disponível globalmente via Skill tool) que deveria ter sido invocada e não foi, registre o nome da skill na entrada da lição para referência futura.
 
 Tempo esperado por lição: **5 minutos**. Se está levando mais, o formato está errado — seja mais seco.
 

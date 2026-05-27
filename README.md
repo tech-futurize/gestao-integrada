@@ -22,7 +22,7 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
    ```bash
    npm install
    ```
-   > O `postinstall` instala automaticamente as dependências de `Agents Mastra/` — nenhum `cd` necessário.
+   > O `postinstall` instala automaticamente as dependências de `agents-mastra/` — nenhum `cd` necessário.
 
 3. **Configure as variáveis de ambiente:**
    ```bash
@@ -32,9 +32,10 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
 
 4. **Configure o banco de dados:**
    - No painel do Supabase, vá em SQL Editor
-   - Execute o conteúdo de `supabase-migration.sql` (schema inicial — cria as tabelas base + RLS)
-   - Execute o conteúdo de `supabase-migration-2026-q2.sql` (Refatoração Q2 — novas tabelas, drops, alters)
-   - Execute o conteúdo de `supabase-seed.sql` (dados de exemplo para todos os projetos)
+   - Execute o conteúdo de `docs/database/supabase-migration.sql` (schema base — cria todas as tabelas e RLS)
+   - Execute o conteúdo de `docs/database/supabase-seed.sql` (dados de exemplo)
+
+   > As migrations incrementais (Q2, Engenharia, Suprimentos) já foram aplicadas ao banco de produção. Em um banco novo, execute apenas os dois arquivos acima.
 
 5. **Rode o projeto:**
    ```bash
@@ -110,11 +111,9 @@ Plataforma web para gerenciamento integrado de projetos de engenharia e constru�
 | O que é o projeto | [PROJECT.md](./PROJECT.md) |
 | Como construir | [CLAUDE.md](./CLAUDE.md) |
 | O que fazer agora | [PLAN.md](./PLAN.md) |
-| Como contribuir | [CONTRIBUTING.md](./CONTRIBUTING.md) |
 | Agentes e responsabilidades | [/docs/AGENTS.md](./docs/AGENTS.md) |
 | Arquitetura técnica | [/docs/architecture/ARCHITECTURE.md](./docs/architecture/ARCHITECTURE.md) |
 | Schema do banco | [/docs/architecture/DATABASE.md](./docs/architecture/DATABASE.md) |
 | Serviços externos | [/docs/architecture/INTEGRATIONS.md](./docs/architecture/INTEGRATIONS.md) |
-| Documentação dos módulos | [/docs/modulos/00-Indice.md](./docs/modulos/00-Indice.md) |
 
 > Índice canônico completo: [CLAUDE.md §7](./CLAUDE.md#7-documentos-do-projeto).

@@ -101,7 +101,7 @@ Acesso → AuthContext (getSession()) → ProtectedRoute
 | 009 | Datas "Atuais" de contrato calculadas no front | Evita trigger/view; datas derivadas de `Σ(aditivos.prazo_dias)` são simples de computar |
 | 010 | `unidades_medida` como tabela lookup global sem `projeto_id` | Consistência entre módulos; permite adicionar unidades sem migration futura |
 | 011 | Histórico de revisões via `jsonb` em `documentos_engenharia` | Campo `historico_revisoes` já existia; append simples sem tabela de log extra |
-| 012 | Agentes Mastra em projeto paralelo `Agents Mastra/` via HTTP | Isolamento de runtime (Node/TS vs Vite/JS); comunicação SSE na porta 4111 |
+| 012 | Agentes Mastra em projeto paralelo `agents-mastra/` via HTTP | Isolamento de runtime (Node/TS vs Vite/JS); comunicação SSE na porta 4111 |
 | 013 | `ProjectContext` + `useProject()` encapsulam `localStorage.getItem("selectedProjectId")` | Leitura direta ao `localStorage` espalhada em cada página dificulta testes e refactoring; hook único é o ponto de verdade |
 | 014 | Estrutura `src/pages/<dominio>/` (subpastas por domínio) | Evita crescimento ilimitado do diretório `pages/`; cada domínio tem suas páginas e é fácil localizar e navegar |
 

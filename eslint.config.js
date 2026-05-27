@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist', 'Agents Mastra/'] },
+  { ignores: ['dist', 'agents-mastra/'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {

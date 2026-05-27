@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -6,9 +6,10 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import GanttChart from "@/components/cronograma/GanttChart";
 import ViewTarefaModal from "@/components/cronograma/ViewTarefaModal";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
+import FilterBar from "@/components/ui/FilterBar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { CalendarDays, Upload, Eye, GitBranch } from "lucide-react";
+import { CalendarDays, Upload, Eye, GitBranch, Search } from "lucide-react";
 
 const EXPORT_COLUMNS = [
   { key: "codigo_wbs",               label: "WBS",                     type: "string",  required: true },
@@ -40,12 +41,41 @@ export default function Cronograma() {
   const [zoom, setZoom] = useState("semanas");
   const [showBaseline, setShowBaseline] = useState(false);
   const [showCritical, setShowCritical] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [filtros, setFiltros] = useState({});
 
   const { data: tarefas = [], isLoading } = useQuery({
     queryKey: ["tarefas_cronograma", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
+
+  const areaOptions = useMemo(() => [...new Set(tarefas.map(t => t.area).filter(Boolean))].sort(), [tarefas]);
+  const discOptions = useMemo(() => [...new Set(tarefas.map(t => t.disciplina).filter(Boolean))].sort(), [tarefas]);
+
+  const calcStatusLabel = (t) => {
+    const real = t.avanco_realizado ?? 0;
+    const prev = t.avanco_previsto ?? 0;
+    if (real >= 100) return "Concluído";
+    if (real >= prev) return "Em Dia";
+    return "Atrasado";
+  };
+
+  const filteredTarefas = useMemo(() => {
+    const statuses  = filtros.status      || [];
+    const areas     = filtros.area        || [];
+    const discs     = filtros.disciplina  || [];
+    return tarefas.filter(t => {
+      if (busca) {
+        const b = busca.toLowerCase();
+        if (!t.codigo_wbs?.toLowerCase().includes(b) && !t.nome?.toLowerCase().includes(b)) return false;
+      }
+      if (statuses.length > 0 && !statuses.includes(calcStatusLabel(t))) return false;
+      if (areas.length    > 0 && !areas.includes(t.area))        return false;
+      if (discs.length    > 0 && !discs.includes(t.disciplina))  return false;
+      return true;
+    });
+  }, [tarefas, busca, filtros]);
 
   const handleImport = async (row) => {
     const payload = {
@@ -83,24 +113,18 @@ export default function Cronograma() {
     return <PageEmptyState icon={CalendarDays} description="Selecione um projeto na barra lateral para ver o cronograma." />;
   }
 
-  const totalTarefas = tarefas.length;
-  const concluidas   = tarefas.filter(t => (t.avanco_realizado || 0) === 100).length;
-  const atrasadas    = tarefas.filter(t => t.data_fim_planejada && new Date(t.data_fim_planejada) < new Date() && (t.avanco_realizado || 0) < 100).length;
-  const criticas     = tarefas.filter(t => t.caminho_critico).length;
+  const totalTarefas = filteredTarefas.length;
+  const concluidas   = filteredTarefas.filter(t => (t.avanco_realizado || 0) === 100).length;
+  const atrasadas    = filteredTarefas.filter(t => t.data_fim_planejada && new Date(t.data_fim_planejada) < new Date() && (t.avanco_realizado || 0) < 100).length;
+  const criticas     = filteredTarefas.filter(t => t.caminho_critico).length;
 
   return (
     <div className="p-6 flex flex-col gap-4 h-[calc(100vh-64px)]">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Cronograma</h1>
-          <p className="text-sm text-muted-foreground">Gráfico de Gantt com hierarquia WBS e avanço físico</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => setShowImportExport(true)}>
-            <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
-          </Button>
-        </div>
+      {/* Controles de topo */}
+      <div className="flex items-center justify-end shrink-0">
+        <Button variant="outline" onClick={() => setShowImportExport(true)}>
+          <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+        </Button>
       </div>
 
       {/* KPIs */}
@@ -116,6 +140,28 @@ export default function Cronograma() {
             <p className="text-2xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap items-start gap-2 shrink-0">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            className="border border-border rounded-lg pl-8 pr-3 py-1.5 text-sm w-56 bg-background text-foreground"
+            placeholder="Buscar WBS ou atividade..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+          />
+        </div>
+        <FilterBar
+          storageKey="cronograma-filtros"
+          filters={[
+            { key: "status",      label: "Status",     options: ["Em Dia", "Atrasado", "Concluído"] },
+            { key: "area",        label: "Área",        options: areaOptions },
+            { key: "disciplina",  label: "Disciplina",  options: discOptions },
+          ]}
+          onChange={setFiltros}
+        />
       </div>
 
       {/* Controles */}
@@ -145,7 +191,7 @@ export default function Cronograma() {
       {/* Gantt — flex-1 min-h-0 para ocupar o restante da altura disponível */}
       <div className="flex-1 min-h-0">
         <GanttChart
-          tarefas={tarefas}
+          tarefas={filteredTarefas}
           isLoading={isLoading}
           zoom={zoom}
           showBaseline={showBaseline}

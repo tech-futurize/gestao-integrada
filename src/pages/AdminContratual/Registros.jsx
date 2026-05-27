@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import FilterBar from "@/components/ui/FilterBar";
 import { Plus, AlertTriangle, Search, Edit, Trash2 } from "lucide-react";
-import IncidenteForm from "@/components/pleitos/IncidenteForm";
+import RegistroForm from "@/components/pleitos/RegistroForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast } from "@/components/ui/use-toast";
@@ -33,45 +33,45 @@ export default function Registros() {
   const onErr = (msg) => toast({ title: "Erro ao salvar", description: msg, variant: "destructive" });
 
   const [showForm, setShowForm] = useState(false);
-  const [editingIncidente, setEditingIncidente] = useState(null);
+  const [editingRegistro, setEditingRegistro] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filtros, setFiltros] = useState({});
 
   const { data: incidentes = [], isLoading } = useQuery({
-    queryKey: ["incidentes", selectedProjectId],
-    queryFn: () => entities.Incidente.filter({ projeto_id: selectedProjectId }),
+    queryKey: ["registros", selectedProjectId],
+    queryFn: () => entities.Registro.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => entities.Incidente.create(data),
+    mutationFn: (data) => entities.Registro.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["incidentes"] });
+      queryClient.invalidateQueries({ queryKey: ["registros"] });
       setShowForm(false);
-      setEditingIncidente(null);
+      setEditingRegistro(null);
     },
     onError: (e) => onErr(e.message),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => entities.Incidente.update(id, data),
+    mutationFn: ({ id, data }) => entities.Registro.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["incidentes"] });
+      queryClient.invalidateQueries({ queryKey: ["registros"] });
       setShowForm(false);
-      setEditingIncidente(null);
+      setEditingRegistro(null);
     },
     onError: (e) => onErr(e.message),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => entities.Incidente.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["incidentes"] }),
+    mutationFn: (id) => entities.Registro.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["registros"] }),
     onError: (e) => onErr(e.message),
   });
 
   const handleSubmit = (data) => {
     const payload = { ...data, projeto_id: selectedProjectId };
-    if (editingIncidente) updateMutation.mutate({ id: editingIncidente.id, data: payload });
+    if (editingRegistro) updateMutation.mutate({ id: editingRegistro.id, data: payload });
     else createMutation.mutate(payload);
   };
 
@@ -122,7 +122,7 @@ export default function Registros() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Registros</h2>
           <Button
-            onClick={() => { setEditingIncidente(null); setShowForm(true); }}
+            onClick={() => { setEditingRegistro(null); setShowForm(true); }}
           >
             <Plus className="w-5 h-5 mr-2" />
             Novo Registro
@@ -131,12 +131,12 @@ export default function Registros() {
 
         {/* Form inline */}
         {showForm && (
-          <IncidenteForm
-            key={editingIncidente?.id || "new-incidente"}
-            incidente={editingIncidente}
+          <RegistroForm
+            key={editingRegistro?.id || "new-incidente"}
+            incidente={editingRegistro}
             casos={[]}
             onSubmit={handleSubmit}
-            onCancel={() => { setShowForm(false); setEditingIncidente(null); }}
+            onCancel={() => { setShowForm(false); setEditingRegistro(null); }}
             isSubmitting={createMutation.isPending || updateMutation.isPending}
           />
         )}
@@ -258,7 +258,7 @@ export default function Registros() {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8"
-                        onClick={() => { setEditingIncidente(inc); setShowForm(true); }}
+                        onClick={() => { setEditingRegistro(inc); setShowForm(true); }}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>

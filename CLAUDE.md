@@ -100,7 +100,7 @@ Ao remover qualquer módulo da UI, verificar obrigatoriamente estes 6 pontos ant
 
 ### Documentação
 
-Ao refatorar qualquer módulo, incluir como subtarefa: "atualizar `docs/modulos/<X>.md`". Doc desatualizado é dívida técnica tão real quanto código morto (L008).
+Documentação de módulos será escrita ao final de cada milestone, após `/audit` aprovado — não durante o desenvolvimento ativo (L008).
 
 ### Lições Aprendidas (obrigatório)
 
@@ -139,7 +139,6 @@ Ao refatorar qualquer módulo, incluir como subtarefa: "atualizar `docs/modulos/
 ├── PROJECT.md            ← O QUE é o projeto
 ├── PLAN.md               ← O QUE fazer AGORA (VIVO)
 ├── README.md             ← Setup operacional
-├── CONTRIBUTING.md       ← Guia de contribuição
 ├── .env.example          ← template de variáveis (commitado)
 ├── .env                  ← variáveis reais — NUNCA commitado
 ├── .gitignore
@@ -148,54 +147,53 @@ Ao refatorar qualquer módulo, incluir como subtarefa: "atualizar `docs/modulos/
 ├── vite.config.js
 ├── tailwind.config.js
 ├── components.json       ← shadcn/ui config
-├── supabase-migration.sql ← schema completo do banco
-├── supabase-seed.sql     ← dados de exemplo
+│
+├── /agents-mastra/       ← agentes de IA (Mastra) — servidor separado em :4111
 │
 ├── /docs/
 │   ├── AGENTS.md         ← agentes, prompts, responsabilidades
 │   ├── WORKFLOWS.md      ← workflows detalhados
 │   ├── LESSONS.md        ← lições aprendidas (VIVO)
-│   ├── /modulos/         ← documentação dos módulos da aplicação
 │   ├── /architecture/
 │   │   ├── ARCHITECTURE.md
 │   │   ├── DATABASE.md
 │   │   └── INTEGRATIONS.md
+│   ├── /database/
+│   │   ├── supabase-migration.sql ← schema base do banco
+│   │   └── supabase-seed.sql     ← dados de exemplo
 │   ├── /design/
 │   │   └── DESIGN.md
 │   ├── /testing/
 │   │   └── TESTING.md
 │   ├── /adrs/
-│   ├── /skills/
 │   ├── /research/
 │   └── /security/
 │
-├── /src/
-│   ├── App.jsx           ← rotas e providers
-│   ├── Layout.jsx        ← sidebar, header, seletor de projeto
-│   ├── main.jsx
-│   ├── /pages/           ← uma página por rota (Dashboard, Engenharia, etc.)
-│   ├── /components/      ← componentes por domínio
-│   │   ├── /casos/
-│   │   ├── /contratos/
-│   │   ├── /dashboard/
-│   │   ├── /engenharia/
-│   │   ├── /histograma/
-│   │   ├── /mudancas/
-│   │   ├── /planejamento/
-│   │   ├── /qualidade/
-│   │   ├── /rdo/
-│   │   ├── /suprimentos/
-│   │   └── /ui/          ← shadcn/ui components
-│   ├── /api/
-│   │   └── supabaseEntities.js ← data layer central
-│   ├── /lib/
-│   │   ├── supabaseClient.js
-│   │   ├── AuthContext.jsx
-│   │   └── ...
-│   ├── /hooks/
-│   └── /utils/
-│
-└── /Template/            ← templates de documentação (referência)
+└── /src/
+    ├── App.jsx           ← rotas e providers
+    ├── Layout.jsx        ← sidebar, header, seletor de projeto
+    ├── main.jsx
+    ├── /pages/           ← uma página por rota (Dashboard, Engenharia, etc.)
+    ├── /components/      ← componentes por domínio
+    │   ├── /casos/
+    │   ├── /contratos/
+    │   ├── /dashboard/
+    │   ├── /engenharia/
+    │   ├── /histograma/
+    │   ├── /mudancas/
+    │   ├── /planejamento/
+    │   ├── /qualidade/
+    │   ├── /rdo/
+    │   ├── /suprimentos/
+    │   └── /ui/          ← shadcn/ui components
+    ├── /api/
+    │   └── supabaseEntities.js ← data layer central
+    ├── /lib/
+    │   ├── supabaseClient.js
+    │   ├── AuthContext.jsx
+    │   └── ...
+    ├── /hooks/
+    └── /utils/
 ```
 
 ---
@@ -216,4 +214,3 @@ Ao refatorar qualquer módulo, incluir como subtarefa: "atualizar `docs/modulos/
 | WORKFLOWS.md | /docs/ | Semi-estático | Workflows detalhados |
 | LESSONS.md | /docs/ | VIVO | Lições aprendidas |
 | TESTING.md | /docs/testing/ | Semi-estático | Estratégia de testes |
-| /docs/modulos/ | /docs/ | Semi-estático | Documentação dos módulos |

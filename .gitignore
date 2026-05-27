@@ -1,6 +1,8 @@
-#env
+# Env
 .env
-.env.*
+.env.local
+.env.*.local
+.env.development
 
 # Logs
 logs
@@ -14,7 +16,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*
@@ -27,13 +28,17 @@ dist-ssr
 *.sln
 *.sw?
 
-.env
+# Claude Code
+.claude/settings.local.json
+.superpowers/
 
-# Mastra (Agents Mastra/)
+# Temp folders
+docs/temp/
+
+# Mastra (agents-mastra/)
 .mastra/
 *.db
 *.db-*
 *.duckdb
 *.duckdb.wal
 output.txt
-.env.development

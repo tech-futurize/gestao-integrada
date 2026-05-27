@@ -16,30 +16,30 @@ export default function Pleitos() {
   const { toast } = useToast();
   const onErr = (msg) => toast({ title: "Erro ao salvar", description: msg, variant: "destructive" });
   const [showForm, setShowForm] = useState(false);
-  const [editingCaso, setEditingCaso] = useState(null);
-  const [selectedCaso, setSelectedCaso] = useState(null);
+  const [editingPleito, setEditingPleito] = useState(null);
+  const [selectedPleito, setSelectedPleito] = useState(null);
 
   const { data: casos = [], isLoading } = useQuery({
-    queryKey: ["casos", selectedProjectId],
-    queryFn: () => entities.Caso.filter({ projeto_id: selectedProjectId }),
+    queryKey: ["pleitos", selectedProjectId],
+    queryFn: () => entities.Pleito.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => entities.Caso.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["casos"] }); setShowForm(false); setEditingCaso(null); },
+    mutationFn: (data) => entities.Pleito.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pleitos"] }); setShowForm(false); setEditingPleito(null); },
     onError: (e) => onErr(e.message),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => entities.Caso.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["casos"] }); setShowForm(false); setEditingCaso(null); setSelectedCaso(null); },
+    mutationFn: ({ id, data }) => entities.Pleito.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pleitos"] }); setShowForm(false); setEditingPleito(null); setSelectedPleito(null); },
     onError: (e) => onErr(e.message),
   });
 
   const handleSubmit = (data) => {
     const casoData = { ...data, projeto_id: selectedProjectId };
-    if (editingCaso) updateMutation.mutate({ id: editingCaso.id, data: casoData });
+    if (editingPleito) updateMutation.mutate({ id: editingPleito.id, data: casoData });
     else createMutation.mutate(casoData);
   };
 
@@ -47,12 +47,12 @@ export default function Pleitos() {
     return <PageEmptyState icon={FileText} description="Selecione um projeto na barra lateral para gerenciar pleitos." />;
   }
 
-  if (selectedCaso) {
+  if (selectedPleito) {
     return (
       <PleitoDetalhes
-        caso={selectedCaso}
-        onBack={() => setSelectedCaso(null)}
-        onEdit={(caso) => { setEditingCaso(caso); setShowForm(true); setSelectedCaso(null); }}
+        pleito={selectedPleito}
+        onBack={() => setSelectedPleito(null)}
+        onEdit={(pleito) => { setEditingPleito(pleito); setShowForm(true); setSelectedPleito(null); }}
       />
     );
   }
@@ -62,7 +62,7 @@ export default function Pleitos() {
       <div className="max-w-7xl mx-auto space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Pleitos</h2>
-          <Button onClick={() => { setEditingCaso(null); setShowForm(true); }}>
+          <Button onClick={() => { setEditingPleito(null); setShowForm(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             Novo Pleito
           </Button>
@@ -70,15 +70,15 @@ export default function Pleitos() {
 
         {showForm && (
           <PleitoForm
-            key={editingCaso?.id || "new-caso"}
-            caso={editingCaso}
+            key={editingPleito?.id || "new-pleito"}
+            pleito={editingPleito}
             onSubmit={handleSubmit}
-            onCancel={() => { setShowForm(false); setEditingCaso(null); }}
+            onCancel={() => { setShowForm(false); setEditingPleito(null); }}
             isSubmitting={createMutation.isPending || updateMutation.isPending}
           />
         )}
 
-        <PleitosList casos={casos} isLoading={isLoading} onSelect={setSelectedCaso} />
+        <PleitosList casos={casos} isLoading={isLoading} onSelect={setSelectedPleito} />
       </div>
     </div>
   );

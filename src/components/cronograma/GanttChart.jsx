@@ -55,24 +55,33 @@ function compareWbs(a, b) {
 const INDENT = { 1: 0, 2: 12, 3: 24, 4: 36, 5: 48, 6: 60, 7: 72, 8: 84, 9: 96 };
 const TIPO_COLORS = { Resumo: "#26405d", Atividade: "#3b82f6", Marco: "#c35e1e" };
 
-const W_ID   = 78;
+const W_ID   = 96;
+const W_NIV  = 40;
 const W_NOME = 500;
 const W_ACT  = 43;
 
-// color-mix usa hsl(var(--foreground)) que em tema claro é navy escuro e em tema escuro é near-white.
-// Resultado: gradiente cinza-azulado no tema claro e gradiente branco no tema escuro.
 const LEVEL_BG = {
-  1: "color-mix(in srgb, hsl(var(--foreground)) 16%,   transparent)",
-  2: "color-mix(in srgb, hsl(var(--foreground)) 12%,   transparent)",
-  3: "color-mix(in srgb, hsl(var(--foreground))  9%,   transparent)",
-  4: "color-mix(in srgb, hsl(var(--foreground))  6%,   transparent)",
-  5: "color-mix(in srgb, hsl(var(--foreground))  4%,   transparent)",
-  6: "color-mix(in srgb, hsl(var(--foreground))  2.5%, transparent)",
-  7: "color-mix(in srgb, hsl(var(--foreground))  1.5%, transparent)",
-  8: "color-mix(in srgb, hsl(var(--foreground))  0.8%, transparent)",
-  9: "color-mix(in srgb, hsl(var(--foreground))  0.4%, transparent)",
+  1: "color-mix(in srgb, hsl(210 40% 40%) 28%,   transparent)",
+  2: "color-mix(in srgb, hsl(210 40% 40%) 21%,   transparent)",
+  3: "color-mix(in srgb, hsl(210 40% 40%) 15%,   transparent)",
+  4: "color-mix(in srgb, hsl(210 40% 40%) 11%,   transparent)",
+  5: "color-mix(in srgb, hsl(210 40% 40%)  8%,   transparent)",
+  6: "color-mix(in srgb, hsl(210 40% 40%)  5.5%, transparent)",
+  7: "color-mix(in srgb, hsl(210 40% 40%)  3.5%, transparent)",
+  8: "color-mix(in srgb, hsl(210 40% 40%)  2%,   transparent)",
+  9: "color-mix(in srgb, hsl(210 40% 40%)  1.2%, transparent)",
 };
-const BG_LEAF     = "transparent";
+const LEVEL_BADGE_BG = {
+  1: "color-mix(in srgb, hsl(210 40% 40%) 52%, transparent)",
+  2: "color-mix(in srgb, hsl(210 40% 40%) 40%, transparent)",
+  3: "color-mix(in srgb, hsl(210 40% 40%) 30%, transparent)",
+  4: "color-mix(in srgb, hsl(210 40% 40%) 22%, transparent)",
+  5: "color-mix(in srgb, hsl(210 40% 40%) 16%, transparent)",
+  6: "color-mix(in srgb, hsl(210 40% 40%) 11%, transparent)",
+  7: "color-mix(in srgb, hsl(210 40% 40%)  7%, transparent)",
+  8: "color-mix(in srgb, hsl(210 40% 40%)  4.5%, transparent)",
+  9: "color-mix(in srgb, hsl(210 40% 40%)  3%, transparent)",
+};
 const BG_MUTED    = "var(--muted)";
 const BG_CRITICAL = "color-mix(in srgb, hsl(var(--destructive)) 8%, transparent)";
 
@@ -192,8 +201,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
   // ── Cor de fundo por nível + folhas transparentes ──
   const getRowBg = (t, isCritical) => {
     if (isCritical) return BG_CRITICAL;
-    if (isLeaf(t))  return BG_LEAF;
-    return LEVEL_BG[t.nivel] || BG_LEAF;
+    return LEVEL_BG[t.nivel] || "transparent";
   };
 
   // ── Timeline headers ──
@@ -300,10 +308,15 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
       {/* ── Header fixo (não rola verticalmente) ──────────────────────────── */}
       <div className="flex shrink-0 border-b border-border" style={{ height: HDR_H, background: BG_MUTED }}>
 
-        {/* Cabeçalhos fixos: ID + Atividade + Ações */}
-        <div className="flex shrink-0 border-r border-border" style={{ width: W_ID + W_NOME + W_ACT }}>
+        {/* Cabeçalhos fixos: ID + Nív + Atividade + Ações */}
+        <div className="flex shrink-0 border-r border-border" style={{ width: W_ID + W_NIV + W_NOME + W_ACT }}>
           <div className="flex items-center pl-2 border-r border-border shrink-0" style={{ width: W_ID }}>
             <span className="text-xs font-semibold text-muted-foreground">ID</span>
+          </div>
+          {/* Nível */}
+          <div className="flex items-center justify-center border-r border-border shrink-0"
+               style={{ width: W_NIV }}>
+            <span className="text-xs font-semibold text-muted-foreground">Nív</span>
           </div>
           <div className="flex items-center justify-between px-2 border-r border-border shrink-0" style={{ width: W_NOME }}>
             <span className="text-xs font-semibold text-muted-foreground">Atividade</span>
@@ -362,7 +375,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
         {/* Painel 1: colunas fixas (ID, Atividade, Ações)
             height: totalH — garante que parentRef tenha a altura de rolagem correta */}
         <div className="shrink-0 border-r border-border relative"
-             style={{ width: W_ID + W_NOME + W_ACT, height: totalH }}>
+             style={{ width: W_ID + W_NIV + W_NOME + W_ACT, height: totalH }}>
           {virtualRows.map(vr => {
             const t          = visibleTarefas[vr.index];
             const atrasada   = isAtrasada(t);
@@ -377,6 +390,14 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
                      style={{ width: W_ID, background: bg }}>
                   <span className="text-xs text-muted-foreground font-mono truncate">
                     {t.codigo_wbs || "—"}
+                  </span>
+                </div>
+                {/* Nível */}
+                <div className="flex items-center justify-center border-r border-border shrink-0"
+                     style={{ width: W_NIV, background: bg }}>
+                  <span className="text-xs font-bold rounded px-1 py-0.5"
+                        style={{ background: LEVEL_BADGE_BG[t.nivel], color: "white" }}>
+                    {t.nivel ?? "—"}
                   </span>
                 </div>
                 {/* Atividade */}
@@ -493,7 +514,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
       {/* ── Barra de rolagem horizontal — fora do scroll vertical ─────────── */}
       {/* Alinhada por painel: spacer + extras (opcional) + gantt */}
       <div className="flex shrink-0 border-t border-border">
-        <div className="shrink-0" style={{ width: W_ID + W_NOME + W_ACT }} />
+        <div className="shrink-0" style={{ width: W_ID + W_NIV + W_NOME + W_ACT }} />
         {colsExpanded && (
           <div
             className="shrink-0 border-r border-border"

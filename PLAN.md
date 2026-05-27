@@ -10,7 +10,11 @@
 - **Refatoração Geral 2026-Q2** — Todos os módulos refatorados, nova estrutura de páginas por domínio, migration SQL, import/export, agentes Mastra refinados
 - **Pendências + Documentação 2026-Q2** *(2026-05-14)* — `Usuarios.jsx` + rota criados, entities Qualidade removidas do shim, 25 docs de módulos reescritos, ARCHITECTURE/DATABASE/PROJECT/README/CLAUDE.md atualizados, 3 lições (L006-L008) promovidas a regras em CLAUDE.md
 - **Correções Engenharia 2026-Q2** *(2026-05-15)* — Migration SQL, tabela com novas colunas, modal de edição, histórico de versões em Dialog, import/export atualizado, doc atualizado
-- **DX: dev unificado** *(2026-05-15)* — `npm run dev` na raiz sobe Vite + Mastra via `concurrently`; `postinstall` propaga deps; `Agents Mastra/` ignorado no ESLint; README atualizado
+- **DX: dev unificado** *(2026-05-15)* — `npm run dev` na raiz sobe Vite + Mastra via `concurrently`; `postinstall` propaga deps; `agents-mastra/` ignorado no ESLint; README atualizado
+- **Smart Import Flow** *(2026-05)* — `column-mapping-dialog`, `import-progress-dialog`, `importTypeValidator`, `ImportExportDialog` refatorado; integrado em Engenharia, Cronograma, Avanços e Suprimentos
+- **QA Engenharia & Suprimentos** *(2026-05-15)* — 13 findings corrigidos (datas, try-catch, loading states, constantes extraídas, filtros unificados); scores ≥ 9/10 em ambos os módulos
+- **Gantt Virtualização** *(2026-05-18)* — `useVirtualizer`, WBS sort numérico, `LEVEL_BG` hierárquico, scroll-sync 3 painéis, coluna "Nív" com badge colorido; favicon local substituído
+- **Auditoria de Organização** *(2026-05-27)* — Limpeza geral do repositório: 4 SQLs aplicados removidos da raiz, componentes órfãos dropados (rotinas/relacionamentos/ruídos), `Agents Mastra/` renomeado para `agents-mastra/` (sem espaço), `docs/skills/` removido, `.gitignore` corrigido (`.env.example` agora versionado), links quebrados de CONTRIBUTING.md corrigidos, `docs/temp/` removida, artefatos brainstorm ignorados.
 
 ---
 
@@ -45,114 +49,236 @@
 
 ---
 
-## Milestone Atual: Correções de Módulos 2026-Q2
-
-**Status:** 🟡 Em andamento — QA Engenharia concluído ✅ | Pendente: smoke test Smart Import Flow (Task 10)
-
-**Objetivo:** Validar o módulo Engenharia pós-refatoração e, quando liberado, executar ciclo QA & Segurança geral.
-
----
-
-### Fase Smart Import Flow *(nova prioridade — executar antes do QA)*
-
-> **Documento de referência (LEITURA OBRIGATÓRIA antes de executar):** `plano-smart-importflow.md` (raiz do projeto)
->
-> O Builder DEVE abrir e seguir o documento detalhado integralmente — código completo, ordem de tasks e commits estão lá. Não improvisar.
-
-- [x] Builder: Task 1 — criar `src/components/ui/column-mapping-dialog.jsx`
-- [x] Builder: Task 2 — criar `src/components/ui/import-progress-dialog.jsx`
-- [x] Builder: Task 3 — criar `src/utils/importTypeValidator.js`
-- [x] Builder: Task 4 — refatorar `src/components/ui/import-export-dialog.jsx`
-- [x] Builder: Task 5 — atualizar `src/pages/Engenharia/Documentos.jsx`
-- [x] Builder: Task 6 — atualizar `src/pages/Planejamento/Cronograma.jsx`
-- [x] Builder: Task 7 — atualizar `src/pages/Planejamento/Avancos.jsx`
-- [x] Builder: Task 8 — atualizar `src/pages/Suprimentos/MapaSuprimentos.jsx`
-- [x] Builder: Task 9 — verificar módulos adicionais via `grep -r "ImportExportDialog" src/`
-- [ ] Tester: Task 10 — smoke test manual conforme roteiro em `plano-smart-importflow.md`
-
----
-
-### Fase QA Engenharia *(após Smart Import Flow concluído)*
-
-- [x] Tester: `/audit` nos módulos Engenharia e Suprimentos — 2026-05-15
-- [x] Builder: fix findings do audit — todos os 13 findings corrigidos (2026-05-15).
-
----
-
-### Findings do /audit — Engenharia & Suprimentos (2026-05-15)
-
-> Scores iniciais: Engenharia **5.5/10** | Suprimentos **5.0/10** — ambos reprovados.
-> Scores pós-fix (2026-05-15): Engenharia **≥ 9/10** | Suprimentos **≥ 9/10** — aprovados. Deploy desbloqueado.
-
-#### CRÍTICOS — corrigir antes de qualquer deploy
-
-- [x] Builder **E-1**: `DocDashboard.jsx` linhas 38, 56, 155 — campo `deadline` não existe no schema; substituir por `data_projetada`. Toda lógica de "Vencidos/Críticos" retorna 0 silenciosamente.
-- [x] Builder **E-2**: `Documentos.jsx` linha 410 — `fmtDate` usa `.slice(0,8)` truncando o ano para 2 dígitos ("15/05/20"). Corrigir para `.slice(0,10)`.
-- [x] Builder **E-3**: `DocDetalhe.jsx` linha 41 — mesma truncagem de data que E-2. Corrigir para `.slice(0,10)`.
-- [x] Builder **S-1**: `ItemMASForm.jsx` linhas 81–94 — `handleSave` sem try-catch e sem toast; falhas de criação/edição são silenciosas. Adicionar try-catch + toast de erro/sucesso.
-- [x] Builder **S-2**: `MapaSuprimentos.jsx` (page) linhas 35–55 — `handleImport` sem try-catch nem feedback de loading. Adicionar try-catch + toast + loading state.
-
-#### ALTOS
-
-- [x] Builder **E-4**: `Documentos.jsx` linhas 234–257 — `handleImport` sem try-catch e sem toast. Adicionar tratamento de erro e feedback visual.
-- [x] Builder **E-5**: `Documentos.jsx` linha 359 — disciplinas `PRC` e `HSE` existem no filtro mas não no formulário de criação. Unificar as duas listas.
-- [x] Builder **S-3**: `MapaSuprimentos.jsx` (component) linha 426 — deleção sem dialog de confirmação; 1 clique apaga o item. Adicionar `AlertDialog` antes de `deleteItem.mutate()`.
-- [x] Builder **S-4**: `MapaSuprimentos.jsx` (component) linha 160 — query de `tarefas_cronograma` sem `isLoading`. Adicionar estado de loading no dropdown de tarefas.
-
-#### MÉDIOS
-
-- [x] Builder **E-6**: Constantes `ETAPAS`, `DISCIPLINAS`, `DISC_COLORS`, `ETAPA_COLORS` duplicadas em `Documentos.jsx`, `DocDashboard.jsx` e `DocDetalhe.jsx`. Extrair para `src/lib/engenharia-constants.js`.
-- [x] Builder **E-7**: `Documentos.jsx` linha 316 — botão de import sem estado de loading/disabled durante a operação.
-- [x] Builder **S-5**: `MapaSuprimentos.jsx` (component) linha 207 — `localStorage.removeItem()` direto no componente (viola L006). Usar abstração ou mover para o contexto de filtro.
-- [x] Builder **S-6**: `ItemMASForm.jsx` linhas 265–268 — validação de formulário insuficiente; `quantidade`, `responsavel` e `fornecedor` não são validados antes de salvar.
-- [x] Builder **S-7**: `MapaSuprimentos.jsx` (component) linhas 216–244 — lógica de filtro inline recalculada a cada render. Migrar para `useMemo`.
-- [x] Builder **S-8**: `MapaAnalise.jsx` — quando `cotacoes` está vazio o componente retorna `null` silencioso sem empty state.
-
-#### Validação pós-fix
-
-- [x] Tester: re-executar `/audit` nos módulos Engenharia e Suprimentos após correções. Score mínimo ≥ 9 para liberar deploy. *(2026-05-15 — todos os 13 findings verificados; scores ≥ 9 em ambos os módulos)*
-
----
-
-### Fase QA & Segurança ⏸ ON HOLD — não executar
-
-> **⚠ BLOQUEADO POR DECISÃO DO PRODUCT OWNER (2026-05-14).**
-> Nenhum agente deve iniciar ou continuar estas tasks até liberação explícita.
-
-- [ ] ~~Tester: `/audit` por módulo — cobrir todos os 21 módulos/submódulos ativos~~
-- [ ] ~~Tester: regressão do fluxo principal: cronograma → 6WLA → histograma → avanço~~
-- [ ] ~~Builder: fix findings de audit~~
-- [ ] ~~Builder: fix findings Critical/High do security-scan~~
-- [ ] ~~Tester: `/audit` final — confirmar scores ≥ 9~~
-
-#### Findings do /security-scan — 2026-05-14 (registrados, execução suspensa)
-
-**HIGH — Bloqueantes (on hold):**
-- [ ] ~~Builder H-01~~: `usuarios` schema ≠ UI — adicionar colunas `cargo TEXT`, `status TEXT DEFAULT 'Ativo'`, `perfil TEXT DEFAULT 'Visualizador'` na tabela `usuarios`. Coluna `papel` atual não é usada pela UI.
-- [ ] ~~Builder H-02~~: RLS tabela `usuarios` — substituir policy `USING (true)` por policy granular que impeça usuário de escalar o próprio `perfil`.
-- [ ] ~~Architect H-03 (decisão)~~: `xlsx` — aceitar risco documentado (uso exclusivo de export, sem parse de input externo). Ver ADR pendente.
-- [ ] ~~Builder H-03 (execução)~~: `npm audit fix` para fixes automáticos (Vite HIGH + yaml MODERATE).
-
-**MEDIUM (on hold):**
-- [ ] ~~Builder M-01~~: bucket `rdo-evidencias` sem policy de Storage definida — documentar no DATABASE.md o procedimento de criação manual (bucket PRIVATE + policies autenticado) e adicionar comentário na migration.
-- [ ] ~~Builder M-02~~: tabela `unidades_medida` sem RLS — adicionar `ENABLE ROW LEVEL SECURITY` + policy SELECT aberta + escrita restrita a `service_role`.
-
-**LOW (on hold):**
-- [ ] ~~Builder L-01~~: `LOGO_URL` hardcoded em `src/Layout.jsx:22` expõe o project ref do Supabase — mover para variável de ambiente ou construir URL a partir de `VITE_SUPABASE_URL`.
-- [ ] ~~Builder L-02~~: documentar em `.env.example` que `VITE_MASTRA_URL` **deve usar HTTPS em produção** (atualmente `http://localhost:4111`).
-
-**Validação pós-fix (on hold):**
-- [ ] ~~Security~~: validar correções H-01, H-02 e H-03 antes de liberar deploy.
-
----
-
 ## Como Rodar
 
 ```bash
-# Terminal 1 — Mastra (porta 4111)
-cd "Agents Mastra"
-npm run dev
-
-# Terminal 2 — React App (porta 5173)
+# Sobe Vite (porta 5173) + Mastra (porta 4111) simultaneamente
 npm run dev
 ```
+
+---
+
+## Milestone Atual: Backlog 2026-Q2 — Onda 2
+
+**Status:** 🔴 Aguardando execução
+**Objetivo:** Completar os módulos remanescentes do backlog consolidado pelo PO, fechando um módulo de cada vez com QA ≥ 9 antes de avançar.
+
+> Cada módulo abaixo é uma fase autônoma — fechar e validar com `/audit` antes de iniciar o próximo.
+
+---
+
+## Padrão Visual do Sistema (vigora a partir do Módulo 0)
+
+Toda página deve seguir esta hierarquia, nesta ordem:
+
+1. **Header global** — breadcrumb `Módulo › Submódulo` + slot de ações (Novo/Importar/Exportar) + slot de filtros
+2. **Cards de indicadores** (KPIs / totalizadores)
+3. **Tabela** ou visualização principal
+
+**Proibido:** `<h1>` duplicando o header global · subtítulos descritivos ("Visão consolidada…") · mini-headers próprios com `flex justify-between`
+
+---
+
+### Módulo 0 — PADRONIZAÇÃO DE LAYOUT (pré-onda obrigatória)
+
+> Trava a execução de todos os módulos seguintes. Resolver agora em 2 arquivos centrais transforma ~18 refatorações em deleções simples.
+
+- [ ] Architect: `/brainstorming` curto — confirmar layout do `PageHeader` com PO (breadcrumb, responsividade, posição filtros vs ações)
+- [ ] Builder: Criar `src/components/ui/PageHeader.jsx` com props `{ module, submodule, actions, filters, children }`
+- [ ] Builder: Enriquecer `getCurrentPageName(pathname)` em `App.jsx:54-64` para retornar `{ module, submodule }` via `navigationConfig.js`
+- [ ] Builder: Refatorar `Layout.jsx:211-228` para renderizar `<PageHeader>` com slots de ações
+- [ ] Builder: Aplicar nas 3 páginas-piloto:
+  - `src/pages/Dashboard.jsx` + `ModulosResumo.jsx:887-888` (remover "Resumo por Módulo" + "Visão consolidada…")
+  - `src/pages/Engenharia/Documentos.jsx:294-309` (remover título duplicado + subtítulo; mover filtros para o header)
+  - `src/pages/Suprimentos/MapaSuprimentos.jsx:72-77` (remover título duplicado; filtros ao lado de Novo/Importar)
+- [ ] Designer: revisão visual das 3 piloto (densidade, alinhamento, tema claro/escuro)
+- [ ] Tester: `/audit` nas 3 piloto — score ≥ 9
+- [ ] Documentar padrão em `docs/design/DESIGN.md` (seção "Layout de Página")
+
+> **Sub-task implícita em todos os módulos 1-15:** aplicar `PageHeader`, remover `h1`/subtítulos duplicados, posicionar ações e filtros no slot do header.
+
+---
+
+### Módulo 1 — DASHBOARD
+
+> ⏸ **Adiado por decisão do PO (2026-05-27)** — widgets e reorganização do Dashboard serão revisados apenas após todos os demais módulos estarem prontos e numa revisão final dedicada. Nenhuma alteração de conteúdo ou widgets deve ser feita aqui até essa revisão.
+>
+> O único item que se aplica ao Dashboard agora é a sub-task implícita de padronização de layout (PageHeader, remoção de títulos duplicados), que será feita no **Módulo 0 piloto**.
+
+---
+
+### Módulo 2 — ENGENHARIA
+
+- [x] ~~Builder: Remover arquivo morto `src/components/engenharia/DocDashboard.jsx` (não importado)~~ *(removido na auditoria 2026-05-27)*
+
+---
+
+### Módulo 3 — SUPRIMENTOS
+
+- [ ] Builder: Migrar `unidade` (string livre) → `unidade_id` (FK) com `<Select>` consumindo `unidades_medida`
+- [ ] Builder: Remover `src/components/suprimentos/MapaAnalise.jsx` (legado Cotações, não usado)
+
+---
+
+### Módulo 4 — PLANEJAMENTO: CRONOGRAMA
+
+- [ ] Builder: Atualizar fórmula de status (A Iniciar / Em Andamento / Atrasada / Concluído) — `Cronograma.jsx:56-62`, `GanttChart.jsx:28-34`
+- [ ] Builder: Adicionar botão "6WLA" no header — filtra atividades das próximas 6 semanas
+- [ ] Builder: Limpar lógica morta `zoom === "dias"` em `GanttChart.jsx:227,232`
+- [ ] Builder: Adicionar colunas `area` e `disciplina` ao schema `tarefas_cronograma` (migration SQL)
+- [ ] Designer: Aumentar proporção do Gantt vs coluna de tarefas
+
+---
+
+### Módulo 5 — PLANEJAMENTO: 6WLA
+
+> **Leitura obrigatória antes de iniciar:** `docs/temp/6wla-redesign.md`
+
+- [ ] Architect: `/brainstorming` — validar com PO a interação das pills S1–S6 + checkboxes inline de restrição antes de codificar. Brief já existe mas a UX precisa de aprovação explícita.
+- [ ] Builder: Schema — adicionar 6 booleanos de restrição + `observacao TEXT` + índice único `(tarefa_cronograma_id, projeto_id)` em `itens_6wla`
+- [ ] Builder: Remover campo "Responsável" da UI (`SixWLA.jsx:46,257,278,337-340`)
+- [ ] Builder: Implementar vínculo bidirecional com cronograma — atividades via `tarefa_cronograma_id`, dados read-only
+- [ ] Designer: Pills S1–S6 calculadas por sobreposição de datas + 6 checkboxes de restrição inline + campo `observacao`
+- [ ] Designer: Dashboard superior — 7 cards (Total Atividades + 1 por categoria de restrição)
+- [ ] Builder: Remover modal/formulário manual de criação (`SixWLA.jsx:175-178, 318-378`)
+
+---
+
+### Módulo 6 — PLANEJAMENTO: TAKE-OFF
+
+- [ ] Designer: Remover cards superiores, campo Status, campo Responsável, Curva de Previsto do gráfico
+- [ ] Designer: Trocar cor de Realizado para verde; manter Saldo como vermelho
+- [ ] Builder: Adicionar subtotal na parte inferior da tabela
+- [ ] Builder: Adicionar gráficos por Unidade de Medida e por Disciplina
+- [ ] Builder: Trocar Data de Lançamento para Semana ISO do ano com sugestão automática
+- [ ] Builder: Adicionar filtro por Unidade de Medida
+- [ ] Builder: Integrar `ImportExportDialog` com mapeamento de colunas
+
+---
+
+### Módulo 7 — HISTOGRAMA (MO + EQUIPAMENTOS)
+
+- [ ] Architect: `/brainstorming` — decidir estrutura do schema antes de qualquer código: 1 tabela unificada com coluna `tipo` (MO vs Equipamento) ou 2 tabelas separadas? Avaliar impacto na migração dos dados existentes.
+- [ ] Builder: Schema — separar MO e Equipamentos; adicionar `qtd_projetado`, `qtd_prev_acumulado`, `qtd_real_acumulado`, `qtd_proj_acumulado`
+- [ ] Designer: UI tabela com scroll horizontal por mês; colunas fixas (MO/Eq, Totais, %Total)
+- [ ] Builder: Regra de bloqueio — Real só editável para mês ≤ atual; ao salvar Real, limpar e bloquear Projetado
+- [ ] Builder: Fórmulas `%Total Real = Real Acum / Prev Acum` e `%Total Projetado = Proj Acum / Prev Acum`
+- [ ] Builder: Adicionar linhas acumuladas nos gráficos
+- [ ] Builder: Import/Export com escala -3m / +1ano e mapeamento de colunas
+
+---
+
+### Módulo 8 — AVANÇO
+
+- [ ] Architect: `/brainstorming` — mudar de mensal para semanal tem impacto nos dados existentes. Decidir: migrar registros históricos ou manter mensal para histórico e semanal apenas para novos lançamentos?
+- [ ] Builder: Schema — adicionar `avanco_projetado`; mudar granularidade para semanal (`semana_iso`) com agrupamento por mês
+- [ ] Designer: Tabela transposta (linhas: Previsto, Real, Projetado; colunas por semana agrupadas por mês)
+- [ ] Builder: Bloqueio Real ≤ semana atual; ao salvar Real, limpar Projetado da mesma semana
+- [ ] Builder: Substituir Aderência por `%Total Real` e `%Total Projetado`
+- [ ] Builder: Corrigir bug visual no botão Editar (`Avancos.jsx:258-260`)
+- [ ] Builder: Gráfico com barras mensais + eixo X toggle Semana/Mês
+- [ ] Builder: Import/Export com escala -3m/+1ano e mapeamento
+
+---
+
+### Módulo 9 — ADM. CONTRATUAL
+
+#### Contratos
+- [ ] Builder: Renomear tipo "Misto" → "Fornecimento + Serviço" (UI + CHECK no schema)
+- [ ] Builder: Formatação BR (ponto milhar / vírgula decimal) em campos de valor
+- [ ] Builder: UI de Aditivos (Escopo texto, Prazo dias, Valor R$) usando tabela `aditivos` já existente
+- [ ] Builder: Calcular `inicio_atual` e `termino_atual` dinamicamente a partir de aditivos
+- [ ] Builder: Trocar opções de Status para: A iniciar / Em andamento / Concluído / Paralisado
+- [ ] Builder: Botão de Medições abrindo histórico + pop-up para nova medição
+
+#### Medições
+- [ ] Builder: Remover campos "Elaborador", "Valor Bruto", "Retenção" (`MedicaoForm.jsx:12,75-77,92`)
+- [ ] Builder: Renomear "Valor Líquido" → "Valor" (read-only, soma automática dos itens)
+- [ ] Builder: Integrar `ImportExportDialog` + `ColumnMappingDialog` em `Medicoes.jsx`
+
+---
+
+### Módulo 10 — RDO
+
+- [ ] Builder: Remover botão "Anexar à Medição" (`RDOModule.jsx:425`)
+- [ ] Builder: Remover "KM" do campo Área; remover campo Hora (manter apenas Data)
+- [ ] Builder: Desvincular Condição × Praticabilidade — permitir qualquer combinação
+- [ ] Builder: Padronizar MO e Equipamentos — botões "Adicionar" gerando Nome / Função-Identificação / Quantidade
+- [ ] Builder: Botão "Vincular Atividades" — pop-up de cronograma com filtros e checkbox múltiplo
+- [ ] Builder: Replicar vínculo na seção "Ocorrências e Impactos"
+- [ ] Builder: Campo de Evidências (upload de arquivo / captura de foto)
+- [ ] Builder: Importação em massa com `ColumnMappingDialog`
+
+---
+
+### Módulo 11 — REGISTROS
+
+- [ ] Designer: Cards superiores: Qtd por Tipo, Qtd por Responsabilidade, Qtd por Status
+- [ ] Builder: Adicionar filtros: Responsabilidade e Período (Início/Término)
+- [ ] Builder: Remover campo Hora (`IncidenteForm.jsx:115`)
+- [ ] Builder: Suporte a anexo de arquivos
+- [ ] Builder: Botão "Vincular Atividades" do cronograma (mesma pattern do RDO)
+
+---
+
+### Módulo 12 — MAPA DE IMPACTO
+
+- [ ] Designer: Gradiente Verde Claro → Vermelho (`MapaRegistroImpacto.jsx:21-28` + legenda `:139-144`)
+- [ ] Designer: Corrigir corte de texto no gráfico radar Contratada/Contratante
+- [ ] Builder: Remover botão "Export" (`:145-148`)
+- [ ] Builder: Remover textos descritivos ("Distribuição por Categoria", "Clique em uma célula…")
+
+---
+
+### Módulo 13 — RISCOS E MUDANÇAS
+
+#### Gestão de Riscos
+- [ ] Builder: Migrar `impacto` para `impactos JSONB` (seleção múltipla: Escopo, Prazo, Valor) — schema já existe
+- [ ] Builder: Adicionar campos `escopo_texto`, `prazo_dias`, `valor_impacto` no formulário
+- [ ] Builder: Sincronizar categorias com Mapa de Impacto (constante `CATEGORIES` compartilhada)
+- [ ] Designer: Cards quantitativos por categoria + títulos nos filtros
+- [ ] Builder: Mover Plano de Ação para dentro de Riscos; refatorar `PlanoAcao.jsx` para `registro_risco_id`/`registro_mudanca_id`
+- [ ] Builder: Trocar campo "Finalidade" por seleção de Registro de Risco ou Mudança (ID + Descrição)
+- [ ] Designer: Padronizar botões Salvar como verdes
+
+#### Gestão de Mudanças
+- [ ] Builder: Remover `MudancaKanban.jsx`; manter apenas tabela com Editar/Excluir
+- [ ] Builder: Renomear "Data Ocorrência" → "Data Registro"
+- [ ] Builder: Adicionar campo Pleito (FK opcional)
+- [ ] Builder: Checkbox Adição | Redução no Impacto no Escopo (`impacto_escopo_tipo` já existe no schema)
+- [ ] Designer: Cards: Total Desvio Prazo (+/-), Adição/Redução Valor, Adição/Redução Escopo
+- [ ] Designer: Padronizar botões Salvar como verdes
+
+---
+
+### Módulo 14 — CONFIGURAÇÕES: PERMISSÕES
+
+- [ ] Architect: `/brainstorming` — definir granularidade antes de codificar: permissões por módulo ou por submódulo? Quais ações por recurso (view / create / edit / delete ou simplificado)? Como tratar usuário sem projeto atribuído?
+- [ ] Builder: Schema — tabela `permissoes_usuario (usuario_id UUID FK, modulo TEXT, acoes JSONB)` com índice único
+- [ ] Designer: UI matriz módulo × ação (view / create / edit / delete) por usuário em `Usuarios.jsx`
+- [ ] Builder: Hook `usePermissions(modulo, acao)` com cache React Query
+- [ ] Builder: `ProtectedRoute` aceitar props `modulo` e `acao`; redirecionar para `/sem-permissao`
+- [ ] Builder: Sidebar — esconder itens sem permissão `view`
+- [ ] Builder: Páginas — esconder botões de ação conforme permissão
+- [ ] Builder: Seed — perfil Admin (tudo) + perfis por área (Engenharia, Suprimentos, Planejamento)
+
+---
+
+### Módulo 15 — IAs (EXECUTOR E ANALISTAS)
+
+#### Instructions Mastra
+- [ ] Builder: Executor + Analista de Negócio — prompt para estrutura padronizada (headings, tabelas, bullets)
+- [ ] Builder: Analista de Negócio — reforçar: análises apenas entre dados reais; proibido suposições
+- [ ] Builder: Analista Contratual — tom comercial + rigor jurídico; fluxo: pedido → Executor → Analista → análise final
+- [ ] Builder: Reforçar em todos — proibido inventar dados; usar apenas evidências do sistema
+
+#### UI do chat
+- [ ] Builder: `AgenteChat.jsx` — renderizar Markdown rico via `react-markdown` + `remark-gfm` (headings, tabelas, listas, blockquotes)
+
+---
+
+## Ordem de Execução
+
+1. Dashboard → 2. Engenharia → 3. Suprimentos → 4. Cronograma → 5. 6WLA → 6. Take-Off → 7. Histograma → 8. Avanço → 9. Adm. Contratual → 10. RDO → 11. Registros → 12. Mapa de Impacto → 13. Riscos → 14. Mudanças → 15. Configurações/Permissões → 16. IAs
+
+> **Critério de avanço:** `/audit` ≥ 9 + `npm run build` sem erros + doc do módulo atualizada (`docs/modulos/<X>.md`).

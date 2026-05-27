@@ -12,9 +12,9 @@ import InfoTooltip from "@/components/ui/InfoTooltip";
 
 const CATEGORIAS = ["Escopo", "Prazo", "Custo"];
 
-export default function PleitoForm({ caso, onSubmit, onCancel, isSubmitting }) {
+export default function PleitoForm({ pleito, onSubmit, onCancel, isSubmitting }) {
   const [formData, setFormData] = useState(
-    caso || {
+    pleito || {
       titulo: "",
       descricao_problema: "",
       contexto: "",
@@ -59,7 +59,7 @@ export default function PleitoForm({ caso, onSubmit, onCancel, isSubmitting }) {
       <CardHeader className="border-b bg-muted">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-bold text-foreground">
-            {caso ? "Editar Pleito" : "Novo Pleito"}
+            {pleito ? "Editar Pleito" : "Novo Pleito"}
           </CardTitle>
           <CloseButton onClick={onCancel} />
         </div>

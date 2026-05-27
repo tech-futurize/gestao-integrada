@@ -16,7 +16,7 @@ const IMPACTO_CATEGORIES = [
   "Segurança", "Qualidade", "Gestão & Comunicação"
 ];
 
-export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, isSubmitting }) {
+export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting }) {
   const [formData, setFormData] = useState({
     tipo_registro: incidente?.tipo_registro || "Ata de Reunião",
     data_hora: toDatetimeLocal(incidente?.data_hora) || toDatetimeLocal(new Date()),
@@ -24,7 +24,7 @@ export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, is
     descricao: incidente?.descricao || "",
     impacto_preliminar: incidente?.impacto_preliminar || "",
     status: incidente?.status || "Registrado",
-    caso_id: incidente?.caso_id || null,
+    pleito_id: incidente?.pleito_id || null,
     numero_rdo: incidente?.numero_rdo || "",
     area: incidente?.area || "",
     disciplina: incidente?.disciplina || "",
@@ -69,7 +69,7 @@ export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, is
     onSubmit({
       ...formData,
       data_hora: toUtcIso(formData.data_hora),
-      caso_id: formData.caso_id || null,
+      pleito_id: formData.pleito_id || null,
       mao_de_obra: isRDO ? maoDeObra.filter(r => r.quantidade || r.funcao) : [],
       equipamentos_rdo: isRDO ? equipamentosRdo.filter(r => r.quantidade || r.equipamento) : [],
       impacto_ocorrencia: impactoOcorrencia,
@@ -304,12 +304,12 @@ export default function IncidenteForm({ incidente, casos, onSubmit, onCancel, is
           {/* Associar Pleito */}
           <div className="space-y-2">
             <Label>Associar a Pleito (Opcional)</Label>
-            <Select value={formData.caso_id || "__none__"} onValueChange={(v) => set("caso_id", v === "__none__" ? null : v)}>
+            <Select value={formData.pleito_id || "__none__"} onValueChange={(v) => set("pleito_id", v === "__none__" ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Selecione um pleito" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">Nenhum</SelectItem>
-                {casos.map((caso) => (
-                  <SelectItem key={caso.id} value={caso.id}>{caso.titulo}</SelectItem>
+                {casos.map((pleito) => (
+                  <SelectItem key={pleito.id} value={pleito.id}>{pleito.titulo}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

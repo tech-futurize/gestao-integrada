@@ -10,8 +10,8 @@ export default function MapaImpacto() {
   const { selectedProjectId } = useProject();
 
   const { data: incidentes = [] } = useQuery({
-    queryKey: ["incidentes", selectedProjectId],
-    queryFn: () => entities.Incidente.filter({ projeto_id: selectedProjectId }),
+    queryKey: ["registros", selectedProjectId],
+    queryFn: () => entities.Registro.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
 

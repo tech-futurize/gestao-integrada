@@ -24,10 +24,9 @@ export default defineConfig(({ mode }) => {
       }
     ].filter(Boolean),
     server: {
-      host: '0.0.0.0', // Bind to all interfaces for container access
-      port: 5173,
-      strictPort: true,
-      // Allow all hosts - essential for Modal tunnel URLs
+      host: 'localhost',
+      port: 8080,
+      open: true,
       allowedHosts: true,
       proxy: {
         '/mastra-api': {
@@ -37,13 +36,7 @@ export default defineConfig(({ mode }) => {
         },
       },
       watch: {
-        // Enable polling for better file change detection in containers
-        usePolling: true,
-        interval: 100, // Check every 100ms for responsive HMR
-      },
-      hmr: {
-        protocol: 'wss',
-        clientPort: 443
+        usePolling: false,
       }
     },
     resolve: {

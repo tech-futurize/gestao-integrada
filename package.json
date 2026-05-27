@@ -1,5 +1,5 @@
 {
-  "name": "base44-app",
+  "name": "gestao-integrada",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,16 +9,14 @@
   "scripts": {
     "dev": "concurrently --names \"VITE,MASTRA\" --prefix-colors \"cyan,magenta\" --kill-others-on-fail \"npm run dev:vite\" \"npm run dev:mastra\"",
     "dev:vite": "vite",
-    "dev:mastra": "npm --prefix \"Agents Mastra\" run dev",
+    "dev:mastra": "npm --prefix agents-mastra run dev",
     "build": "vite build",
-    "build:mastra": "npm --prefix \"Agents Mastra\" run build",
+    "build:mastra": "npm --prefix agents-mastra run build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "npm --prefix \"Agents Mastra\" install"
+    "postinstall": "npm --prefix agents-mastra install"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.27",
-    "@base44/vite-plugin": "^1.0.13",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
     "@radix-ui/react-accordion": "^1.2.3",

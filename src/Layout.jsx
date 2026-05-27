@@ -19,7 +19,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/69aff7051dae3ee60a66c065/5ef3f6de4_LogoVetor.png";
+const LOGO_URL = "/logo.png";
 
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();

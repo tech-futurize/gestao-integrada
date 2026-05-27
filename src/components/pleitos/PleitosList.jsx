@@ -143,10 +143,10 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
         </div>
 
         {/* Linhas */}
-        {casos.map((caso, idx) => (
+        {casos.map((pleito, idx) => (
           <div
-            key={caso.id}
-            onClick={() => onSelect(caso)}
+            key={pleito.id}
+            onClick={() => onSelect(pleito)}
             className={`grid items-center px-5 py-3.5 cursor-pointer transition-colors hover:bg-muted/50 ${
               idx < casos.length - 1 ? "border-b border-border" : ""
             }`}
@@ -154,15 +154,15 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
           >
             {/* Título */}
             <div className="min-w-0 pr-3">
-              <p className="text-sm font-semibold text-foreground truncate">{caso.titulo}</p>
-              {caso.descricao_problema && (
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{caso.descricao_problema}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{pleito.titulo}</p>
+              {pleito.descricao_problema && (
+                <p className="text-xs text-muted-foreground truncate mt-0.5">{pleito.descricao_problema}</p>
               )}
             </div>
 
             {/* Categoria */}
             <div className="flex flex-wrap gap-1">
-              {(caso.categorias || []).slice(0, 2).map(cat => (
+              {(pleito.categorias || []).slice(0, 2).map(cat => (
                 <span key={cat} className="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-muted text-muted-foreground border border-border">
                   {cat}
                 </span>
@@ -172,10 +172,10 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
             {/* Prioridade */}
             <div>
               {(() => {
-                const b = prioridadeBadge(caso.prioridade);
+                const b = prioridadeBadge(pleito.prioridade);
                 return (
                   <span className={`${badgeBase} ${b.cls}`} style={b.glow ? { boxShadow: b.glow } : undefined}>
-                    {caso.prioridade}
+                    {pleito.prioridade}
                   </span>
                 );
               })()}
@@ -184,22 +184,22 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
             {/* Status */}
             <div>
               {(() => {
-                const b = statusBadge(caso.status);
+                const b = statusBadge(pleito.status);
                 return (
                   <span className={`${badgeBase} ${b.cls}`} style={b.glow ? { boxShadow: b.glow } : undefined}>
-                    {caso.status}
+                    {pleito.status}
                   </span>
                 );
               })()}
             </div>
 
             {/* Responsável */}
-            <div className="text-xs text-muted-foreground truncate">{caso.responsavel || "—"}</div>
+            <div className="text-xs text-muted-foreground truncate">{pleito.responsavel || "—"}</div>
 
             {/* Data */}
             <div className="text-xs text-muted-foreground">
-              {caso.data_abertura
-                ? format(new Date(caso.data_abertura), "dd/MM/yyyy", { locale: ptBR })
+              {pleito.data_abertura
+                ? format(new Date(pleito.data_abertura), "dd/MM/yyyy", { locale: ptBR })
                 : "—"}
             </div>
 
