@@ -15,10 +15,16 @@ WHERE mes_referencia IS NOT NULL
 -- 3. Tornar semana_iso NOT NULL (após população)
 ALTER TABLE avanco_fisico ALTER COLUMN semana_iso SET NOT NULL;
 
--- 4. Unique constraint projeto × semana (chave de negócio)
-ALTER TABLE avanco_fisico
-  ADD CONSTRAINT uq_avanco_fisico_projeto_semana
-  UNIQUE (projeto_id, semana_iso);
+-- 4. Unique constraint projeto × semana (chave de negócio) — idempotente
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'uq_avanco_fisico_projeto_semana'
+  ) THEN
+    ALTER TABLE avanco_fisico
+      ADD CONSTRAINT uq_avanco_fisico_projeto_semana
+      UNIQUE (projeto_id, semana_iso);
+  END IF;
+END$$;
 
 -- 5. Deprecar mes_referencia: tornar nullable
 --    (novos registros não precisam preencher mes_referencia)
