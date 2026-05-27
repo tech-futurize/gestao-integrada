@@ -250,11 +250,11 @@ export default function SixWLAPage() {
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
                   ativa
-                    ? "bg-primary text-primary-foreground border-primary"
+                    ? "bg-[#102A44] text-[#26FFFF] border-[#102A44]"
                     : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
                 )}
               >
-                {s.label} · Sem.{s.weekNumber}
+                {s.label} · {formatData(s.start)}
               </button>
             );
           })}
