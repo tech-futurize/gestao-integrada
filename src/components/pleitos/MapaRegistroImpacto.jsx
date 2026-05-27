@@ -282,6 +282,25 @@ function RadarAngleTick({ x, y, payload, cx, cy }) {
   );
 }
 
+function renderPieLabel({ cx, cy, midAngle, outerRadius, name, percent }) {
+  const RADIAN = Math.PI / 180;
+  const radius = outerRadius + 28;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text
+      x={x}
+      y={y}
+      fontSize={10}
+      fill="#6b7280"
+      textAnchor={x > cx ? "start" : "end"}
+    >
+      <tspan x={x} dy="0">{name}</tspan>
+      <tspan x={x} dy="14">{`${(percent * 100).toFixed(0)}%`}</tspan>
+    </text>
+  );
+}
+
 function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPieClick }) {
   const pieData = useMemo(() => {
     const contratada = todasOcorrencias.filter(i => i.responsabilidade === "Contratada").length;
@@ -319,18 +338,16 @@ function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPi
           )}
         </h4>
         <ResponsiveContainer width="100%" height={240}>
-          <PieChart>
+          <PieChart margin={{ top: 30, right: 50, bottom: 30, left: 50 }}>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              outerRadius={90}
+              outerRadius={72}
               dataKey="value"
               cursor="pointer"
               onClick={(data) => onPieClick(data.name)}
-              label={({ name, value }) =>
-                `${name}: ${Math.round((value / totalPie) * 100)}%`
-              }
+              label={renderPieLabel}
               labelLine={true}
             >
               {pieData.map((entry, i) => (
