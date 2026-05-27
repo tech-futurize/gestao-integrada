@@ -1,105 +1,101 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Plus, Pencil, Trash2 } from "lucide-react";
+import { CalendarRange, Plus, Info, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/components/ui/use-toast";
 import PageHeader from "@/components/ui/PageHeader";
+import { useToast } from "@/components/ui/use-toast";
+import { getSemanas, getSemanasBadge, formatData } from "@/utils/sixWLAUtils";
+import SixWLATable from "@/components/planejamento/SixWLATable";
+import AdicionarCronogramaModal from "@/components/planejamento/AdicionarCronogramaModal";
 
-const CATEGORIAS = [
-  "Projeto/Engenharia",
-  "Material/Suprimentos",
-  "Mão de Obra",
-  "Equipamentos",
-  "Externas/Regulatórias",
-  "Informações/Decisões",
+const RESTRICOES = [
+  { key: "restricao_projeto_eng",  label: "Proj/Eng", full: "Projeto/Engenharia" },
+  { key: "restricao_material",     label: "Mat",      full: "Material/Suprimentos" },
+  { key: "restricao_mao_obra",     label: "MO",       full: "Mão de Obra" },
+  { key: "restricao_equipamentos", label: "Eq",       full: "Equipamentos" },
+  { key: "restricao_externas",     label: "Ext",      full: "Externas/Regulatórias" },
+  { key: "restricao_informacoes",  label: "Info",     full: "Informações/Decisões" },
 ];
-
-const STATUS_OPTIONS = ["Planejada", "Em Andamento", "Concluída", "Removida"];
-
-const STATUS_COLORS = {
-  Planejada: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Em Andamento": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  Concluída: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  Removida: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-};
-
-const CAT_COLORS = {
-  "Projeto/Engenharia": "#3b82f6",
-  "Material/Suprimentos": "#f59e0b",
-  "Mão de Obra": "#10b981",
-  "Equipamentos": "#8b5cf6",
-  "Externas/Regulatórias": "#ef4444",
-  "Informações/Decisões": "#c35e1e",
-};
-
-const EMPTY_FORM = {
-  semana_ano: "",
-  atividade: "",
-  responsavel: "",
-  restricoes: "",
-  categoria_restricao: "",
-  status: "Planejada",
-  ppc: 0,
-};
-
-// Gera lista de semanas do ano atual
-const WEEKS_OF_YEAR = (() => {
-  const year = new Date().getFullYear();
-  return Array.from({ length: 52 }, (_, i) => `${year}-W${String(i + 1).padStart(2, "0")}`);
-})();
-
-function formatWeek(semana_ano) {
-  if (!semana_ano) return "—";
-  const [year, week] = semana_ano.split("-W");
-  return `Semana ${week}/${year}`;
-}
 
 export default function SixWLAPage() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [filtroSemana, setFiltroSemana] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("");
-  const [filtroCategoria, setFiltroCategoria] = useState("");
 
-  const { data: itens = [], isLoading } = useQuery({
+  const semanas = useMemo(() => getSemanas(new Date()), []);
+  const [semanasAtivas, setSemanasAtivas] = useState(() => semanas.map(s => s.label));
+  const [showModal, setShowModal] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
+  const [novasAtividades, setNovasAtividades] = useState([]);
+  const bannerChecked = useRef(false);
+
+  // Q1 — registros 6WLA
+  const { data: itens = [], isLoading: loadingItens } = useQuery({
     queryKey: ["itens_6wla", selectedProjectId],
     queryFn: () => entities.Item6WLA.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
 
-  const createMut = useMutation({
-    mutationFn: (data) => entities.Item6WLA.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["itens_6wla"] });
-      setShowForm(false);
-      setEditing(null);
-      setForm(EMPTY_FORM);
-      toast({ variant: "success", description: "Item criado com sucesso." });
-    },
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  // Q2 — atividades do cronograma
+  const { data: tarefas = [], isLoading: loadingTarefas } = useQuery({
+    queryKey: ["tarefas_cronograma_atividades", selectedProjectId],
+    queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId, tipo: "Atividade" }),
+    enabled: !!selectedProjectId,
   });
 
+  const existingTarefaIds = useMemo(
+    () => new Set(itens.map(i => i.tarefa_cronograma_id)),
+    [itens]
+  );
+
+  // Merge + calcular badges de semana
+  const merged = useMemo(() => {
+    return itens.map(item => {
+      const tarefa = tarefas.find(t => t.id === item.tarefa_cronograma_id) || null;
+      return {
+        ...item,
+        tarefa,
+        semanasBadge: tarefa ? getSemanasBadge(tarefa, semanas) : [],
+      };
+    });
+  }, [itens, tarefas, semanas]);
+
+  // Auto-sync: detectar atividades novas nas próximas 6 semanas
+  useEffect(() => {
+    if (loadingItens || loadingTarefas || bannerChecked.current) return;
+    bannerChecked.current = true;
+    const novas = tarefas.filter(t => {
+      if (existingTarefaIds.has(t.id)) return false;
+      return getSemanasBadge(t, semanas).length > 0;
+    });
+    if (novas.length > 0) {
+      setNovasAtividades(novas);
+      setShowBanner(true);
+    }
+  }, [loadingItens, loadingTarefas, tarefas, existingTarefaIds, semanas]);
+
+  // Filtrar por semanas ativas
+  const filtered = useMemo(() => {
+    if (semanasAtivas.length === semanas.length) return merged;
+    return merged.filter(item =>
+      item.semanasBadge.some(s => semanasAtivas.includes(s))
+    );
+  }, [merged, semanasAtivas, semanas.length]);
+
+  // KPIs
+  const kpis = useMemo(() => ({
+    total: merged.length,
+    ...Object.fromEntries(RESTRICOES.map(r => [r.key, merged.filter(i => i[r.key]).length])),
+  }), [merged]);
+
+  // Mutations
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => entities.Item6WLA.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["itens_6wla"] });
-      setShowForm(false);
-      setEditing(null);
-      setForm(EMPTY_FORM);
-      toast({ variant: "success", description: "Item atualizado." });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
@@ -109,278 +105,147 @@ export default function SixWLAPage() {
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const semanas = useMemo(() => [...new Set(itens.map(i => i.semana_ano).filter(Boolean))].sort(), [itens]);
+  const bulkCreateMut = useMutation({
+    mutationFn: (tarefaIds) =>
+      Promise.all(
+        tarefaIds.map(tarefa_cronograma_id =>
+          entities.Item6WLA.create({
+            projeto_id: selectedProjectId,
+            tarefa_cronograma_id,
+            restricao_projeto_eng:  false,
+            restricao_material:     false,
+            restricao_mao_obra:     false,
+            restricao_equipamentos: false,
+            restricao_externas:     false,
+            restricao_informacoes:  false,
+          })
+        )
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["itens_6wla"] });
+      setShowBanner(false);
+      setNovasAtividades([]);
+      toast({ variant: "success", description: "Atividades adicionadas ao 6WLA." });
+    },
+    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
 
-  const filtered = useMemo(() => {
-    let r = itens;
-    if (filtroSemana) r = r.filter(i => i.semana_ano === filtroSemana);
-    if (filtroStatus) r = r.filter(i => i.status === filtroStatus);
-    if (filtroCategoria) r = r.filter(i => i.categoria_restricao === filtroCategoria);
-    return r;
-  }, [itens, filtroSemana, filtroStatus, filtroCategoria]);
+  const toggleSemana = (label) =>
+    setSemanasAtivas(prev =>
+      prev.includes(label) ? prev.filter(s => s !== label) : [...prev, label]
+    );
 
-  const ppcMedio = useMemo(() => {
-    const comPpc = itens.filter(i => i.ppc > 0);
-    if (!comPpc.length) return null;
-    return Math.round(comPpc.reduce((s, i) => s + (i.ppc || 0), 0) / comPpc.length);
-  }, [itens]);
-
-  const catDistrib = useMemo(() => {
-    return CATEGORIAS.map(cat => ({
-      cat,
-      count: itens.filter(i => i.categoria_restricao === cat).length,
-      color: CAT_COLORS[cat],
-    })).filter(c => c.count > 0);
-  }, [itens]);
-
-  const handleOpenNew = () => {
-    const now = new Date();
-    const week = Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / (7 * 86400000));
-    setEditing(null);
-    setForm({ ...EMPTY_FORM, semana_ano: `${now.getFullYear()}-W${String(week).padStart(2, "0")}` });
-    setShowForm(true);
-  };
-
-  const handleEdit = (item) => {
-    setEditing(item);
-    setForm({
-      semana_ano: item.semana_ano || "",
-      atividade: item.atividade || "",
-      responsavel: item.responsavel || "",
-      restricoes: item.restricoes || "",
-      categoria_restricao: item.categoria_restricao || "",
-      status: item.status || "Planejada",
-      ppc: item.ppc ?? 0,
-    });
-    setShowForm(true);
-  };
-
-  const handleSubmit = () => {
-    const payload = { ...form, projeto_id: selectedProjectId, ppc: Number(form.ppc) || 0 };
-    if (editing) updateMut.mutate({ id: editing.id, data: payload });
-    else createMut.mutate(payload);
-  };
+  const tarefasDisponiveis = useMemo(
+    () => tarefas.filter(t => !existingTarefaIds.has(t.id)),
+    [tarefas, existingTarefaIds]
+  );
 
   if (!selectedProjectId) {
     return (
       <div className="flex flex-col h-full">
         <PageHeader />
         <div className="flex-1">
-          <PageEmptyState icon={CalendarRange} description="Selecione um projeto no menu lateral para acessar o 6WLA." />
+          <PageEmptyState
+            icon={CalendarRange}
+            description="Selecione um projeto para acessar o 6WLA."
+          />
         </div>
       </div>
     );
   }
 
+  const isLoading = loadingItens || loadingTarefas;
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button onClick={handleOpenNew}>
-            <Plus className="w-4 h-4 mr-2" /> Nova Atividade
+          <Button onClick={() => setShowModal(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar do Cronograma
           </Button>
         }
       />
-      <div className="flex-1 overflow-auto p-6 space-y-6">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground">Total de Itens</p>
-          <p className="text-2xl font-bold text-foreground">{itens.length}</p>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground">PPC Médio</p>
-          <p className="text-2xl font-bold" style={{ color: ppcMedio !== null ? (ppcMedio >= 80 ? "#16a34a" : ppcMedio >= 60 ? "#d97706" : "#ef4444") : "#9ca3af" }}>
-            {ppcMedio !== null ? `${ppcMedio}%` : "—"}
-          </p>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground">Concluídas</p>
-          <p className="text-2xl font-bold text-green-600">{itens.filter(i => i.status === "Concluída").length}</p>
-        </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground">Com Restrições</p>
-          <p className="text-2xl font-bold text-amber-600">{itens.filter(i => i.restricoes).length}</p>
-        </div>
-      </div>
 
-      {/* Restrições por Categoria */}
-      {catDistrib.length > 0 && (
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Restrições por Categoria</p>
-            <div className="flex flex-wrap gap-3">
-              {catDistrib.map(({ cat, count, color }) => (
-                <div key={cat} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/60">
-                  <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                  <span className="text-xs font-medium text-foreground">{cat}</span>
-                  <span className="text-xs font-bold" style={{ color }}>{count}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <div className="flex-1 overflow-auto p-6 space-y-4">
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-3">
-        <select
-          className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
-          value={filtroSemana}
-          onChange={e => setFiltroSemana(e.target.value)}
-        >
-          <option value="">Todas as Semanas</option>
-          {semanas.map(s => <option key={s} value={s}>{formatWeek(s)}</option>)}
-        </select>
-        <select
-          className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
-          value={filtroStatus}
-          onChange={e => setFiltroStatus(e.target.value)}
-        >
-          <option value="">Todos os Status</option>
-          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select
-          className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
-          value={filtroCategoria}
-          onChange={e => setFiltroCategoria(e.target.value)}
-        >
-          <option value="">Todas as Categorias</option>
-          {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </div>
-
-      {/* Tabela */}
-      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Semana</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Atividade</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Responsável</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Categoria</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Restrições</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">PPC</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && (
-                <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">Carregando...</td></tr>
-              )}
-              {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">Nenhuma atividade encontrada</td></tr>
-              )}
-              {filtered.map((item, i) => (
-                <tr key={item.id} className={`border-b border-border hover:bg-muted/40 transition-colors ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
-                  <td className="px-4 py-3 text-xs font-medium text-foreground whitespace-nowrap">{formatWeek(item.semana_ano)}</td>
-                  <td className="px-4 py-3 font-medium text-foreground max-w-xs">
-                    <span className="line-clamp-2">{item.atividade || "—"}</span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">{item.responsavel || "—"}</td>
-                  <td className="px-4 py-3">
-                    {item.categoria_restricao && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full text-white whitespace-nowrap"
-                        style={{ backgroundColor: CAT_COLORS[item.categoria_restricao] || "#6b7280" }}>
-                        {item.categoria_restricao}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground max-w-48">
-                    <span className="line-clamp-2">{item.restricoes || "—"}</span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-sm font-bold" style={{ color: (item.ppc || 0) >= 80 ? "#16a34a" : (item.ppc || 0) >= 60 ? "#d97706" : "#ef4444" }}>
-                      {item.ppc ? `${item.ppc}%` : "—"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[item.status] || "bg-muted text-muted-foreground"}`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => handleEdit(item)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => deleteMut.mutate(item.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modal */}
-      <Dialog open={showForm} onOpenChange={open => { if (!open) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar Atividade" : "Nova Atividade"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="space-y-1 col-span-2">
-              <Label>Semana / Ano</Label>
-              <Select value={form.semana_ano} onValueChange={v => setForm(f => ({ ...f, semana_ano: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione a semana" /></SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {WEEKS_OF_YEAR.map(w => <SelectItem key={w} value={w}>{formatWeek(w)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1 col-span-2">
-              <Label>Atividade *</Label>
-              <Input value={form.atividade} onChange={e => setForm(f => ({ ...f, atividade: e.target.value }))} placeholder="Descrição da atividade" />
-            </div>
-            <div className="space-y-1">
-              <Label>Responsável</Label>
-              <Input value={form.responsavel} onChange={e => setForm(f => ({ ...f, responsavel: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>PPC (%)</Label>
-              <Input type="number" min={0} max={100} value={form.ppc} onChange={e => setForm(f => ({ ...f, ppc: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Categoria de Restrição</Label>
-              <Select value={form.categoria_restricao} onValueChange={v => setForm(f => ({ ...f, categoria_restricao: v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1 col-span-2">
-              <Label>Restrições Identificadas</Label>
-              <Input value={form.restricoes} onChange={e => setForm(f => ({ ...f, restricoes: e.target.value }))} placeholder="Descreva as restrições" />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            {editing && (
-              <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); }}>Excluir</Button>
-            )}
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
-              {editing ? "Salvar alterações" : "Criar"}
+        {/* Banner auto-sync */}
+        {showBanner && novasAtividades.length > 0 && (
+          <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg text-sm">
+            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            <span className="text-blue-700 dark:text-blue-300 flex-1">
+              {novasAtividades.length} atividade{novasAtividades.length > 1 ? "s novas" : " nova"} encontrada{novasAtividades.length > 1 ? "s" : ""} no cronograma.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-blue-700 border-blue-300 hover:bg-blue-100"
+              onClick={() => bulkCreateMut.mutate(novasAtividades.map(t => t.id))}
+              disabled={bulkCreateMut.isPending}
+            >
+              Importar automaticamente
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <button
+              onClick={() => setShowBanner(false)}
+              className="text-muted-foreground hover:text-foreground p-1 rounded"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* KPIs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="bg-card rounded-xl border border-border p-3">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-2xl font-bold text-foreground">{kpis.total}</p>
+          </div>
+          {RESTRICOES.map(r => (
+            <div key={r.key} className="bg-card rounded-xl border border-border p-3" title={r.full}>
+              <p className="text-xs text-muted-foreground truncate">{r.label}</p>
+              <p className="text-2xl font-bold text-amber-600">{kpis[r.key]}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Pills S1–S6 */}
+        <div className="flex flex-wrap gap-2">
+          {semanas.map(s => {
+            const ativa = semanasAtivas.includes(s.label);
+            return (
+              <button
+                key={s.label}
+                onClick={() => toggleSemana(s.label)}
+                title={`${formatData(s.start)} – ${formatData(s.end)}`}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                  ativa
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                )}
+              >
+                {s.label} · Sem.{s.weekNumber}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tabela */}
+        <SixWLATable
+          items={filtered}
+          restricoes={RESTRICOES}
+          isLoading={isLoading}
+          onUpdate={(id, data) => updateMut.mutate({ id, data })}
+          onDelete={(id) => deleteMut.mutate(id)}
+        />
       </div>
+
+      <AdicionarCronogramaModal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        tarefas={tarefasDisponiveis}
+        onConfirm={(ids) => { bulkCreateMut.mutate(ids); setShowModal(false); }}
+      />
     </div>
   );
 }
