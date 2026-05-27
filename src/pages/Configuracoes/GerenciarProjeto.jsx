@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Settings, Plus, Pencil, Trash2, CheckCircle, Clock, PauseCircle } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { Settings, Plus, Pencil, Trash2, CheckCircle, Clock, PauseCircle } from "lucide-react";
 import { useProject } from "@/lib/ProjectContext";
 
 const STATUS_OPTIONS = ["Ativo", "Em Pausa", "Encerrado"];

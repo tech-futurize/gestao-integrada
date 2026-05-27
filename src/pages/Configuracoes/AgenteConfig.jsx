@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
+import { RefreshCw, Settings2, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCw, Settings2, Wifi, WifiOff } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 
 const MASTRA_BASE = import.meta.env.VITE_MASTRA_URL || "http://localhost:4111";

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Users, Plus, Pencil, UserX } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Users, Plus, Pencil, UserX } from "lucide-react";
 
 const PERFIL_OPTIONS = ["Admin", "Gestor", "Visualizador"];
 const STATUS_OPTIONS = ["Ativo", "Inativo"];
