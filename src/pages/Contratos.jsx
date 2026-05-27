@@ -8,6 +8,7 @@ import ContratosList from "@/components/contratos/ContratosList";
 import ContratoForm from "@/components/contratos/ContratoForm";
 import ContratoDetalhes from "@/components/contratos/ContratoDetalhes";
 import PageEmptyState from "@/components/ui/PageEmptyState";
+import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
@@ -45,7 +46,14 @@ export default function Contratos({ initialTab: _initialTab = "contratos" }) {
   });
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={FileText} description="Selecione um projeto no menu lateral para acessar os contratos." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={FileText} description="Selecione um projeto no menu lateral para acessar os contratos." />
+        </div>
+      </div>
+    );
   }
 
   const totalContratado = contratos.reduce((s, c) => s + (c.valor_total || 0), 0);
@@ -58,8 +66,16 @@ export default function Contratos({ initialTab: _initialTab = "contratos" }) {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button onClick={() => { setEditContrato(null); setShowContratoForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Contrato
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
         <div className="grid grid-cols-2 gap-4">
           {[
             { label: "Total Contratado", value: fmt(totalContratado), icon: DollarSign, color: "#26405d" },
@@ -78,39 +94,35 @@ export default function Contratos({ initialTab: _initialTab = "contratos" }) {
             </Card>
           ))}
         </div>
-        <Button onClick={() => { setEditContrato(null); setShowContratoForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Contrato
-        </Button>
+
+        {selectedContrato ? (
+          <ContratoDetalhes
+            contrato={selectedContrato}
+            medicoes={[]}
+            onBack={() => setSelectedContrato(null)}
+            onEdit={(c) => { setEditContrato(c); setShowContratoForm(true); }}
+            onDelete={(id) => deleteContrato.mutate(id)}
+            onNovaMedicao={() => {}}
+          />
+        ) : (
+          <ContratosList
+            contratos={contratos}
+            isLoading={loadingContratos}
+            onSelect={setSelectedContrato}
+            onEdit={(c) => { setEditContrato(c); setShowContratoForm(true); }}
+            onDelete={(id) => deleteContrato.mutate(id)}
+          />
+        )}
+
+        {showContratoForm && (
+          <ContratoForm
+            key={editContrato?.id || "new-contrato"}
+            contrato={editContrato}
+            onSave={handleSaveContrato}
+            onClose={() => { setShowContratoForm(false); setEditContrato(null); }}
+          />
+        )}
       </div>
-
-      {selectedContrato ? (
-        <ContratoDetalhes
-          contrato={selectedContrato}
-          medicoes={[]}
-          onBack={() => setSelectedContrato(null)}
-          onEdit={(c) => { setEditContrato(c); setShowContratoForm(true); }}
-          onDelete={(id) => deleteContrato.mutate(id)}
-          onNovaMedicao={() => {}}
-        />
-      ) : (
-        <ContratosList
-          contratos={contratos}
-          isLoading={loadingContratos}
-          onSelect={setSelectedContrato}
-          onEdit={(c) => { setEditContrato(c); setShowContratoForm(true); }}
-          onDelete={(id) => deleteContrato.mutate(id)}
-        />
-      )}
-
-      {showContratoForm && (
-        <ContratoForm
-          key={editContrato?.id || "new-contrato"}
-          contrato={editContrato}
-          onSave={handleSaveContrato}
-          onClose={() => { setShowContratoForm(false); setEditContrato(null); }}
-        />
-      )}
     </div>
   );
 }
