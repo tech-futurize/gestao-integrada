@@ -42,7 +42,7 @@ export default function AgenteConfig() {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(`${MASTRA_BASE}/api`, { signal: controller.signal });
+      const res = await fetch('/mastra-api/api', { signal: controller.signal });
       clearTimeout(timeout);
       setMastraStatus(res.ok ? "online" : "offline");
     } catch {
