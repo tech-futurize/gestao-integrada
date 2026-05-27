@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/lib/ProjectContext";
@@ -8,10 +8,10 @@ import CloseButton from "@/components/ui/CloseButton";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import {
   BarChart2, Plus, ArrowLeft, ChevronUp, ChevronDown, ChevronsUpDown,
-  Save, Edit, Trash2, TrendingUp, AlertTriangle, CheckCircle, XCircle
+  Save, Edit, Trash2, AlertTriangle, CheckCircle, XCircle
 } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart
 } from "recharts";
 
 const DISCIPLINAS = ["Civil", "Mecânica", "Tubulação", "Elétrica", "Estrutura Metálica", "Instrumentação", "Pintura", "Outros"];
@@ -130,7 +130,7 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose, 
 }
 
 // ── DETALHE ITEM ───────────────────────────────────────────────────────────────
-function ItemDetalhe({ item, lancamentos, projetoId, onBack, onAddLancamento, onEditLancamento, onDeleteLancamento }) {
+function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLancamento, onEditLancamento, onDeleteLancamento }) {
   const sorted = [...lancamentos].sort((a, b) => a.semana.localeCompare(b.semana));
   let acumulado = 0;
   const lancSorted = sorted.map(l => {

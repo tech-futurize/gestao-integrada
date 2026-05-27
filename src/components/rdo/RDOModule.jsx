@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { toDatetimeLocal, toUtcIso } from "@/lib/dateUtils";
@@ -536,7 +536,7 @@ export default function RDOModule({ selectedProjectId }) {
                 <td colSpan={11} className="py-16 text-center">
                   <FileText className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
                   <p className="text-muted-foreground font-medium">Nenhum RDO registrado</p>
-                  <p className="text-muted-foreground/60 text-xs mt-1">Clique em "Novo RDO" para começar</p>
+                  <p className="text-muted-foreground/60 text-xs mt-1">Clique em &quot;Novo RDO&quot; para começar</p>
                 </td>
               </tr>
             )}

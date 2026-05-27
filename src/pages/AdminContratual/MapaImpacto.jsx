@@ -1,4 +1,3 @@
-import React from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin } from "lucide-react";

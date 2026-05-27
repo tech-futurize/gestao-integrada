@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, Upload, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export default function MapaSuprimentos() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showImportExport, setShowImportExport] = useState(false);
-  const [importing, setImporting] = useState(false);
+  const [_importing, setImporting] = useState(false);
   const [triggerNew, setTriggerNew] = useState(0);
 
   const { data: itens = [] } = useQuery({

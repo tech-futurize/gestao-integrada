@@ -1,4 +1,3 @@
-import React from "react";
 import { FileText } from "lucide-react";
 import RDOModule from "@/components/rdo/RDOModule";
 import PageEmptyState from "@/components/ui/PageEmptyState";

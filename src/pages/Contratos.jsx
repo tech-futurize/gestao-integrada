@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Plus, FileText, DollarSign } from "lucide-react";
 import ContratosList from "@/components/contratos/ContratosList";
 import ContratoForm from "@/components/contratos/ContratoForm";
@@ -12,7 +11,7 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
-export default function Contratos({ initialTab = "contratos" }) {
+export default function Contratos({ initialTab: _initialTab = "contratos" }) {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();

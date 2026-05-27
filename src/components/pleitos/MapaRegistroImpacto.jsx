@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { format, endOfWeek, startOfWeek, isWithinInterval, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import HeatmapDrilldown from "./HeatmapDrilldown";
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from "recharts";
 

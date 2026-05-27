@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
@@ -114,7 +114,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
   };
 
   const barColor = STATUS_BAR[form.status] || "#64748b";
-  const badgeCfg = STATUS_BADGE[form.status] || STATUS_BADGE["A iniciar"];
+  const _badgeCfg = STATUS_BADGE[form.status] || STATUS_BADGE["A iniciar"];
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 overflow-y-auto py-6 px-4">

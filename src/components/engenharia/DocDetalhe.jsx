@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Save, X } from "lucide-react";
-import { ETAPAS, DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
+import { DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
 
-export default function DocDetalhe({ doc, tarefas = [], onClose, onUpdate }) {
+export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpdate }) {
   const tarefaLabel = (id) => {
     if (!id) return "—";
     const t = tarefas.find(t => t.id === id);

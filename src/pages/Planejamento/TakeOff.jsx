@@ -1,4 +1,3 @@
-import React from "react";
 import { Ruler } from "lucide-react";
 import TakeOffCommodities from "@/components/planejamento/TakeOffCommodities";
 import PageEmptyState from "@/components/ui/PageEmptyState";

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
@@ -117,7 +117,7 @@ export default function GerenciarProjeto() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {projetos.map(p => {
             const cfg = STATUS_CFG[p.status] || STATUS_CFG.Ativo;
-            const StatusIcon = cfg.icon;
+            const _StatusIcon = cfg.icon;
             return (
               <div key={p.id} className="bg-card rounded-xl border border-border p-5 space-y-3 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between gap-2">

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -209,7 +209,7 @@ export default function Registros() {
               {baseList.length === 0 ? "Nenhum registro cadastrado" : "Nenhum registro corresponde aos filtros"}
             </p>
             {baseList.length === 0 && (
-              <p className="text-sm mt-1">Clique em "Novo Registro" para começar.</p>
+              <p className="text-sm mt-1">Clique em &quot;Novo Registro&quot; para começar.</p>
             )}
           </div>
         ) : (

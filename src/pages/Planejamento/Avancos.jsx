@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -12,7 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
-import { TrendingUp, Plus, Upload, Pencil, Trash2, AlertCircle, CheckCircle } from "lucide-react";
+import { TrendingUp, Plus, Upload, Pencil, Trash2 } from "lucide-react";
 
 const EXPORT_COLUMNS = [
   { key: "mes_referencia",             label: "Mês Referência",                type: "string",  required: true },

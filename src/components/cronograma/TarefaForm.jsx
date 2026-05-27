@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,13 +19,12 @@ function SectionDivider({ label, color }) {
 
 export default function TarefaForm({ tarefa, tarefas, onSave, onClose }) {
   const [form, setForm] = useState({
-    codigo_wbs: "", nome: "", tipo: "Atividade", nivel: 1, pai_id: null,
+    codigo_wbs: "", nome: "", tipo: "Atividade", pai_id: null,
     data_inicio_planejada: "", data_fim_planejada: "",
     data_inicio_baseline: "", data_fim_baseline: "",
     data_inicio_real: "", data_fim_real: "",
-    avanco_previsto: 0, avanco_realizado: 0,
     area: "", disciplina: "",
-    caminho_critico: false, responsavel: "", predecessoras: "",
+    responsavel: "", predecessoras: "",
     ...tarefa,
     avanco_previsto: tarefa?.avanco_previsto ?? 0,
     avanco_realizado: tarefa?.avanco_realizado ?? 0,

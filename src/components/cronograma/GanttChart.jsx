@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from "react";
+import { useRef, useMemo, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronRight, ChevronDown, Eye, AlertTriangle, Calendar, Diamond } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -178,7 +178,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
   }, [sortedTarefas]);
 
   const hasChildren = (t) => t.codigo_wbs ? childrenSet.has(t.codigo_wbs) : false;
-  const isLeaf      = (t) => !hasChildren(t);
+  const _isLeaf      = (t) => !hasChildren(t);
 
   // ── collapsedWbsSet: O(1) ancestor check por profundidade ──
   const collapsedWbsSet = useMemo(() => {
@@ -299,7 +299,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
     <Card className="text-center p-12">
       <Calendar className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
       <p className="text-muted-foreground font-medium">Nenhuma tarefa cadastrada</p>
-      <p className="text-muted-foreground/60 text-sm mt-1">Clique em "Importar / Exportar" para começar o cronograma.</p>
+      <p className="text-muted-foreground/60 text-sm mt-1">Clique em &quot;Importar / Exportar&quot; para começar o cronograma.</p>
     </Card>
   );
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -209,7 +209,7 @@ export default function PlanoAcao({ pleitoId }) {
           )}
 
           {acoes.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">Nenhuma ação registrada. Clique em "Nova Ação" para começar.</div>
+            <div className="text-center py-12 text-muted-foreground">Nenhuma ação registrada. Clique em &quot;Nova Ação&quot; para começar.</div>
           ) : (
             <div className="overflow-x-auto">
               <Table>

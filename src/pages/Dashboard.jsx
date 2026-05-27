@@ -1,4 +1,3 @@
-import React from "react";
 import { AlertCircle } from "lucide-react";
 import ModulosResumo from "@/components/dashboard/ModulosResumo";
 import PageEmptyState from "@/components/ui/PageEmptyState";

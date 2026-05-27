@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Search, AlertTriangle, X, Pencil, Trash2, FilterX } from "lucide-react";
+import { Search, AlertTriangle, X, Pencil, Trash2, FilterX } from "lucide-react";
 import ItemMASForm from "./ItemMASForm";
 import FilterBar from "@/components/ui/FilterBar";
 
@@ -160,7 +159,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     enabled: !!selectedProjectId,
   });
 
-  const { data: tarefas = [], isLoading: isLoadingTarefas } = useQuery({
+  const { data: tarefas = [], isLoading: _isLoadingTarefas } = useQuery({
     queryKey: ["tarefas_cronograma", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -344,7 +343,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                 <tr>
                   <td colSpan={9} className="py-16 text-center">
                     <p className="text-muted-foreground font-medium">Nenhum item cadastrado</p>
-                    <p className="text-muted-foreground/50 text-xs mt-1">Clique em "Novo Item" para começar</p>
+                    <p className="text-muted-foreground/50 text-xs mt-1">Clique em &quot;Novo Item&quot; para começar</p>
                   </td>
                 </tr>
               )}
@@ -377,7 +376,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                           const isLast = idx === ETAPAS.length - 1;
 
                           return (
-                            <React.Fragment key={etapaConf.key}>
+                            <Fragment key={etapaConf.key}>
                               <div className="flex flex-col items-center">
                                 <span className="text-muted-foreground/60" style={{ fontSize: 9, marginBottom: 2, whiteSpace: "nowrap" }}>{etapaConf.label}</span>
                                 <div className="relative flex items-center justify-center">
@@ -405,7 +404,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                               {!isLast && (
                                 <div className="h-0.5 flex-1 mx-1" style={{ backgroundColor: est === "concluida" ? "#15803d" : "#e5e7eb", minWidth: 12 }} />
                               )}
-                            </React.Fragment>
+                            </Fragment>
                           );
                         })}
                       </div>

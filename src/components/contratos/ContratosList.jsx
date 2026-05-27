@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ export default function ContratosList({ contratos, isLoading, onSelect, onEdit, 
     <Card className="text-center p-12">
       <FileText className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
       <p className="text-muted-foreground font-medium">Nenhum contrato cadastrado</p>
-      <p className="text-muted-foreground/60 text-sm mt-1">Clique em "Novo Contrato" para começar.</p>
+      <p className="text-muted-foreground/60 text-sm mt-1">Clique em &quot;Novo Contrato&quot; para começar.</p>
     </Card>
   );
 

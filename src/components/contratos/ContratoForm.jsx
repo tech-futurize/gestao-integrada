@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import CloseButton from "@/components/ui/CloseButton";
 
 export default function ContratoForm({ contrato, onSave, onClose }) {
   const [form, setForm] = useState({
-    numero: "", objeto: "", fornecedor: "", cnpj: "", valor_total: "",
+    numero: "", objeto: "", fornecedor: "", cnpj: "",
     data_inicio: "", data_fim: "", status: "Ativo", tipo: "Serviços",
     centro_custo: "", gestor: "", observacoes: "",
     ...contrato,

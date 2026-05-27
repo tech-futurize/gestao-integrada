@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useDeferredValue } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo, useDeferredValue } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import PageEmptyState from "@/components/ui/PageEmptyState";
@@ -34,7 +34,7 @@ const EXPORT_COLUMNS = [
 export default function Cronograma() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const { toast: _toast } = useToast();
 
   const [showImportExport, setShowImportExport] = useState(false);
   const [viewingTarefa, setViewingTarefa] = useState(null);

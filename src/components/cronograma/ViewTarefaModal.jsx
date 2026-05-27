@@ -1,4 +1,3 @@
-import React from "react";
 import { X, CalendarDays } from "lucide-react";
 
 const ACCENT = "#6366f1";

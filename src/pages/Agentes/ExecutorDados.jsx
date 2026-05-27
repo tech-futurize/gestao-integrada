@@ -1,4 +1,3 @@
-import React from "react";
 import { Bot } from "lucide-react";
 import AgenteChat from "@/components/agentes/AgenteChat";
 

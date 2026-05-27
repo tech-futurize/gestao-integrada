@@ -77,6 +77,7 @@ function createEntityClient(tableName) {
     },
 
     async update(id, data) {
+      // eslint-disable-next-line no-unused-vars
       const { id: _id, created_at, ...payload } = data;
       const { data: result, error } = await supabase
         .from(tableName)

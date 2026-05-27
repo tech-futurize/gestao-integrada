@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { CalendarRange, Plus, Pencil, Trash2, TrendingUp, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { CalendarRange, Plus, Pencil, Trash2 } from "lucide-react";
 
 const CATEGORIAS = [
   "Projeto/Engenharia",

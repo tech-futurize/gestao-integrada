@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, CheckCircle, AlertCircle, RefreshCw, Settings2, Wifi, WifiOff } from "lucide-react";
+import { RefreshCw, Settings2, Wifi, WifiOff } from "lucide-react";
 
 const MASTRA_BASE = import.meta.env.VITE_MASTRA_URL || "http://localhost:4111";
 
@@ -137,7 +137,7 @@ export default function AgenteConfig() {
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Os agentes de IA são executados pelo Mastra Framework localmente na porta 4111.
                 Para usar os agentes, inicie o servidor Mastra e acesse cada agente pelo menu lateral
-                em "Agentes de IA". Os agentes têm acesso ao contexto do projeto selecionado.
+                em &quot;Agentes de IA&quot;. Os agentes têm acesso ao contexto do projeto selecionado.
               </p>
             </div>
           </div>

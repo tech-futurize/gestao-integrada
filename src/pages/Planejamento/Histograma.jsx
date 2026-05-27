@@ -1,4 +1,3 @@
-import React from "react";
 import HistogramaEquipamentos from "@/components/histograma/HistogramaEquipamentos";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { useProject } from "@/lib/ProjectContext";
