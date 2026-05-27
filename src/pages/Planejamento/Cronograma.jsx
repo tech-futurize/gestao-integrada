@@ -10,6 +10,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Upload, Eye, GitBranch, Search } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 
 const EXPORT_COLUMNS = [
   { key: "codigo_wbs",               label: "WBS",                     type: "string",  required: true },
@@ -111,7 +112,14 @@ export default function Cronograma() {
   };
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={CalendarDays} description="Selecione um projeto na barra lateral para ver o cronograma." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={CalendarDays} description="Selecione um projeto na barra lateral para ver o cronograma." />
+        </div>
+      </div>
+    );
   }
 
   const totalTarefas = filteredTarefas.length;
@@ -120,13 +128,15 @@ export default function Cronograma() {
   const criticas     = filteredTarefas.filter(t => t.caminho_critico).length;
 
   return (
-    <div className="p-6 flex flex-col gap-4 h-[calc(100vh-64px)]">
-      {/* Controles de topo */}
-      <div className="flex items-center justify-end shrink-0">
-        <Button variant="outline" onClick={() => setShowImportExport(true)}>
-          <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
-        </Button>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button variant="outline" onClick={() => setShowImportExport(true)}>
+            <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-hidden p-6 flex flex-col gap-4">
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
@@ -219,6 +229,7 @@ export default function Cronograma() {
         onExport={() => tarefas}
         onImport={handleImport}
       />
+    </div>
     </div>
   );
 }
