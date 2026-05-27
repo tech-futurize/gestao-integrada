@@ -48,39 +48,55 @@ function mesLabel(date) {
 // ── CelulaEditavel — defined OUTSIDE main component to prevent remount ────────
 function CelulaEditavel({ registro, campo, onSave }) {
   const [editing, setEditing] = useState(false);
-  const [local, setLocal] = useState(registro?.[campo] ?? 0);
-  const disabled = campo === "quantidade_realizada_mensal"
-    && isFutureMonth(registro?.mes_referencia);
-  const valor = registro?.[campo] ?? 0;
+  const [inputVal, setInputVal] = useState("");
 
-  if (!registro) return <span className="text-muted-foreground text-xs">—</span>;
+  const disabled =
+    campo === "quantidade_realizada_mensal" &&
+    isFutureMonth(registro.mes_referencia);
 
-  if (!editing || disabled) {
+  if (disabled)
     return (
-      <span
-        onClick={() => !disabled && setEditing(true)}
-        className={`block text-center min-w-[32px] rounded px-1 py-0.5 text-sm font-medium
-          ${disabled ? "text-muted-foreground/40 cursor-not-allowed" : "cursor-pointer hover:bg-muted/60"}`}
-      >
-        {valor || "·"}
-      </span>
+      <td className="px-2 py-1 text-center bg-muted text-muted-foreground text-xs w-12">
+        —
+      </td>
     );
-  }
+
+  const valor = registro[campo] ?? 0;
+
+  const handleBlur = () => {
+    onSave(registro, campo, Number(inputVal));
+    setEditing(false);
+  };
+
   return (
-    <input
-      autoFocus
-      type="number"
-      step="1"
-      min="0"
-      value={local}
-      onChange={(e) => setLocal(e.target.value)}
-      onBlur={() => { onSave(Number(local)); setEditing(false); }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.target.blur();
-        if (e.key === "Escape") { setLocal(valor); setEditing(false); }
+    <td
+      className="px-2 py-1 text-center cursor-pointer hover:bg-accent w-12"
+      onClick={() => {
+        if (!editing) {
+          setInputVal(String(valor));
+          setEditing(true);
+        }
       }}
-      className="w-14 text-center text-sm border border-blue-400 rounded px-1 py-0 focus:outline-none bg-background"
-    />
+    >
+      {editing ? (
+        <input
+          autoFocus
+          type="number"
+          step="1"
+          min="0"
+          value={inputVal}
+          onChange={(e) => setInputVal(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleBlur();
+            if (e.key === "Escape") setEditing(false);
+          }}
+          className="w-10 text-center border rounded text-xs p-0"
+        />
+      ) : (
+        <span className="text-xs">{valor}</span>
+      )}
+    </td>
   );
 }
 
@@ -108,7 +124,7 @@ export default function HistogramaTabela({ tipo }) {
   });
 
   const { data: projetoArr = [] } = useQuery({
-    queryKey: ["projeto-datas", selectedProjectId],
+    queryKey: ["projetos", selectedProjectId],
     queryFn: () => entities.Projeto.filter({ id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
@@ -120,33 +136,25 @@ export default function HistogramaTabela({ tipo }) {
   );
 
   // Mutations
-  const updateCelula = useMutation({
-    mutationFn: async ({ id, campo, valor, mesRef, nomeRecurso }) => {
-      await entities.Histograma.update(id, { [campo]: valor });
-      // When saving Real, clear Projetado for same month/resource
-      if (campo === "quantidade_realizada_mensal") {
-        const par = histogramas.find(
-          (h) => h.nome_recurso === nomeRecurso && h.mes_referencia?.startsWith(mesRef)
-        );
-        if (par) {
-          await entities.Histograma.update(par.id, { qtd_projetado: 0 });
-        }
-      }
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["histogramas"] }),
+  const updateMut = useMutation({
+    mutationFn: ({ id, updates }) => entities.Histograma.update(id, updates),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["histogramas", selectedProjectId, tipo] }),
     onError: onErr,
   });
 
-  const deleteRecurso = useMutation({
-    mutationFn: async (nomeRecurso) => {
-      const registros = histogramas.filter((h) => h.nome_recurso === nomeRecurso);
-      for (const r of registros) {
-        await entities.Histograma.delete(r.id);
-      }
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["histogramas"] }),
-    onError: onErr,
-  });
+  const updateCelula = (registro, campo, valor) => {
+    const updates = { [campo]: valor };
+    if (campo === "quantidade_realizada_mensal") updates.qtd_projetado = 0;
+    updateMut.mutate({ id: registro.id, updates });
+  };
+
+  const deleteRecurso = (nome_recurso) => {
+    const toDelete = histogramas.filter((r) => r.nome_recurso === nome_recurso);
+    Promise.all(toDelete.map((r) => entities.Histograma.delete(r.id))).then(() =>
+      queryClient.invalidateQueries({ queryKey: ["histogramas", selectedProjectId, tipo] })
+    );
+  };
 
   const createRecurso = useMutation({
     mutationFn: async (nome_recurso) => {
@@ -163,7 +171,7 @@ export default function HistogramaTabela({ tipo }) {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["histogramas"] });
+      queryClient.invalidateQueries({ queryKey: ["histogramas", selectedProjectId, tipo] });
       setShowNovoDialog(false);
       setNovoNome("");
     },
