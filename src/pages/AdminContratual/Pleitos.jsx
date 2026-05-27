@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { Plus, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { entities } from "@/api/supabaseEntities";
 import PleitoForm from "@/components/pleitos/PleitoForm";
 import PleitosList from "@/components/pleitos/PleitosList";
 import PleitoDetalhes from "@/components/pleitos/PleitoDetalhes";
@@ -45,7 +45,17 @@ export default function Pleitos() {
   };
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={FileText} description="Selecione um projeto na barra lateral para gerenciar pleitos." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState
+            icon={FileText}
+            description="Selecione um projeto na barra lateral para gerenciar pleitos."
+          />
+        </div>
+      </div>
+    );
   }
 
   if (selectedPleito) {

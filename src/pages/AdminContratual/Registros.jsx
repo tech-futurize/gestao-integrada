@@ -1,19 +1,19 @@
 import { useState, useMemo } from "react";
-import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, AlertTriangle, Search, Edit, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import FilterBar from "@/components/ui/FilterBar";
-import { Plus, AlertTriangle, Search, Edit, Trash2 } from "lucide-react";
+import { entities } from "@/api/supabaseEntities";
 import RegistroForm from "@/components/pleitos/RegistroForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast } from "@/components/ui/use-toast";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 const STATUS_COLORS = {
   Registrado: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
