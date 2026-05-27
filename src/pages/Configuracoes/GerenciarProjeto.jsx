@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import PageHeader from "@/components/ui/PageHeader";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -94,16 +95,15 @@ export default function GerenciarProjeto() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Gerenciar Projetos</h1>
-          <p className="text-sm text-muted-foreground">Cadastro e gestão de projetos do sistema</p>
-        </div>
-        <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Novo Projeto
-        </Button>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> Novo Projeto
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
 
       {/* Cards de Projetos */}
       {isLoading ? (
@@ -209,6 +209,7 @@ export default function GerenciarProjeto() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

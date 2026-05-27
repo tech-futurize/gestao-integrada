@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, Settings2, Wifi, WifiOff } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 
 const MASTRA_BASE = import.meta.env.VITE_MASTRA_URL || "http://localhost:4111";
 
@@ -64,17 +65,16 @@ export default function AgenteConfig() {
   const StatusIcon = sc.icon;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Configuração dos Agentes</h1>
-          <p className="text-sm text-muted-foreground">Status e informações dos agentes de IA (Mastra Framework)</p>
-        </div>
-        <Button variant="outline" onClick={checkMastra} disabled={checking}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${checking ? "animate-spin" : ""}`} />
-          Verificar Conectividade
-        </Button>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button variant="outline" onClick={checkMastra} disabled={checking}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${checking ? "animate-spin" : ""}`} />
+            Verificar Conectividade
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
 
       {/* Status Mastra */}
       <Card className={`border-2 ${mastraStatus === "online" ? "border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-900/10" : mastraStatus === "offline" ? "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-900/10" : "border-border"}`}>
@@ -143,6 +143,7 @@ export default function AgenteConfig() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
