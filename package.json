@@ -14,8 +14,7 @@
     "build:mastra": "npm --prefix agents-mastra run build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "npm --prefix agents-mastra install",
-    "test": "vitest run"
+    "postinstall": "npm --prefix agents-mastra install"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
