@@ -3,37 +3,58 @@ import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/lib/ProjectContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import CloseButton from "@/components/ui/CloseButton";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
+import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import {
-  BarChart2, Plus, ArrowLeft, ChevronUp, ChevronDown, ChevronsUpDown,
-  Save, Edit, Trash2, AlertTriangle, CheckCircle, XCircle
+  Plus, ArrowLeft, ChevronUp, ChevronDown, ChevronsUpDown,
+  Save, Edit, Trash2
 } from "lucide-react";
 import {
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  Area, AreaChart, BarChart, Bar, Legend
 } from "recharts";
 
 const DISCIPLINAS = ["Civil", "Mecânica", "Tubulação", "Elétrica", "Estrutura Metálica", "Instrumentação", "Pintura", "Outros"];
 const UNIDADES = ["m³", "kg", "m", "un", "m²", "ton", "l", "hr"];
 
-const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-background text-foreground";
+const COMMODITY_COLUMNS = [
+  { key: "codigo",       label: "Código",        type: "string", required: true },
+  { key: "descricao",    label: "Descrição",      type: "string", required: true },
+  { key: "disciplina",   label: "Disciplina",     type: "string" },
+  { key: "unidade",      label: "Unidade",        type: "string" },
+  { key: "qtd_contrato", label: "Qtd. Contrato",  type: "number", required: true },
+  { key: "qtd_takeoff",  label: "Qtd. Take-Off",  type: "number" },
+];
+
+const inputCls  = "w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-background text-foreground";
 const selectCls = "w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-200";
+
+// ISO 8601 week — e.g. "2026-W22"
+function currentIsoWeek() {
+  const now  = new Date();
+  const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const day  = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
 
 function calcStatus(realizado, contrato) {
   if (!contrato) return "Normal";
   const pct = (realizado / contrato) * 100;
   if (pct > 100) return "Excedido";
-  if (pct >= 95) return "Crítico";
-  if (pct >= 80) return "Atenção";
+  if (pct >= 95)  return "Crítico";
+  if (pct >= 80)  return "Atenção";
   return "Normal";
 }
 
 const STATUS_CFG = {
-  "Normal":   { bg: "#dcfce7", text: "#16a34a", bar: "#16a34a", cls: "bg-status-positive/15 text-status-positive" },
-  "Atenção":  { bg: "#fef3c7", text: "#d97706", bar: "#d97706", cls: "bg-status-attention/15 text-status-attention" },
-  "Crítico":  { bg: "#fee2e2", text: "#dc2626", bar: "#dc2626", cls: "bg-status-critical/15 text-status-critical" },
-  "Excedido": { bg: "#f3e8ff", text: "#9333ea", bar: "#9333ea", cls: "bg-purple-100/80 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
+  "Normal":   { cls: "bg-status-positive/15 text-status-positive" },
+  "Atenção":  { cls: "bg-status-attention/15 text-status-attention" },
+  "Crítico":  { cls: "bg-status-critical/15 text-status-critical" },
+  "Excedido": { cls: "bg-purple-100/80 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
 };
 
 function Field({ label, children }) {
@@ -92,10 +113,9 @@ function ItemModal({ item, onSave, onClose, totalItems }) {
 }
 
 // ── MODAL LANÇAMENTO ───────────────────────────────────────────────────────────
-function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose, lancamentos }) {
-  const nextSemana = `S${String(lancamentos.length + 1).padStart(2, "0")}`;
+function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose }) {
   const [form, setForm] = useState(lancamento || {
-    semana: nextSemana, data_inicio: "", data_fim: "", quantidade: "", responsavel: "", observacao: ""
+    semana_iso: currentIsoWeek(), quantidade: "", observacao: ""
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -107,15 +127,16 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose, 
           <CloseButton onClick={onClose} />
         </div>
         <div className="p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Semana"><input className={inputCls} value={form.semana} onChange={e => set("semana", e.target.value)} placeholder="S01" /></Field>
-            <Field label="Data Início"><input type="date" className={inputCls} value={form.data_inicio} onChange={e => set("data_inicio", e.target.value)} /></Field>
-            <Field label="Data Fim"><input type="date" className={inputCls} value={form.data_fim} onChange={e => set("data_fim", e.target.value)} /></Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Quantidade *"><input type="number" className={inputCls} value={form.quantidade} onChange={e => set("quantidade", e.target.value)} /></Field>
-            <Field label="Responsável"><input className={inputCls} value={form.responsavel} onChange={e => set("responsavel", e.target.value)} /></Field>
-          </div>
+          <Field label="Semana ISO (YYYY-Wxx)">
+            <input
+              className={inputCls}
+              value={form.semana_iso}
+              onChange={e => set("semana_iso", e.target.value)}
+              placeholder="ex: 2026-W22"
+              pattern="\d{4}-W\d{2}"
+            />
+          </Field>
+          <Field label="Quantidade *"><input type="number" className={inputCls} value={form.quantidade} onChange={e => set("quantidade", e.target.value)} /></Field>
           <Field label="Observação"><input className={inputCls} value={form.observacao} onChange={e => set("observacao", e.target.value)} /></Field>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
@@ -131,7 +152,9 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose, 
 
 // ── DETALHE ITEM ───────────────────────────────────────────────────────────────
 function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLancamento, onEditLancamento, onDeleteLancamento }) {
-  const sorted = [...lancamentos].sort((a, b) => a.semana.localeCompare(b.semana));
+  const sorted = [...lancamentos].sort((a, b) =>
+    (a.semana_iso || a.semana || "").localeCompare(b.semana_iso || b.semana || "")
+  );
   let acumulado = 0;
   const lancSorted = sorted.map(l => {
     acumulado += l.quantidade;
@@ -139,20 +162,15 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
   });
 
   const realizado = lancamentos.reduce((s, l) => s + l.quantidade, 0);
-  const saldo = item.qtd_contrato - realizado;
-  const pct = item.qtd_contrato > 0 ? ((realizado / item.qtd_contrato) * 100).toFixed(1) : 0;
-  const status = calcStatus(realizado, item.qtd_contrato);
-  const stCfg = STATUS_CFG[status];
+  const saldo     = item.qtd_contrato - realizado;
+  const pct       = item.qtd_contrato > 0 ? ((realizado / item.qtd_contrato) * 100).toFixed(1) : 0;
+  const status    = calcStatus(realizado, item.qtd_contrato);
+  const stCfg     = STATUS_CFG[status];
 
-  // Chart data: previsto linear vs realizado acumulado
-  const totalSemanas = Math.max(lancSorted.length + 2, 6);
-  const chartData = Array.from({ length: totalSemanas }, (_, i) => {
-    const semIdx = i + 1;
-    const semLabel = `S${String(semIdx).padStart(2, "0")}`;
-    const previsto = (item.qtd_contrato / totalSemanas) * semIdx;
-    const lanc = lancSorted.find(l => l.semana === semLabel);
-    return { semana: semLabel, previsto: Math.round(previsto * 10) / 10, realizado: lanc ? lanc.acumulado : null };
-  });
+  const chartData = lancSorted.map(l => ({
+    semana: l.semana_iso || l.semana || "",
+    realizado: l.acumulado,
+  }));
 
   return (
     <div className="space-y-6">
@@ -176,14 +194,13 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
           <span className={`text-sm font-semibold rounded-full px-3 py-1 ${stCfg.cls}`}>{status}</span>
         </div>
 
-        {/* KPI cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
           {[
-            { label: "Qtd. Contrato", value: item.qtd_contrato?.toLocaleString("pt-BR"), colorCls: "text-foreground" },
+            { label: "Qtd. Contrato", value: item.qtd_contrato?.toLocaleString("pt-BR"),           colorCls: "text-foreground" },
             { label: "Qtd. Take-Off", value: item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—", colorCls: "text-muted-foreground" },
-            { label: "Qtd. Realizado", value: realizado.toLocaleString("pt-BR"), colorCls: "text-ocre" },
-            { label: "Saldo", value: saldo.toLocaleString("pt-BR"), colorCls: saldo >= 0 ? "text-status-positive" : "text-status-critical" },
-            { label: "% Avanço", value: `${pct}%`, colorCls: stCfg.cls.split(" ").find(c => c.startsWith("text-")) },
+            { label: "Qtd. Realizado", value: realizado.toLocaleString("pt-BR"),                   colorCls: "text-status-positive" },
+            { label: "Saldo",          value: saldo.toLocaleString("pt-BR"),                        colorCls: saldo >= 0 ? "text-status-positive" : "text-status-critical" },
+            { label: "% Avanço",       value: `${pct}%`,                                            colorCls: stCfg.cls.split(" ").find(c => c.startsWith("text-")) },
           ].map(({ label, value, colorCls }) => (
             <div key={label} className="bg-muted rounded-lg p-3 text-center">
               <div className="text-xs text-muted-foreground mb-1">{label}</div>
@@ -192,11 +209,10 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
           ))}
         </div>
 
-        {/* Progress bar */}
         <div className="mt-4">
           <div className="flex justify-between text-xs text-muted-foreground mb-1"><span>Progresso</span><span>{pct}%</span></div>
           <div className="h-3 bg-muted rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: stCfg.bar }} />
+            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: "#16a34a" }} />
           </div>
         </div>
       </div>
@@ -207,22 +223,16 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart data={chartData}>
             <defs>
-              <linearGradient id="gradPrev" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#26405d" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#26405d" stopOpacity={0} />
-              </linearGradient>
               <linearGradient id="gradReal" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#c35e1e" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#c35e1e" stopOpacity={0} />
+                <stop offset="5%"  stopColor="#16a34a" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
             <XAxis dataKey="semana" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
-            <Legend />
-            <Area type="monotone" dataKey="previsto" stroke="#26405d" fill="url(#gradPrev)" strokeWidth={2} name="Previsto" dot={false} />
-            <Area type="monotone" dataKey="realizado" stroke="#c35e1e" fill="url(#gradReal)" strokeWidth={2} name="Realizado" connectNulls dot={{ r: 4 }} />
+            <Area type="monotone" dataKey="realizado" stroke="#16a34a" fill="url(#gradReal)" strokeWidth={2} name="Realizado" connectNulls dot={{ r: 4 }} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -239,23 +249,20 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted border-b border-border">
-                {["Semana", "Data Início", "Data Fim", "Qtd. Lançada", "Acumulado", "Responsável", ""].map(h => (
+                {["Semana ISO", "Qtd. Lançada", "Acumulado", ""].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {lancSorted.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-6 text-center text-muted-foreground text-sm">Nenhum lançamento ainda</td></tr>
+                <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground text-sm">Nenhum lançamento ainda</td></tr>
               )}
               {lancSorted.map((l, i) => (
                 <tr key={l.id} className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
-                  <td className="px-4 py-2 font-bold text-xs text-ocre">{l.semana}</td>
-                  <td className="px-4 py-2 text-xs text-foreground">{l.data_inicio || "—"}</td>
-                  <td className="px-4 py-2 text-xs text-foreground">{l.data_fim || "—"}</td>
+                  <td className="px-4 py-2 font-bold text-xs text-ocre">{l.semana_iso || l.semana || "—"}</td>
                   <td className="px-4 py-2 font-semibold">{l.quantidade.toLocaleString("pt-BR")} <span className="text-xs text-muted-foreground">{item.unidade}</span></td>
                   <td className="px-4 py-2 font-semibold text-foreground">{l.acumulado.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-2 text-xs text-muted-foreground">{l.responsavel || "—"}</td>
                   <td className="px-4 py-2">
                     <div className="flex gap-1">
                       <button onClick={() => onEditLancamento(l)} className="text-muted-foreground hover:text-blue-600 p-1"><Edit className="w-3.5 h-3.5" /></button>
@@ -273,24 +280,24 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
 }
 
 // ── LISTA PRINCIPAL ────────────────────────────────────────────────────────────
-export default function TakeOffCommodities() {
+export default function TakeOffCommodities({ showImportExport, onCloseImportExport }) {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
 
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItem]   = useState(null);
   const [showItemModal, setShowItemModal] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingItem, setEditingItem]     = useState(null);
   const [showLancModal, setShowLancModal] = useState(false);
-  const [editingLanc, setEditingLanc] = useState(null);
+  const [editingLanc, setEditingLanc]     = useState(null);
   const [filtroDisciplina, setFiltroDisciplina] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("");
-  const [busca, setBusca] = useState("");
-  const [sortCol, setSortCol] = useState("codigo");
-  const [sortDir, setSortDir] = useState("asc");
+  const [filtroUnidade, setFiltroUnidade]       = useState("");
+  const [busca, setBusca]       = useState("");
+  const [sortCol, setSortCol]   = useState("codigo");
+  const [sortDir, setSortDir]   = useState("asc");
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: items = [], isPending, isError } = useQuery({
     queryKey: ["commodities", selectedProjectId],
     queryFn: () => entities.Commodity.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -333,20 +340,19 @@ export default function TakeOffCommodities() {
     onError: onErr,
   });
 
-  // Enrich items with computed fields
   const enriched = useMemo(() => items.map(item => {
-    const lncs = todosLancamentos.filter(l => l.commodity_id === item.id);
+    const lncs     = todosLancamentos.filter(l => l.commodity_id === item.id);
     const realizado = lncs.reduce((s, l) => s + l.quantidade, 0);
-    const saldo = item.qtd_contrato - realizado;
-    const pct = item.qtd_contrato > 0 ? (realizado / item.qtd_contrato) * 100 : 0;
-    const status = calcStatus(realizado, item.qtd_contrato);
+    const saldo     = item.qtd_contrato - realizado;
+    const pct       = item.qtd_contrato > 0 ? (realizado / item.qtd_contrato) * 100 : 0;
+    const status    = calcStatus(realizado, item.qtd_contrato);
     return { ...item, realizado, saldo, pct, status };
   }), [items, todosLancamentos]);
 
   const filtered = useMemo(() => {
     let r = enriched;
     if (filtroDisciplina) r = r.filter(i => i.disciplina === filtroDisciplina);
-    if (filtroStatus) r = r.filter(i => i.status === filtroStatus);
+    if (filtroUnidade)    r = r.filter(i => i.unidade === filtroUnidade);
     if (busca) {
       const b = busca.toLowerCase();
       r = r.filter(i => i.codigo?.toLowerCase().includes(b) || i.descricao?.toLowerCase().includes(b));
@@ -356,7 +362,44 @@ export default function TakeOffCommodities() {
       const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [enriched, filtroDisciplina, filtroStatus, busca, sortCol, sortDir]);
+  }, [enriched, filtroDisciplina, filtroUnidade, busca, sortCol, sortDir]);
+
+  const totals = useMemo(() =>
+    filtered.reduce((acc, i) => ({
+      qtd_contrato: acc.qtd_contrato + (i.qtd_contrato || 0),
+      qtd_takeoff:  acc.qtd_takeoff  + (i.qtd_takeoff  || 0),
+      realizado:    acc.realizado    + i.realizado,
+      saldo:        acc.saldo        + i.saldo,
+    }), { qtd_contrato: 0, qtd_takeoff: 0, realizado: 0, saldo: 0 }),
+  [filtered]);
+
+  const chartByUnidade = useMemo(() =>
+    UNIDADES
+      .map(u => {
+        const its = filtered.filter(i => i.unidade === u);
+        if (its.length === 0) return null;
+        return {
+          name:      u,
+          Contrato:  its.reduce((s, i) => s + (i.qtd_contrato || 0), 0),
+          Realizado: its.reduce((s, i) => s + i.realizado, 0),
+        };
+      })
+      .filter(Boolean),
+  [filtered]);
+
+  const chartByDisciplina = useMemo(() =>
+    DISCIPLINAS
+      .map(d => {
+        const its = filtered.filter(i => i.disciplina === d);
+        if (its.length === 0) return null;
+        return {
+          name:      d,
+          Contrato:  its.reduce((s, i) => s + (i.qtd_contrato || 0), 0),
+          Realizado: its.reduce((s, i) => s + i.realizado, 0),
+        };
+      })
+      .filter(Boolean),
+  [filtered]);
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -368,10 +411,10 @@ export default function TakeOffCommodities() {
     return sortDir === "asc" ? <ChevronUp className="w-3 h-3 inline ml-1" /> : <ChevronDown className="w-3 h-3 inline ml-1" />;
   };
 
-  // Detalhe
+  // ── Detalhe ──────────────────────────────────────────────────────────────────
   if (selectedItem) {
     const itemEnriched = enriched.find(i => i.id === selectedItem.id) || selectedItem;
-    const lncs = todosLancamentos.filter(l => l.commodity_id === selectedItem.id);
+    const lncs         = todosLancamentos.filter(l => l.commodity_id === selectedItem.id);
     return (
       <>
         <ItemDetalhe
@@ -388,7 +431,6 @@ export default function TakeOffCommodities() {
             commodityId={selectedItem.id}
             projetoId={selectedProjectId}
             lancamento={editingLanc}
-            lancamentos={lncs}
             onSave={(d) => editingLanc ? updateLanc.mutate({ id: editingLanc.id, data: d }) : createLanc.mutate(d)}
             onClose={() => { setShowLancModal(false); setEditingLanc(null); }}
           />
@@ -397,33 +439,8 @@ export default function TakeOffCommodities() {
     );
   }
 
-  // KPIs
-  const kpis = [
-    { label: "Total de Itens", value: enriched.length, colorCls: "text-foreground", bgCls: "bg-foreground/10", icon: BarChart2 },
-    { label: "Itens em Dia", value: enriched.filter(i => i.status === "Normal").length, colorCls: "text-status-positive", bgCls: "bg-status-positive/10", icon: CheckCircle },
-    { label: "Em Atenção", value: enriched.filter(i => i.status === "Atenção" || i.status === "Crítico").length, colorCls: "text-status-attention", bgCls: "bg-status-attention/10", icon: AlertTriangle },
-    { label: "Excedidos", value: enriched.filter(i => i.status === "Excedido").length, colorCls: "text-purple-600 dark:text-purple-400", bgCls: "bg-purple-100/80 dark:bg-purple-900/30", icon: XCircle },
-  ];
-
   return (
     <div className="space-y-6">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, colorCls, bgCls, icon: Icon }) => (
-          <Card key={label} className="bg-card shadow-sm border-0">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${bgCls}`}>
-                <Icon className={`w-5 h-5 ${colorCls}`} />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className={`text-2xl font-bold ${colorCls}`}>{value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       {/* Filtros */}
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="flex flex-wrap gap-2">
@@ -436,9 +453,9 @@ export default function TakeOffCommodities() {
             <option value="">Todas as Disciplinas</option>
             {DISCIPLINAS.map(d => <option key={d}>{d}</option>)}
           </select>
-          <select className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
-            <option value="">Todos os Status</option>
-            {["Normal", "Atenção", "Crítico", "Excedido"].map(s => <option key={s}>{s}</option>)}
+          <select className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground" value={filtroUnidade} onChange={e => setFiltroUnidade(e.target.value)}>
+            <option value="">Todas as Unidades</option>
+            {UNIDADES.map(u => <option key={u}>{u}</option>)}
           </select>
         </div>
         <Button onClick={() => { setEditingItem(null); setShowItemModal(true); }}>
@@ -453,17 +470,16 @@ export default function TakeOffCommodities() {
             <thead>
               <tr className="bg-muted border-b border-border">
                 {[
-                  { key: "codigo", label: "Código" },
-                  { key: "descricao", label: "Descrição" },
-                  { key: "disciplina", label: "Disciplina" },
-                  { key: "unidade", label: "Un." },
+                  { key: "codigo",       label: "Código" },
+                  { key: "descricao",    label: "Descrição" },
+                  { key: "disciplina",   label: "Disciplina" },
+                  { key: "unidade",      label: "Un." },
                   { key: "qtd_contrato", label: "Contrato" },
-                  { key: "qtd_takeoff", label: "Take-Off" },
-                  { key: "realizado", label: "Realizado" },
-                  { key: "saldo", label: "Saldo" },
-                  { key: "pct", label: "% Avanço" },
-                  { key: "status", label: "Status" },
-                  { key: "_actions", label: "" },
+                  { key: "qtd_takeoff",  label: "Take-Off" },
+                  { key: "realizado",    label: "Realizado" },
+                  { key: "saldo",        label: "Saldo" },
+                  { key: "pct",          label: "% Avanço" },
+                  { key: "_actions",     label: "" },
                 ].map(({ key, label }) => (
                   <th
                     key={key}
@@ -476,8 +492,9 @@ export default function TakeOffCommodities() {
               </tr>
             </thead>
             <tbody>
-              {isLoading && <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">Carregando...</td></tr>}
-              {!isLoading && filtered.length === 0 && <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">Nenhum item cadastrado</td></tr>}
+              {isPending && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Carregando...</td></tr>}
+              {isError && <tr><td colSpan={10} className="px-4 py-8 text-center text-destructive">Erro ao carregar itens. Tente novamente.</td></tr>}
+              {!isPending && !isError && filtered.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Nenhum item cadastrado</td></tr>}
               {filtered.map((item, i) => {
                 const stCfg = STATUS_CFG[item.status];
                 return (
@@ -491,18 +508,15 @@ export default function TakeOffCommodities() {
                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.unidade}</td>
                     <td className="px-4 py-3 text-right font-medium">{item.qtd_contrato?.toLocaleString("pt-BR")}</td>
                     <td className="px-4 py-3 text-right text-muted-foreground">{item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—"}</td>
-                    <td className="px-4 py-3 text-right font-medium text-ocre">{item.realizado.toLocaleString("pt-BR")}</td>
+                    <td className="px-4 py-3 text-right font-medium text-status-positive">{item.realizado.toLocaleString("pt-BR")}</td>
                     <td className={`px-4 py-3 text-right font-semibold ${item.saldo >= 0 ? "text-status-positive" : "text-status-critical"}`}>{item.saldo.toLocaleString("pt-BR")}</td>
                     <td className="px-4 py-3 min-w-36">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(item.pct, 100)}%`, backgroundColor: stCfg.bar }} />
+                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(item.pct, 100)}%`, backgroundColor: "#16a34a" }} />
                         </div>
                         <span className={`text-xs font-bold w-12 text-right ${stCfg.cls.split(" ").find(c => c.startsWith("text-"))}`}>{item.pct.toFixed(1)}%</span>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold rounded-full px-2 py-0.5 whitespace-nowrap ${stCfg.cls}`}>{item.status}</span>
                     </td>
                     <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                       <div className="flex gap-1">
@@ -514,10 +528,58 @@ export default function TakeOffCommodities() {
                 );
               })}
             </tbody>
+            {!isPending && !isError && filtered.length > 0 && (
+              <tfoot>
+                <tr className="bg-muted/60 border-t-2 border-border font-semibold text-sm">
+                  <td className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wide" colSpan={4}>Totais ({filtered.length} itens)</td>
+                  <td className="px-4 py-3 text-right">{totals.qtd_contrato.toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">{totals.qtd_takeoff.toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-3 text-right text-status-positive">{totals.realizado.toLocaleString("pt-BR")}</td>
+                  <td className={`px-4 py-3 text-right ${totals.saldo >= 0 ? "text-status-positive" : "text-status-critical"}`}>{totals.saldo.toLocaleString("pt-BR")}</td>
+                  <td colSpan={2} />
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>
 
+      {/* Gráficos de Barras */}
+      {filtered.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+            <h3 className="font-semibold mb-4 text-foreground text-sm">Realizado vs Contrato — por Unidade de Medida</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={chartByUnidade} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Contrato"  fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Realizado" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+            <h3 className="font-semibold mb-4 text-foreground text-sm">Realizado vs Contrato — por Disciplina</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={chartByDisciplina} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={45} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Contrato"  fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Realizado" fill="#16a34a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Modais */}
       {showItemModal && (
         <ItemModal
           item={editingItem}
@@ -526,6 +588,16 @@ export default function TakeOffCommodities() {
           onClose={() => { setShowItemModal(false); setEditingItem(null); }}
         />
       )}
+
+      <ImportExportDialog
+        open={!!showImportExport}
+        onOpenChange={(v) => !v && onCloseImportExport?.()}
+        title="Importar / Exportar — Take-Off"
+        exportFileName="takeoff-commodities"
+        columns={COMMODITY_COLUMNS}
+        onExport={() => filtered}
+        onImport={(row) => createItem.mutateAsync({ ...row, projeto_id: selectedProjectId })}
+      />
     </div>
   );
 }

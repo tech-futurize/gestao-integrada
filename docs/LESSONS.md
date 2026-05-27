@@ -16,7 +16,7 @@ Registre **apenas erros relevantes** — aqueles que, em retrospecto, você gost
 - Derivou de um pressuposto que se mostrou errado.
 - Resultou em bug em staging ou produção.
 - Foi detectado pelo `/security-scan`, `/audit`, `/review` ou `/debug`.
-- Seria evitável se o projeto tivesse uma regra explícita em CLAUDE.md / AGENTS.md / WORKFLOWS.md.
+- Seria evitável se o projeto tivesse uma regra explícita em CLAUDE.md / AGENTS.md / SKILLS.md.
 
 **Não registre:**
 
@@ -207,7 +207,7 @@ Copie o bloco abaixo para cada nova lição.
 A cada `/milestone-close`, o Architect:
 
 1. Lê as lições adicionadas no milestone que acabou de fechar.
-2. Promove lições recorrentes a **regra explícita** em CLAUDE.md / AGENTS.md / WORKFLOWS.md.
+2. Promove lições recorrentes a **regra explícita** em CLAUDE.md / AGENTS.md / SKILLS.md.
 3. Marca como `Obsoleta` (sem apagar) lições cobertas por uma regra nova.
 4. Se o arquivo passar de ~40 entradas ativas, cria `LESSONS-YYYY.md` arquivando o ano anterior.
 
@@ -219,7 +219,7 @@ A cada `/milestone-close`, o Architect:
 |---|---|
 | Regras do projeto | [/CLAUDE.md](../CLAUDE.md) |
 | Agentes (quem deve registrar) | [./AGENTS.md](./AGENTS.md) |
-| Workflows (quando registrar) | [./WORKFLOWS.md](./WORKFLOWS.md) |
+| Skills (quando registrar) | [./SKILLS.md](./SKILLS.md) |
 | Decisões irreversíveis | [./adrs/](./adrs/) |
 
 > Índice canônico completo: [CLAUDE.md §7](../CLAUDE.md#7-documentos-do-projeto).

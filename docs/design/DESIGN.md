@@ -399,7 +399,7 @@ Fallback: primeira letra do email. Fallback final: `"?"`.
 |---|---|
 | Regras gerais e performance | [/CLAUDE.md](../../CLAUDE.md) |
 | Limites de sistema | [/docs/architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md) |
-| Workflow /audit | [/docs/WORKFLOWS.md](../WORKFLOWS.md) |
+| Skill /audit | [/docs/SKILLS.md](../SKILLS.md) |
 | RNFs de acessibilidade | [/PROJECT.md](../../PROJECT.md) |
 
 > Índice canônico completo: [CLAUDE.md §7](../../CLAUDE.md#7-documentos-do-projeto).

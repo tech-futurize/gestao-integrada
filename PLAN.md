@@ -133,25 +133,33 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 5 — PLANEJAMENTO: 6WLA
 
+> ✅ **Concluído — Audit score ≥ 9 — Visual 9 · Functional 9 · Trust 9** *(2026-05-27)*
+
 - [x] Architect: `/brainstorming` — spec das pills S1–S6 + checkboxes inline de restrição aprovada pelo PO *(2026-05-27)*
-- [ ] Builder: Schema — adicionar 6 booleanos de restrição + `observacao TEXT` + índice único `(tarefa_cronograma_id, projeto_id)` em `itens_6wla`
-- [ ] Builder: Remover campo "Responsável" da UI (`SixWLA.jsx:46,257,278,337-340`)
-- [ ] Builder: Implementar vínculo bidirecional com cronograma — atividades via `tarefa_cronograma_id`, dados read-only
-- [ ] Designer: Pills S1–S6 calculadas por sobreposição de datas + 6 checkboxes de restrição inline + campo `observacao`
-- [ ] Designer: Dashboard superior — 7 cards (Total Atividades + 1 por categoria de restrição)
-- [ ] Builder: Remover modal/formulário manual de criação (`SixWLA.jsx:175-178, 318-378`)
+- [x] Builder: Schema M5 — 6 booleanos de restrição + `observacao TEXT` + índice único `(tarefa_cronograma_id, projeto_id)` em `itens_6wla` *(2026-05-27)*
+- [x] Builder: Remover campo "Responsável" da UI *(2026-05-27)*
+- [x] Builder: Implementar vínculo bidirecional com cronograma — atividades via `tarefa_cronograma_id`, dados read-only *(2026-05-27)*
+- [x] Designer: Pills S1–S6 calculadas por sobreposição de datas + 6 checkboxes de restrição inline + campo `observacao` *(2026-05-27)*
+- [x] Designer: Dashboard superior — 7 cards (Total Atividades + 1 por categoria de restrição) *(2026-05-27)*
+- [x] Builder: Remover modal/formulário manual de criação; substituído por `AdicionarCronogramaModal` + banner auto-sync *(2026-05-27)*
+- [x] Tester: Bug fix `ModulosResumo.jsx` — `ppc` (campo removido) → `pctSemRestricao` (% atividades sem restrição) *(2026-05-27)*
+- [x] Tester: Documentação criada em `docs/modulos/05-6WLA.md` *(2026-05-27)*
 
 ---
 
 ### Módulo 6 — PLANEJAMENTO: TAKE-OFF
 
-- [ ] Designer: Remover cards superiores, campo Status, campo Responsável, Curva de Previsto do gráfico
-- [ ] Designer: Trocar cor de Realizado para verde; manter Saldo como vermelho
-- [ ] Builder: Adicionar subtotal na parte inferior da tabela
-- [ ] Builder: Adicionar gráficos por Unidade de Medida e por Disciplina
-- [ ] Builder: Trocar Data de Lançamento para Semana ISO do ano com sugestão automática
-- [ ] Builder: Adicionar filtro por Unidade de Medida
-- [ ] Builder: Integrar `ImportExportDialog` com mapeamento de colunas
+> ✅ **Concluído — Audit score ≥ 9 — Visual 9 · Functional 9 · Trust 9** *(2026-05-27)*
+
+- [x] Designer: Remover cards superiores, campo Status, campo Responsável, Curva de Previsto do gráfico *(2026-05-27)*
+- [x] Designer: Trocar cor de Realizado para verde; manter Saldo como vermelho *(2026-05-27)*
+- [x] Builder: Adicionar subtotal na parte inferior da tabela *(2026-05-27)*
+- [x] Builder: Adicionar gráficos por Unidade de Medida e por Disciplina *(2026-05-27)*
+- [x] Builder: Trocar Data de Lançamento para Semana ISO do ano com sugestão automática *(2026-05-27)*
+- [x] Builder: Adicionar filtro por Unidade de Medida *(2026-05-27)*
+- [x] Builder: Integrar `ImportExportDialog` com mapeamento de colunas *(2026-05-27)*
+- [x] Tester: Bug fix L003 — `isLoading` → `isPending` + `isError` adicionado *(2026-05-27)*
+- [x] Tester: Documentação criada em `docs/modulos/06-TakeOff.md` *(2026-05-27)*
 
 ---
 

@@ -1,7 +1,7 @@
 # AGENTS.md — Agentes do Projeto
 
 > Documenta todos os agentes de desenvolvimento, seus papéis, prompts, responsabilidades,
-> workflows vinculados, proibições e lanes de ownership.
+> skills vinculadas, proibições e lanes de ownership.
 > Este é o manual de referência para saber **QUEM faz o quê** e **COMO cada agente se comporta**.
 >
 > **Local:** /docs/AGENTS.md
@@ -16,7 +16,7 @@ Os agentes são acionados **sequencialmente em cascata** — o Architect gera um
 e o usuário aciona cada agente na ordem, um por vez.
 
 > **Skills transversais.** Todos os agentes podem aplicar skills disponíveis globalmente via Skill tool
-> dentro dos workflows — ex.: Builder usa `systematic-debugging`
+> dentro das skills — ex.: Builder usa `systematic-debugging`
 > em `/debug`, Tester usa `test-driven-development` e `verification-before-completion`,
 > Architect usa `writing-plans` em `/milestone-start`.
 
@@ -68,7 +68,7 @@ e o usuário aciona cada agente na ordem, um por vez.
 7. **Gerar Sequência de Execução em toda resposta**
 8. Autorizar /deploy após validações de Tester e Security
 
-### Workflows
+### Skills
 
 - **INVOCA:** /milestone-start, /milestone-close, /review
 - **PARTICIPA:** /deploy (autoriza e atualiza docs)
@@ -124,11 +124,11 @@ e o usuário aciona cada agente na ordem, um por vez.
 7. Definir paleta de cores, tipografia e tokens de espaçamento
 8. Corrigir Visual Fails do /audit automaticamente
 
-### Workflows
+### Skills
 
 - **RESPONDE:** /audit (visual refactor quando Visual < 9), /review (corrige findings visuais)
 - **PARTICIPA:** /deploy (valida visual no staging)
-- **Regra:** Não invoca workflows. Responde quando /audit ou /review detectam problemas visuais.
+- **Regra:** Não invoca skills. Responde quando /audit ou /review detectam problemas visuais.
 
 ### Proibições
 
@@ -179,7 +179,7 @@ e o usuário aciona cada agente na ordem, um por vez.
 7. Rate limiting, validação de input, criptografia de dados
 8. Implementar fixes do /security-scan
 
-### Workflows
+### Skills
 
 - **INVOCA:** /debug (ao encontrar erros)
 - **RESPONDE:** /audit (fix quando Functional < 9), /review (corrige findings), /security-scan (implementa correções)
@@ -236,7 +236,7 @@ e o usuário aciona cada agente na ordem, um por vez.
 7. Fazer testes de regressão após mudanças
 8. Gate final antes de qualquer deploy
 
-### Workflows
+### Skills
 
 - **INVOCA:** /audit (para validar qualidade)
 - **RESPONDE:** /review (verifica cobertura de testes)
@@ -291,7 +291,7 @@ e o usuário aciona cada agente na ordem, um por vez.
 7. Backups e disaster recovery
 8. Rollback imediato se error rate > threshold
 
-### Workflows
+### Skills
 
 - **RESPONDE:** /deploy (executor primário)
 - **Regra:** NUNCA invoca /deploy sozinho. Sempre responde à autorização do Architect.
@@ -345,7 +345,7 @@ e o usuário aciona cada agente na ordem, um por vez.
 8. Documentar findings com severidade
 9. Validar correções do Builder
 
-### Workflows
+### Skills
 
 - **INVOCA:** /security-scan (proativamente + pré-deploy)
 - **PARTICIPA:** /deploy (checklist + staging validation + poder de veto), /review (verifica vulnerabilidades)
@@ -406,8 +406,8 @@ O mesmo agente pode aparecer múltiplas vezes. A sequência reflete a execução
 |-------------------|------|
 | Regras e padrões | [CLAUDE.md](../CLAUDE.md) |
 | O que fazer agora | [PLAN.md](../PLAN.md) |
-| Matriz Agentes × Workflows | [PLAN.md](../PLAN.md) (seção fixa) |
-| Workflows detalhados | [WORKFLOWS.md](./WORKFLOWS.md) |
+| Matriz Agentes × Skills | [PLAN.md](../PLAN.md) (seção fixa) |
+| Skills customizadas | [SKILLS.md](./SKILLS.md) |
 | Lições aprendidas (obrigatório registrar) | [LESSONS.md](./LESSONS.md) |
 | Playbooks reutilizáveis | Skills disponíveis globalmente via Skill tool |
 | Estratégia de testes | [testing/TESTING.md](./testing/TESTING.md) |

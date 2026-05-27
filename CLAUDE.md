@@ -152,7 +152,7 @@ Documentação de módulos será escrita ao final de cada milestone, após `/aud
 │
 ├── /docs/
 │   ├── AGENTS.md         ← agentes, prompts, responsabilidades
-│   ├── WORKFLOWS.md      ← workflows detalhados
+│   ├── SKILLS.md         ← skills customizadas do projeto
 │   ├── LESSONS.md        ← lições aprendidas (VIVO)
 │   ├── /architecture/
 │   │   ├── ARCHITECTURE.md
@@ -211,6 +211,6 @@ Documentação de módulos será escrita ao final de cada milestone, após `/aud
 | DATABASE.md | /docs/architecture/ | VIVO | Schema do banco |
 | INTEGRATIONS.md | /docs/architecture/ | VIVO | Serviços externos |
 | AGENTS.md | /docs/ | Semi-estático | Agentes, prompts e regras |
-| WORKFLOWS.md | /docs/ | Semi-estático | Workflows detalhados |
+| SKILLS.md | /docs/ | Semi-estático | Skills customizadas do projeto |
 | LESSONS.md | /docs/ | VIVO | Lições aprendidas |
 | TESTING.md | /docs/testing/ | Semi-estático | Estratégia de testes |

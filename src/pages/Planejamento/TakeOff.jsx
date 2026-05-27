@@ -1,11 +1,14 @@
-import { Ruler } from "lucide-react";
+import { useState } from "react";
+import { Ruler, FileSpreadsheet } from "lucide-react";
 import TakeOffCommodities from "@/components/planejamento/TakeOffCommodities";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/button";
 import { useProject } from "@/lib/ProjectContext";
 
 export default function TakeOff() {
   const { selectedProjectId } = useProject();
+  const [showImportExport, setShowImportExport] = useState(false);
 
   if (!selectedProjectId) {
     return (
@@ -23,9 +26,19 @@ export default function TakeOff() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader />
+      <PageHeader
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Importar / Exportar
+          </Button>
+        }
+      />
       <div className="flex-1 overflow-auto p-6">
-        <TakeOffCommodities />
+        <TakeOffCommodities
+          showImportExport={showImportExport}
+          onCloseImportExport={() => setShowImportExport(false)}
+        />
       </div>
     </div>
   );

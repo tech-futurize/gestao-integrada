@@ -176,7 +176,7 @@ Tester tem **poder de veto no `/deploy`** — se testes ou thresholds caírem, o
 | Precisa saber... | Leia |
 |---|---|
 | Regras gerais de código e threshold | [/CLAUDE.md §3](../../CLAUDE.md#3-convenções-de-código) |
-| Workflow /audit (onde testes são validados) | [/docs/WORKFLOWS.md](../WORKFLOWS.md) |
+| Skill /audit (onde testes são validados) | [/docs/SKILLS.md](../SKILLS.md) |
 | Skill TDD | Skill `test-driven-development` — disponível globalmente via Skill tool |
 | Skill Verification | Skill `verification-before-completion` — disponível globalmente via Skill tool |
 | Acessibilidade | [/docs/design/DESIGN.md §8](../design/DESIGN.md#8-acessibilidade) |

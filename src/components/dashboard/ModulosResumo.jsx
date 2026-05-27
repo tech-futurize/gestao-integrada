@@ -808,9 +808,11 @@ function ResumoPlanejamento({ projetoId }) {
     enabled: !!projetoId,
   });
 
-  const ppcMedio = itens6wla.filter(a => a.ppc > 0).length
-    ? Math.round(itens6wla.filter(a => a.ppc > 0).reduce((s, a) => s + a.ppc, 0) / itens6wla.filter(a => a.ppc > 0).length)
-    : null;
+  const semRestricao = itens6wla.filter(a =>
+    !a.restricao_projeto_eng && !a.restricao_material && !a.restricao_mao_obra &&
+    !a.restricao_equipamentos && !a.restricao_externas && !a.restricao_informacoes
+  ).length;
+  const pctSemRestricao = itens6wla.length > 0 ? Math.round((semRestricao / itens6wla.length) * 100) : null;
 
   const takeofProgresso = Object.values(
     commodities.reduce((acc, c) => {
@@ -831,7 +833,7 @@ function ResumoPlanejamento({ projetoId }) {
       <CardContent className="p-6">
         <div className="grid grid-cols-4 gap-4 mb-6">
           <KpiCard label="Itens 6WLA" value={itens6wla.length} icon={ClipboardList} color="#26405d" />
-          <KpiCard label="PPC Médio" value={ppcMedio !== null ? `${ppcMedio}%` : "—"} icon={TrendingUp} color={ppcMedio !== null ? (ppcMedio >= 80 ? "#16a34a" : ppcMedio >= 60 ? "#d97706" : "#ef4444") : "#9ca3af"} />
+          <KpiCard label="Sem Restrição" value={pctSemRestricao !== null ? `${pctSemRestricao}%` : "—"} icon={TrendingUp} color={pctSemRestricao !== null ? (pctSemRestricao >= 80 ? "#16a34a" : pctSemRestricao >= 60 ? "#d97706" : "#ef4444") : "#9ca3af"} />
           <KpiCard label="Itens Take-Off" value={commodities.length} icon={FileText} color="#8b5cf6" />
           <KpiCard label="Disciplinas" value={takeofProgresso.length} icon={CheckCircle} color="#00a49a" />
         </div>

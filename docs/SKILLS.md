@@ -1,10 +1,10 @@
-# WORKFLOWS.md — Workflows do Projeto
+# SKILLS.md — Skills Customizadas do Projeto
 
-> Documenta todos os workflows padronizados do projeto.
-> Cada workflow é um comando que pode ser invocado por agentes específicos,
+> Documenta todas as skills customizadas criadas para este projeto.
+> Cada skill é um comando invocável por agentes específicos,
 > com passos definidos, agentes envolvidos e critérios de saída.
 >
-> **Local:** /docs/WORKFLOWS.md
+> **Local:** /docs/SKILLS.md
 > **Ownership:** Architect
 > **Consultado por:** Todos os agentes
 
@@ -12,7 +12,7 @@
 
 ## Visão Geral
 
-| Workflow | Quem Invoca | Quem Responde | Trigger |
+| Skill | Quem Invoca | Quem Responde | Trigger |
 |----------|-------------|---------------|---------|
 | /audit | Tester | Designer (visual) + Builder (funcional) | Pré-deploy ou sob demanda |
 | /debug | Builder (ou qualquer) | O agente que encontrou o erro | Ao encontrar erro |
