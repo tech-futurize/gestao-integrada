@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import PageHeader from "@/components/ui/PageHeader";
 import FilterBar from "@/components/ui/FilterBar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -67,7 +68,7 @@ function ProgressBar({ pct }) {
       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: "#16a34a" }} />
       </div>
-      <span className="text-xs font-bold w-9 text-right text-green-700">{pct}%</span>
+      <span className="text-xs font-bold w-9 text-right text-emerald-500">{pct}%</span>
     </div>
   );
 }
@@ -311,26 +312,24 @@ export default function Documentos() {
             </Button>
           </>
         }
-        filters={
-          <>
-            <input
-              className="border border-border rounded-lg px-3 py-1.5 text-sm w-56 bg-background text-foreground"
-              placeholder="Buscar TAG/ID ou título..."
-              value={busca}
-              onChange={e => { setBusca(e.target.value); setPage(1); }}
-            />
-            <FilterBar
-              storageKey="documentos-filtros"
-              filters={[
-                { key: "disciplina", label: "Disciplina", options: ["MEC", "CIV", "ELE", "TUB", "INS", "AUT", "EST", "PRC", "HSE"] },
-                { key: "fornecedor", label: "Fornecedor", options: fornecedorOptions },
-              ]}
-              onChange={setFiltros}
-            />
-          </>
-        }
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            className="border border-border rounded-lg px-3 py-1.5 text-sm w-56 bg-background text-foreground"
+            placeholder="Buscar TAG/ID ou título..."
+            value={busca}
+            onChange={e => { setBusca(e.target.value); setPage(1); }}
+          />
+          <FilterBar
+            storageKey="documentos-filtros"
+            filters={[
+              { key: "disciplina", label: "Disciplina", options: ["MEC", "CIV", "ELE", "TUB", "INS", "AUT", "EST", "PRC", "HSE"] },
+              { key: "fornecedor", label: "Fornecedor", options: fornecedorOptions },
+            ]}
+            onChange={setFiltros}
+          />
+        </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -357,7 +356,12 @@ export default function Documentos() {
 
       {/* Tabela */}
       {isLoading ? (
-        <div className="flex items-center justify-center h-64 text-muted-foreground">Carregando...</div>
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 w-full" />
+          ))}
+        </div>
       ) : isError ? (
         <div className="flex items-center justify-center h-64 text-destructive">Erro ao carregar documentos.</div>
       ) : (
@@ -433,7 +437,7 @@ export default function Documentos() {
                           </button>
                           <button
                             onClick={() => setDeleteTarget(doc)}
-                            className="p-1.5 rounded hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
+                            className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
                             title="Excluir"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
