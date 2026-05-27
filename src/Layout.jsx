@@ -60,21 +60,22 @@ export default function Layout({ children }) {
 
   return (
     <>
-      <div className="min-h-screen flex w-full bg-background">
+      <div className="h-screen flex w-full bg-background overflow-hidden relative">
+
+        {/* Botão colapso — fora do aside para não ser cortado pelo overflow-hidden */}
+        <button
+          onClick={() => setCollapsed(c => !c)}
+          className={`absolute top-5 z-30 w-6 h-6 rounded-full flex items-center justify-center shadow-md bg-sidebar border border-sidebar-border transition-all duration-300 hover:bg-sidebar-accent ${collapsed ? "left-[52px]" : "left-[228px]"}`}
+        >
+          {collapsed
+            ? <ChevronRight className="w-3.5 h-3.5 text-sidebar-primary" />
+            : <ChevronLeft className="w-3.5 h-3.5 text-sidebar-primary" />}
+        </button>
 
         {/* ── SIDEBAR ── */}
         <aside
-          className={`flex-shrink-0 flex flex-col relative transition-all duration-300 bg-sidebar min-h-screen border-r border-sidebar-border ${sidebarW}`}
+          className={`flex-shrink-0 flex flex-col relative z-20 transition-all duration-300 bg-sidebar h-screen overflow-hidden border-r border-sidebar-border ${sidebarW}`}
         >
-          {/* Botão colapso */}
-          <button
-            onClick={() => setCollapsed(c => !c)}
-            className="absolute -right-3 top-5 z-20 w-6 h-6 rounded-full flex items-center justify-center shadow-md bg-sidebar border border-sidebar-border transition-colors hover:bg-sidebar-accent"
-          >
-            {collapsed
-              ? <ChevronRight className="w-3.5 h-3.5 text-sidebar-primary" />
-              : <ChevronLeft className="w-3.5 h-3.5 text-sidebar-primary" />}
-          </button>
 
           {/* Logo */}
           <div className="flex flex-col items-center px-2 pt-4 pb-3 border-b border-sidebar-border">

@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Package } from "lucide-react";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
-import { UNIDADES_MEDIDA } from "@/lib/unidadesMedida";
 
 const STATUS_BADGE = {
   "A iniciar":   { bg: "#f3f4f6", text: "#6b7280" },
@@ -47,6 +46,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
   const [form, setForm] = useState({
     descricao: item?.descricao || "",
     unidade: item?.unidade || "",
+    unidade_id: item?.unidade_id || "",
     quantidade: item?.quantidade || "",
     numero_sc: item?.numero_sc || "",
     responsavel: item?.responsavel || "",
@@ -63,6 +63,12 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
     queryKey: ["tarefas_cronograma", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
+  });
+
+  const { data: unidades = [], isLoading: isLoadingUnidades } = useQuery({
+    queryKey: ["unidades_medida"],
+    queryFn: () => entities.UnidadeMedida.list(),
+    staleTime: 1000 * 60 * 10,
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -101,6 +107,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
         quantidade: parseFloat(form.quantidade) || 0,
         id_cronograma: form.id_cronograma || null,
         data_cronograma: form.data_cronograma || null,
+        unidade_id: form.unidade_id || null,
       };
       if (item) await entities.ItemMAS.update(item.id, data);
       else await entities.ItemMAS.create(data);
@@ -217,14 +224,14 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Unidade</Label>
-                <Select value={form.unidade || "__none__"} onValueChange={v => set("unidade", v === "__none__" ? "" : v)}>
+                <Select value={form.unidade_id || "__none__"} onValueChange={v => set("unidade_id", v === "__none__" ? "" : v)} disabled={isLoadingUnidades}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecionar unidade..." />
+                    <SelectValue placeholder={isLoadingUnidades ? "Carregando..." : "Selecionar unidade..."} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">— Sem unidade —</SelectItem>
-                    {UNIDADES_MEDIDA.map(u => (
-                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    {unidades.map(u => (
+                      <SelectItem key={u.id} value={u.id}>{u.sigla} — {u.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

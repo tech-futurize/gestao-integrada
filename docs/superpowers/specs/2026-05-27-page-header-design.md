@@ -99,7 +99,7 @@ function getCurrentPage(pathname) {
 }
 ```
 
-O `LayoutWrapper` pode remover a passagem de `currentPageName` como prop, pois o PageHeader lê a rota diretamente.
+O `LayoutWrapper` deve remover a passagem de `currentPageName` como prop — ela deixa de existir no Layout, pois o PageHeader lê a rota diretamente.
 
 ---
 

@@ -15,6 +15,7 @@
 - **QA Engenharia & Suprimentos** *(2026-05-15)* — 13 findings corrigidos (datas, try-catch, loading states, constantes extraídas, filtros unificados); scores ≥ 9/10 em ambos os módulos
 - **Gantt Virtualização** *(2026-05-18)* — `useVirtualizer`, WBS sort numérico, `LEVEL_BG` hierárquico, scroll-sync 3 painéis, coluna "Nív" com badge colorido; favicon local substituído
 - **Auditoria de Organização** *(2026-05-27)* — Limpeza geral do repositório: 4 SQLs aplicados removidos da raiz, componentes órfãos dropados (rotinas/relacionamentos/ruídos), `Agents Mastra/` renomeado para `agents-mastra/` (sem espaço), `docs/skills/` removido, `.gitignore` corrigido (`.env.example` agora versionado), links quebrados de CONTRIBUTING.md corrigidos, `docs/temp/` removida, artefatos brainstorm ignorados.
+- **Login Page Redesign** *(2026-05-27)* — `Login.jsx` reescrito com split-screen (hero slideshow de obras industriais + painel de formulário); slideshow automático de 6 imagens com transição suave; branding FuturizeNow (logo mark + nome); cards de módulos do sistema; CSS animations em `index.css`; responsivo (hero oculto em `< 980px`).
 
 ---
 
@@ -83,17 +84,17 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 > Trava a execução de todos os módulos seguintes. Resolver agora em 2 arquivos centrais transforma ~18 refatorações em deleções simples.
 
-- [ ] Architect: `/brainstorming` curto — confirmar layout do `PageHeader` com PO (breadcrumb, responsividade, posição filtros vs ações)
-- [ ] Builder: Criar `src/components/ui/PageHeader.jsx` com props `{ module, submodule, actions, filters, children }`
-- [ ] Builder: Enriquecer `getCurrentPageName(pathname)` em `App.jsx:54-64` para retornar `{ module, submodule }` via `navigationConfig.js`
-- [ ] Builder: Refatorar `Layout.jsx:211-228` para renderizar `<PageHeader>` com slots de ações
-- [ ] Builder: Aplicar nas 3 páginas-piloto:
-  - `src/pages/Dashboard.jsx` + `ModulosResumo.jsx:887-888` (remover "Resumo por Módulo" + "Visão consolidada…")
-  - `src/pages/Engenharia/Documentos.jsx:294-309` (remover título duplicado + subtítulo; mover filtros para o header)
-  - `src/pages/Suprimentos/MapaSuprimentos.jsx:72-77` (remover título duplicado; filtros ao lado de Novo/Importar)
-- [ ] Designer: revisão visual das 3 piloto (densidade, alinhamento, tema claro/escuro)
-- [ ] Tester: `/audit` nas 3 piloto — score ≥ 9
-- [ ] Documentar padrão em `docs/design/DESIGN.md` (seção "Layout de Página")
+- [x] Architect: `/brainstorming` curto — spec aprovada pelo PO *(2026-05-27)*
+- [x] Builder: Criar `src/components/ui/PageHeader.jsx` com props `{ actions, filters }` — breadcrumb automático via `useLocation()` + `navigationConfig.js` *(2026-05-27)*
+- [x] Builder: `getCurrentPage(pathname)` implementado dentro do próprio `PageHeader.jsx` — retorna `{ moduleName, submodule }` *(2026-05-27)*
+- [x] Builder: Refatorar `Layout.jsx` — header antigo removido; `<main>` entrega apenas `{children}` *(2026-05-27)*
+- [x] Builder: Aplicar nas 3 páginas-piloto *(2026-05-27)*:
+  - `src/pages/Dashboard.jsx` — `<PageHeader />` importado e aplicado ✅
+  - `src/pages/Engenharia/Documentos.jsx` — `<PageHeader filters actions>` aplicado, header local removido ✅
+  - `src/pages/Suprimentos/MapaSuprimentos.jsx` — `<PageHeader actions>` aplicado, header local removido ✅
+- [x] Designer: revisão visual das 3 piloto (densidade, alinhamento, tema claro/escuro) *(2026-05-27)*
+- [x] Tester: `/audit` nas 3 piloto — score ≥ 9 *(2026-05-27)* — Visual 9 · Functional 9 · Trust 9
+- [x] Documentar padrão em `docs/design/DESIGN.md` (seção "Layout de Página") *(2026-05-27)*
 
 > **Sub-task implícita em todos os módulos 1-15:** aplicar `PageHeader`, remover `h1`/subtítulos duplicados, posicionar ações e filtros no slot do header.
 

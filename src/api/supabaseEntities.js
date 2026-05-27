@@ -16,6 +16,7 @@ const TABLE_MAP = {
   Commodity: 'commodities',
   LancamentoCommodity: 'lancamentos_commodity',
   ItemMAS: 'itens_mas',
+  UnidadeMedida: 'unidades_medida',
   DocumentoEngenharia: 'documentos_engenharia',
   Item6WLA: 'itens_6wla',
   Risco: 'riscos',

@@ -4,6 +4,7 @@ import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Search, AlertTriangle, X, Pencil, Trash2, FilterX } from "lucide-react";
 import ItemMASForm from "./ItemMASForm";
 import FilterBar from "@/components/ui/FilterBar";
@@ -153,7 +154,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     if (triggerNew > 0) { setEditItem(null); setShowForm(true); }
   }, [triggerNew]);
 
-  const { data: itens = [], isLoading } = useQuery({
+  const { data: itens = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["itemMAS", selectedProjectId],
     queryFn: () => entities.ItemMAS.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -163,6 +164,12 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     queryKey: ["tarefas_cronograma", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
+  });
+
+  const { data: unidades = [] } = useQuery({
+    queryKey: ["unidades_medida"],
+    queryFn: () => entities.UnidadeMedida.list(),
+    staleTime: 1000 * 60 * 10,
   });
 
   const updateItem = useMutation({
@@ -181,6 +188,8 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     if (!t) return "—";
     return t.codigo_wbs ? `${t.codigo_wbs} — ${t.nome}` : t.nome;
   };
+
+  const unidadeSigla = (id) => unidades.find(u => u.id === id)?.sigla || "";
 
   const kpis = ETAPAS.map((etapa, idx) => ({
     ...etapa,
@@ -336,10 +345,22 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
               </tr>
             </thead>
             <tbody>
-              {isLoading && (
-                <tr><td colSpan={9} className="py-12 text-center text-muted-foreground">Carregando...</td></tr>
+              {isLoading && Array.from({ length: 5 }).map((_, i) => (
+                <tr key={i} className="border-b border-border">
+                  {Array.from({ length: 9 }).map((__, j) => (
+                    <td key={j} className="py-3 px-3"><Skeleton className="h-5 w-full" /></td>
+                  ))}
+                </tr>
+              ))}
+              {!isLoading && isError && (
+                <tr>
+                  <td colSpan={9} className="py-16 text-center">
+                    <p className="text-status-critical font-medium">Erro ao carregar dados</p>
+                    <p className="text-muted-foreground/50 text-xs mt-1">Tente recarregar a página</p>
+                  </td>
+                </tr>
               )}
-              {!isLoading && filtered.length === 0 && (
+              {!isLoading && !isError && filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="py-16 text-center">
                     <p className="text-muted-foreground font-medium">Nenhum item cadastrado</p>
@@ -361,7 +382,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                       {item.fornecedor || "—"}
                     </td>
                     <td className="py-3 px-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                      {item.quantidade ? `${item.quantidade} ${item.unidade || ""}` : "—"}
+                      {item.quantidade ? `${item.quantidade} ${unidadeSigla(item.unidade_id)}`.trim() : "—"}
                     </td>
                     <td className="py-3 px-3 text-center">
                       <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-0.5 rounded">{item.numero_sc || "—"}</span>

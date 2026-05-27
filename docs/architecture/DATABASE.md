@@ -586,6 +586,7 @@ Look-ahead de 6 semanas — vínculo obrigatório com o cronograma.
 |------|---------|-----------|---------|
 | 2026-Q1 | `supabase-migration.sql` | Criação inicial do schema (~30 tabelas) | Todas as tabelas base |
 | 2026-Q2 | `supabase-migration-2026-q2.sql` | Refatoração Geral: Drop Qualidade, criação de `unidades_medida`, `plano_acao`, `rdo`, `usuarios`; ALTER em 10+ tabelas | Ver seção "Tabelas removidas/adicionadas" acima |
+| 2026-05-27 | `supabase-migration-m4-cronograma.sql` | M4.4 — Adiciona `area TEXT` e `disciplina TEXT` em `tarefas_cronograma` | `tarefas_cronograma` |
 
 ---
 
