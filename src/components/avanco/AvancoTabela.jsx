@@ -24,7 +24,8 @@ function CelulaEditavel({ value, onSave, disabled }) {
   const handleBlur = () => {
     if (cancelRef.current) { cancelRef.current = false; return; }
     const num = parseFloat(inputVal);
-    if (!isNaN(num) && num !== valor) onSave(num);
+    if (isNaN(num)) { setEditing(false); return; }
+    if (num !== valor) onSave(num);
     setEditing(false);
   };
 
