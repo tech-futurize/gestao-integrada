@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { ShieldAlert, Plus, Pencil, Trash2 } from "lucide-react";
 import FilterBar from "@/components/ui/FilterBar";
+import PageHeader from "@/components/ui/PageHeader";
 
 const CATEGORIAS = ["Técnico", "Financeiro", "Prazo", "Segurança", "Regulatório", "Ambiental", "Outros"];
 const STATUS_OPTIONS = ["Ativo", "Mitigado", "Encerrado"];
@@ -155,21 +156,24 @@ export default function GestaoRiscos() {
   };
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={ShieldAlert} description="Selecione um projeto para ver a gestão de riscos." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1"><PageEmptyState icon={ShieldAlert} description="Selecione um projeto para ver a gestão de riscos." /></div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Gestão de Riscos</h1>
-          <p className="text-sm text-muted-foreground">Identificação, avaliação e monitoramento de riscos</p>
-        </div>
-        <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Novo Risco
-        </Button>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> Novo Risco
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -359,6 +363,7 @@ export default function GestaoRiscos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
     </div>
   );
 }

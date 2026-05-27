@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowRightLeft, Plus, Pencil, Trash2 } from "lucide-react";
 import FilterBar from "@/components/ui/FilterBar";
+import PageHeader from "@/components/ui/PageHeader";
 
 const STATUS_COLORS = {
   "Identificada": "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
@@ -92,21 +93,24 @@ export default function GestaoMudancas() {
   };
 
   if (!selectedProjectId) {
-    return <PageEmptyState icon={ArrowRightLeft} description="Selecione um projeto para ver as mudanças contratuais." />;
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1"><PageEmptyState icon={ArrowRightLeft} description="Selecione um projeto para ver as mudanças contratuais." /></div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Gestão de Mudanças</h1>
-          <p className="text-sm text-muted-foreground">Controle de mudanças contratuais e seus impactos</p>
-        </div>
-        <Button onClick={() => { setEditing(null); setShowForm(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Nova Mudança
-        </Button>
-      </div>
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button onClick={() => { setEditing(null); setShowForm(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> Nova Mudança
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
 
       {/* Dashboard Executivo (KPIs) */}
       {mudancas.length > 0 && <DashboardExecutivo mudancas={mudancas} />}
@@ -196,6 +200,7 @@ export default function GestaoMudancas() {
           </table>
         </div>
       </div>
+    </div>
     </div>
   );
 }
