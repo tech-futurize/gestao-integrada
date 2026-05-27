@@ -1,317 +1,337 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  ComposedChart, Bar, Line, XAxis, YAxis,
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
-import { TrendingUp, Plus, Upload, Pencil, Trash2 } from "lucide-react";
+import { TrendingUp, Upload } from "lucide-react";
+import { addMonths, parseISO } from "date-fns";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import PageHeader from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/skeleton";
+import AvancoTabela from "@/components/avanco/AvancoTabela";
+import {
+  generateWeeksScale,
+  groupWeeksByMonth,
+} from "@/utils/isoWeek";
 
 const EXPORT_COLUMNS = [
-  { key: "mes_referencia",             label: "Mês Referência",                type: "string",  required: true },
-  { key: "avanco_previsto_mensal",     label: "Avanço Previsto Mensal (%)",    type: "number" },
-  { key: "avanco_realizado_mensal",    label: "Avanço Realizado Mensal (%)",   type: "number" },
-  { key: "avanco_previsto_acumulado",  label: "Avanço Previsto Acumulado (%)", type: "number" },
-  { key: "avanco_realizado_acumulado", label: "Avanço Realizado Acumulado (%)",type: "number" },
+  { key: "semana_iso",              label: "Semana ISO",    type: "string", required: true },
+  { key: "avanco_previsto_mensal",  label: "Previsto (%)",  type: "number" },
+  { key: "avanco_realizado_mensal", label: "Realizado (%)", type: "number" },
+  { key: "avanco_projetado",        label: "Projetado (%)", type: "number" },
 ];
-
-const EMPTY_FORM = {
-  mes_referencia: "",
-  avanco_previsto_mensal: "",
-  avanco_realizado_mensal: "",
-  avanco_previsto_acumulado: "",
-  avanco_realizado_acumulado: "",
-};
-
-function fmtMes(mesRef) {
-  if (!mesRef) return "—";
-  const [year, month] = mesRef.split("-");
-  const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-  return `${meses[parseInt(month, 10) - 1]}/${year?.slice(2)}`;
-}
 
 export default function Avancos() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(EMPTY_FORM);
   const [showImportExport, setShowImportExport] = useState(false);
+  const [viewMode, setViewMode] = useState("mes"); // "semana" | "mes"
 
-  const { data: avancos = [], isLoading } = useQuery({
+  // ── Queries ──────────────────────────────────────────────────────────────────
+
+  const { data: avancos = [], isPending, isError } = useQuery({
     queryKey: ["avanco_fisico", selectedProjectId],
     queryFn: () => entities.AvancoFisico.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
 
-  const sorted = useMemo(
-    () => [...avancos].sort((a, b) => (a.mes_referencia || "").localeCompare(b.mes_referencia || "")),
-    [avancos]
-  );
-
-  const createMut = useMutation({
-    mutationFn: (data) => entities.AvancoFisico.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["avanco_fisico"] });
-      setShowForm(false);
-      setEditing(null);
-      setForm(EMPTY_FORM);
-      toast({ variant: "success", description: "Registro criado com sucesso." });
-    },
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  const { data: projetoArr = [] } = useQuery({
+    queryKey: ["projetos", selectedProjectId],
+    queryFn: () => entities.Projeto.filter({ id: selectedProjectId }),
+    enabled: !!selectedProjectId,
   });
+  const projeto = projetoArr[0] ?? null;
 
-  const updateMut = useMutation({
-    mutationFn: ({ id, data }) => entities.AvancoFisico.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["avanco_fisico"] });
-      setShowForm(false);
-      setEditing(null);
-      setForm(EMPTY_FORM);
-      toast({ variant: "success", description: "Registro atualizado." });
-    },
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
-  });
+  // ── Escala de semanas (-3m / +1a) ────────────────────────────────────────────
 
-  const deleteMut = useMutation({
-    mutationFn: (id) => entities.AvancoFisico.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["avanco_fisico"] }),
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
-  });
+  const { weeks, monthGroups } = useMemo(() => {
+    if (!projeto?.data_inicio || !projeto?.data_fim_prevista) {
+      return { weeks: [], monthGroups: [] };
+    }
+    const start = addMonths(parseISO(projeto.data_inicio), -3);
+    const end   = addMonths(parseISO(projeto.data_fim_prevista), 12);
+    const ws    = generateWeeksScale(start, end);
+    return { weeks: ws, monthGroups: groupWeeksByMonth(ws) };
+  }, [projeto]);
 
-  const ultimo = sorted[sorted.length - 1];
-  const prevAcum = ultimo?.avanco_previsto_acumulado || 0;
-  const realAcum = ultimo?.avanco_realizado_acumulado || 0;
-  const desvio = realAcum - prevAcum;
+  // ── Map semana_iso → registro ─────────────────────────────────────────────────
 
-  const chartData = sorted.map((a) => ({
-    name: fmtMes(a.mes_referencia),
-    "Prev. Acum.": a.avanco_previsto_acumulado || 0,
-    "Real. Acum.": a.avanco_realizado_acumulado || 0,
-    "Prev. Mensal": a.avanco_previsto_mensal || 0,
-    "Real. Mensal": a.avanco_realizado_mensal || 0,
-  }));
+  const dataMap = useMemo(() => {
+    const m = new Map();
+    for (const row of avancos) {
+      if (row.semana_iso) m.set(row.semana_iso, row);
+    }
+    return m;
+  }, [avancos]);
 
-  const handleEdit = (item) => {
-    setEditing(item);
-    setForm({
-      mes_referencia: item.mes_referencia || "",
-      avanco_previsto_mensal: item.avanco_previsto_mensal ?? "",
-      avanco_realizado_mensal: item.avanco_realizado_mensal ?? "",
-      avanco_previsto_acumulado: item.avanco_previsto_acumulado ?? "",
-      avanco_realizado_acumulado: item.avanco_realizado_acumulado ?? "",
+  // ── Acumulados e KPIs ────────────────────────────────────────────────────────
+
+  const { withAccum, accumByWeek, kpis } = useMemo(() => {
+    const sorted = weeks
+      .filter(w => dataMap.has(w))
+      .map(w => dataMap.get(w));
+
+    let prevAcum = 0, realAcum = 0, projAcum = 0;
+    const accumByWeek = new Map();
+
+    const withAccum = sorted.map(row => {
+      prevAcum += row.avanco_previsto_mensal  ?? 0;
+      realAcum += row.avanco_realizado_mensal ?? 0;
+      projAcum += row.avanco_projetado        ?? 0;
+      accumByWeek.set(row.semana_iso, { prevAcum, realAcum, projAcum });
+      return { ...row, prevAcum, realAcum, projAcum };
     });
-    setShowForm(true);
+
+    const totalPrev    = prevAcum;
+    const pctTotalReal = totalPrev > 0 ? (realAcum / totalPrev) * 100 : 0;
+    const pctTotalProj = totalPrev > 0 ? (projAcum / totalPrev) * 100 : 0;
+    const desvio       = realAcum - prevAcum;
+
+    return { withAccum, accumByWeek, kpis: { pctTotalReal, pctTotalProj, desvio } };
+  }, [weeks, dataMap]);
+
+  // ── Dados do gráfico ──────────────────────────────────────────────────────────
+
+  const chartData = useMemo(() => {
+    if (viewMode === "semana") {
+      return withAccum.map(row => ({
+        name:     "S" + row.semana_iso.split("-W")[1],
+        previsto:  row.avanco_previsto_mensal  ?? 0,
+        realizado: row.avanco_realizado_mensal ?? 0,
+        projetado: row.avanco_projetado        ?? 0,
+        prevAcum:  row.prevAcum,
+        realAcum:  row.realAcum,
+      }));
+    }
+    // Modo mês: agrupa semanas por monthGroups
+    return monthGroups.map(g => {
+      const prev = g.weeks.reduce((s, w) => s + (dataMap.get(w)?.avanco_previsto_mensal  ?? 0), 0);
+      const real = g.weeks.reduce((s, w) => s + (dataMap.get(w)?.avanco_realizado_mensal ?? 0), 0);
+      const proj = g.weeks.reduce((s, w) => s + (dataMap.get(w)?.avanco_projetado        ?? 0), 0);
+      const lastW = g.weeks[g.weeks.length - 1];
+      const acum  = accumByWeek.get(lastW) ?? { prevAcum: 0, realAcum: 0 };
+      return { name: g.label, previsto: prev, realizado: real, projetado: proj, prevAcum: acum.prevAcum, realAcum: acum.realAcum };
+    });
+  }, [viewMode, withAccum, monthGroups, dataMap, accumByWeek]);
+
+  // ── Mutation de save inline ───────────────────────────────────────────────────
+
+  const saveMut = useMutation({
+    mutationFn: async ({ semana_iso, field, value }) => {
+      const existing = dataMap.get(semana_iso);
+      const payload = {
+        projeto_id:              selectedProjectId,
+        semana_iso,
+        avanco_previsto_mensal:  existing?.avanco_previsto_mensal  ?? 0,
+        avanco_realizado_mensal: existing?.avanco_realizado_mensal ?? 0,
+        avanco_projetado:        existing?.avanco_projetado        ?? 0,
+        [field]: value,
+      };
+      // Regra: ao salvar Real, zerar Projetado da mesma semana
+      if (field === "avanco_realizado_mensal") {
+        payload.avanco_projetado = 0;
+      }
+      if (existing?.id) {
+        return entities.AvancoFisico.update(existing.id, payload);
+      }
+      return entities.AvancoFisico.create(payload);
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["avanco_fisico", selectedProjectId] }),
+    onError: e =>
+      toast({ title: "Erro ao salvar", description: e.message, variant: "destructive" }),
+  });
+
+  const handleSave = (semana_iso, field, value) => {
+    saveMut.mutate({ semana_iso, field, value });
   };
 
-  const handleSubmit = () => {
-    const payload = {
-      ...form,
+  // ── Import / Export ───────────────────────────────────────────────────────────
+
+  const handleExport = () =>
+    weeks.map(w => {
+      const row = dataMap.get(w) ?? {};
+      return {
+        semana_iso:              w,
+        avanco_previsto_mensal:  row.avanco_previsto_mensal  ?? 0,
+        avanco_realizado_mensal: row.avanco_realizado_mensal ?? 0,
+        avanco_projetado:        row.avanco_projetado        ?? 0,
+      };
+    });
+
+  const handleImport = async row => {
+    const existing = await entities.AvancoFisico.filter({
       projeto_id: selectedProjectId,
-      avanco_previsto_mensal: parseFloat(form.avanco_previsto_mensal) || 0,
-      avanco_realizado_mensal: parseFloat(form.avanco_realizado_mensal) || 0,
-      avanco_previsto_acumulado: parseFloat(form.avanco_previsto_acumulado) || 0,
-      avanco_realizado_acumulado: parseFloat(form.avanco_realizado_acumulado) || 0,
-    };
-    if (editing) updateMut.mutate({ id: editing.id, data: payload });
-    else createMut.mutate(payload);
-  };
-
-  const handleImport = async (row) => {
+      semana_iso: row.semana_iso,
+    });
     const payload = {
-      projeto_id:                  selectedProjectId,
-      mes_referencia:              row.mes_referencia              || "",
-      avanco_previsto_mensal:      row.avanco_previsto_mensal      ?? 0,
-      avanco_realizado_mensal:     row.avanco_realizado_mensal     ?? 0,
-      avanco_previsto_acumulado:   row.avanco_previsto_acumulado   ?? 0,
-      avanco_realizado_acumulado:  row.avanco_realizado_acumulado  ?? 0,
+      projeto_id:              selectedProjectId,
+      semana_iso:              row.semana_iso,
+      avanco_previsto_mensal:  parseFloat(row.avanco_previsto_mensal)  || 0,
+      avanco_realizado_mensal: parseFloat(row.avanco_realizado_mensal) || 0,
+      avanco_projetado:        parseFloat(row.avanco_projetado)        || 0,
     };
-    const existing = await entities.AvancoFisico.filter({ projeto_id: selectedProjectId, mes_referencia: payload.mes_referencia });
     if (existing.length > 0) {
       await entities.AvancoFisico.update(existing[0].id, payload);
     } else {
       await entities.AvancoFisico.create(payload);
     }
-    queryClient.invalidateQueries({ queryKey: ["avanco_fisico"] });
+    queryClient.invalidateQueries({ queryKey: ["avanco_fisico", selectedProjectId] });
   };
+
+  // ── Guards ────────────────────────────────────────────────────────────────────
 
   if (!selectedProjectId) {
     return (
       <div className="flex flex-col h-full">
         <PageHeader />
         <div className="flex-1">
-          <PageEmptyState icon={TrendingUp} description="Selecione um projeto na barra lateral para ver o avanço físico." />
+          <PageEmptyState
+            icon={TrendingUp}
+            description="Selecione um projeto na barra lateral para ver o avanço físico."
+          />
         </div>
       </div>
     );
   }
 
+  if (isPending) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1 p-6 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+          </div>
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-48 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState
+            icon={TrendingUp}
+            description="Erro ao carregar dados de avanço físico. Tente recarregar a página."
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!projeto?.data_inicio || !projeto?.data_fim_prevista) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState
+            icon={TrendingUp}
+            description="Configure as datas de início e fim do projeto em Configurações → Gerenciar Projeto."
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowImportExport(true)}>
-              <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
-            </Button>
-            <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
-              <Plus className="w-4 h-4 mr-2" /> Novo Registro
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => setShowImportExport(true)}>
+            <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+          </Button>
         }
       />
+
       <div className="flex-1 overflow-auto p-6 space-y-6">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "Previsto Acumulado", value: `${prevAcum.toFixed(1)}%`, color: "#9ca3af" },
-          { label: "Realizado Acumulado", value: `${realAcum.toFixed(1)}%`, color: "#3b82f6" },
-          { label: "Desvio", value: `${desvio >= 0 ? "+" : ""}${desvio.toFixed(1)}%`, color: desvio >= 0 ? "#16a34a" : "#ef4444" },
-          { label: "Meses Registrados", value: avancos.length, color: "#26405d" },
-        ].map(kpi => (
-          <div key={kpi.label} className="bg-card rounded-xl border border-border p-4">
-            <p className="text-xs text-muted-foreground">{kpi.label}</p>
-            <p className="text-2xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
-          </div>
-        ))}
-      </div>
 
-      {/* Gráficos */}
-      {chartData.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-card rounded-xl border border-border p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Curva S — Acumulado</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="prevGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#9ca3af" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="realGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} unit="%" domain={[0, 100]} />
-                <Tooltip formatter={(v) => [`${v}%`]} />
-                <Legend />
-                <Area type="monotone" dataKey="Prev. Acum." stroke="#9ca3af" fill="url(#prevGrad)" strokeWidth={2} strokeDasharray="5 3" />
-                <Area type="monotone" dataKey="Real. Acum." stroke="#3b82f6" fill="url(#realGrad)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="bg-card rounded-xl border border-border p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Avanço Mensal</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} unit="%" />
-                <Tooltip formatter={(v) => [`${v}%`]} />
-                <Legend />
-                <Bar dataKey="Prev. Mensal" fill="#e5e7eb" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Real. Mensal" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "%Total Real",       value: `${kpis.pctTotalReal.toFixed(1)}%`, color: "#3b82f6" },
+            { label: "%Total Projetado",  value: `${kpis.pctTotalProj.toFixed(1)}%`, color: "#f59e0b" },
+            {
+              label: "Desvio Acumulado",
+              value: `${kpis.desvio >= 0 ? "+" : ""}${kpis.desvio.toFixed(1)}%`,
+              color: kpis.desvio >= 0 ? "#16a34a" : "#ef4444",
+            },
+            { label: "Semanas c/ Dados", value: avancos.filter(a => a.semana_iso).length, color: "#26405d" },
+          ].map(kpi => (
+            <div key={kpi.label} className="bg-card rounded-xl border border-border p-4">
+              <p className="text-xs text-muted-foreground">{kpi.label}</p>
+              <p className="text-2xl font-bold tabular-nums" style={{ color: kpi.color }}>{kpi.value}</p>
+            </div>
+          ))}
         </div>
-      )}
 
-      {/* Tabela */}
-      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Mês / Ano</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Prev. Mensal</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Real. Mensal</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Prev. Acum.</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Real. Acum.</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Desvio</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
-            {!isLoading && sorted.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-muted-foreground">Nenhum registro cadastrado</td></tr>}
-            {sorted.map((item, i) => {
-              const dev = (item.avanco_realizado_acumulado || 0) - (item.avanco_previsto_acumulado || 0);
-              return (
-                <tr key={item.id} className={`border-b border-border hover:bg-muted/40 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
-                  <td className="px-4 py-3 font-medium text-foreground">{fmtMes(item.mes_referencia)}</td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">{(item.avanco_previsto_mensal || 0).toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">{(item.avanco_realizado_mensal || 0).toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right font-medium text-muted-foreground">{(item.avanco_previsto_acumulado || 0).toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right font-bold text-blue-600 dark:text-blue-400">{(item.avanco_realizado_acumulado || 0).toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right font-bold" style={{ color: dev >= 0 ? "#16a34a" : "#ef4444" }}>
-                    {dev >= 0 ? "+" : ""}{dev.toFixed(2)}%
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => handleEdit(item)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => deleteMut.mutate(item.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modal */}
-      <Dialog open={showForm} onOpenChange={open => { if (!open) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar Registro" : "Novo Registro de Avanço"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="space-y-1 col-span-2">
-              <Label>Mês / Ano (YYYY-MM)</Label>
-              <Input type="month" value={form.mes_referencia} onChange={e => setForm(f => ({ ...f, mes_referencia: e.target.value }))} />
+        {/* Gráfico */}
+        {chartData.length > 0 && (
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Avanço Físico — {viewMode === "mes" ? "Mensal" : "Semanal"}
+              </p>
+              <div className="flex gap-1">
+                {[
+                  { key: "mes",    label: "Mês" },
+                  { key: "semana", label: "Semana" },
+                ].map(m => (
+                  <button
+                    key={m.key}
+                    onClick={() => setViewMode(m.key)}
+                    className={`px-2.5 py-0.5 text-xs rounded transition-colors ${
+                      viewMode === m.key
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label>Avanço Previsto Mensal (%)</Label>
-              <Input type="number" step="0.01" min={0} max={100} value={form.avanco_previsto_mensal} onChange={e => setForm(f => ({ ...f, avanco_previsto_mensal: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Avanço Realizado Mensal (%)</Label>
-              <Input type="number" step="0.01" min={0} max={100} value={form.avanco_realizado_mensal} onChange={e => setForm(f => ({ ...f, avanco_realizado_mensal: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Avanço Previsto Acumulado (%)</Label>
-              <Input type="number" step="0.01" min={0} max={100} value={form.avanco_previsto_acumulado} onChange={e => setForm(f => ({ ...f, avanco_previsto_acumulado: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Avanço Realizado Acumulado (%)</Label>
-              <Input type="number" step="0.01" min={0} max={100} value={form.avanco_realizado_acumulado} onChange={e => setForm(f => ({ ...f, avanco_realizado_acumulado: e.target.value }))} />
-            </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                <YAxis yAxisId="left"  tick={{ fontSize: 10 }} unit="%" domain={[0, "auto"]} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} unit="%" domain={[0, 100]} />
+                <Tooltip formatter={(v, name) => [`${Number(v).toFixed(2)}%`, name]} />
+                <Legend />
+                <Bar yAxisId="left" dataKey="previsto"  name="Previsto"  fill="#e5e7eb" radius={[3,3,0,0]} />
+                <Bar yAxisId="left" dataKey="realizado" name="Realizado" fill="#3b82f6" radius={[3,3,0,0]} />
+                <Bar yAxisId="left" dataKey="projetado" name="Projetado" fill="#f59e0b" radius={[3,3,0,0]} />
+                <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Prev. Acum." stroke="#9ca3af" strokeDasharray="5 3" dot={false} strokeWidth={2} />
+                <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Real. Acum." stroke="#2563eb" dot={false} strokeWidth={2} />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
-          <DialogFooter className="gap-2">
-            {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); }}>Excluir</Button>}
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
-              {editing ? "Salvar" : "Criar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        )}
+
+        {/* Tabela transposta */}
+        <AvancoTabela
+          weeks={weeks}
+          monthGroups={monthGroups}
+          dataMap={dataMap}
+          onSave={handleSave}
+          isSaving={saveMut.isPending}
+        />
+
+      </div>
 
       <ImportExportDialog
         open={showImportExport}
@@ -319,10 +339,9 @@ export default function Avancos() {
         title="Avanço Físico"
         exportFileName="avanco_fisico"
         columns={EXPORT_COLUMNS}
-        onExport={() => sorted}
+        onExport={handleExport}
         onImport={handleImport}
       />
-      </div>
     </div>
   );
 }
