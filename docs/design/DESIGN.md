@@ -256,6 +256,143 @@ Recursos visuais em `/docs/design/assets/`:
 
 ---
 
+## 9. Layout de Página (PageHeader)
+
+### Hierarquia obrigatória
+
+Toda página do sistema deve seguir esta estrutura, nesta ordem:
+
+1. `<PageHeader />` — breadcrumb automático + slot de ações
+2. Cards de KPIs / totalizadores (quando houver)
+3. Filtros (se houver) + tabela ou visualização principal
+
+**Proibido:** `<h1>` duplicando o breadcrumb · subtítulos descritivos abaixo do header · mini-headers locais com `flex justify-between`.
+
+### Componente
+
+**Localização:** [src/components/ui/PageHeader.jsx](../../src/components/ui/PageHeader.jsx)
+
+```jsx
+<PageHeader
+  actions={<JSX />}   // botões de ação (Novo, Importar…) — opcional
+/>
+```
+
+| Prop | Tipo | Padrão | Descrição |
+|------|------|--------|-----------|
+| `actions` | `ReactNode` | `undefined` | Botões à direita (Novo, Importar, Exportar…) |
+
+**Não existe prop `module` nem `submodule`** — o componente deriva automaticamente o breadcrumb via `useLocation()` + `navigationConfig.js`. A página não precisa (nem deve) passar o próprio título.
+
+### Renderização visual por viewport
+
+**Desktop e Mobile — com ações:**
+```
+┌───────────────────────────────────────┐
+│ Contratos › Medições        [+ Nova]  │
+└───────────────────────────────────────┘
+```
+
+**Sem ações (ex: Dashboard):**
+```
+┌───────────────────────────────────────┐
+│ Dashboard                             │
+└───────────────────────────────────────┘
+```
+
+### Comportamento responsivo
+
+| Viewport | Comportamento |
+|----------|---------------|
+| `≥ 1024px` | Breadcrumb + ações alinhados na mesma linha, espaçador `flex-1` no meio |
+| `< 1024px` | Mesmo layout — sem diferença pois não há filtros |
+
+### Tokens utilizados
+
+| Token | Valor | Papel |
+|-------|-------|-------|
+| `bg-sidebar` | Cobalt `#102A44` | Fundo da barra — idêntico em light e dark |
+| `border-sidebar-border` | borda azulada | Linha inferior separadora |
+| `text-sidebar-foreground` | branco azulado | Texto do breadcrumb e ícones |
+| `text-sidebar-foreground/50` | 50% opacidade | Separador `›` do breadcrumb |
+
+### Exemplos de uso
+
+**Apenas ações (sem filtros):**
+```jsx
+<PageHeader
+  actions={
+    <Button onClick={openForm} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+      <Plus className="w-4 h-4 mr-2" /> Novo Contrato
+    </Button>
+  }
+/>
+```
+
+**Sem props (ex: Dashboard):**
+```jsx
+<PageHeader />
+```
+
+### Wrapping padrão das páginas
+
+```jsx
+export default function MinhaPagina() {
+  return (
+    <div className="flex flex-col h-full">
+      <PageHeader actions={…} />
+      <div className="flex-1 overflow-auto p-6">
+        {/* filtros (se houver) + conteúdo */}
+      </div>
+    </div>
+  );
+}
+```
+
+### Migração para novos módulos
+
+Ao aplicar o `PageHeader` em qualquer módulo novo ou existente:
+
+1. Remover o bloco local de cabeçalho: `<div className="flex justify-between …">` com `<h1>`, `<p>` e botões
+2. Adicionar `<PageHeader actions={…} />` como **primeiro filho** do wrapper da página
+3. Envolver o conteúdo restante em `<div className="flex-1 overflow-auto p-6">`
+4. Colocar filtros (se houver) dentro do `<div className="flex-1 overflow-auto p-6">`, antes do conteúdo principal
+
+---
+
+## 10. Sidebar — Menu de Usuário (SidebarUserMenu)
+
+**Localização:** [src/components/ui/SidebarUserMenu.jsx](../../src/components/ui/SidebarUserMenu.jsx)
+
+Bloco fixo no rodapé da sidebar, separado por `border-t border-sidebar-border`. Gerencia avatar, toggle de tema e logout.
+
+### Props
+
+| Prop | Tipo | Descrição |
+|------|------|-----------|
+| `collapsed` | `boolean` | `true` quando a sidebar está no modo ícone |
+
+### Comportamento
+
+| Estado | Layout |
+|--------|--------|
+| Expandida | Avatar + nome + email + seta `›` |
+| Colapsada | Apenas avatar centralizado |
+| Popover (ambos) | Abre `side="right" align="end"` com: nome, email, toggle de tema, botão Sair |
+
+### Tokens
+
+- Avatar: `bg-sidebar-primary text-sidebar-primary-foreground rounded-full`
+- Trigger hover: `hover:bg-sidebar-accent`
+- Popover: `bg-sidebar border-sidebar-border text-sidebar-foreground`
+
+### Iniciais do avatar
+
+`full_name` de `user.user_metadata` → primeiras letras do primeiro e último nome.
+Fallback: primeira letra do email. Fallback final: `"?"`.
+
+---
+
 ## Documentos Relacionados
 
 | Precisa saber... | Leia |
