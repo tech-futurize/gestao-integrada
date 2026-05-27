@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { navigationGroups } from "@/lib/navigationConfig";
+import SidebarUserMenu from "@/components/ui/SidebarUserMenu";
 import {
   ChevronDown,
   CheckCircle2,
@@ -204,6 +205,8 @@ export default function Layout({ children }) {
               );
             })}
           </nav>
+
+          <SidebarUserMenu collapsed={collapsed} />
         </aside>
 
         {/* ── MAIN ── */}
