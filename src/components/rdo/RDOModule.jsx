@@ -588,7 +588,7 @@ export default function RDOModule({ selectedProjectId }) {
                     ) : <span className="text-muted-foreground/50 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">
-                    {caso ? <span className="text-xs text-blue-600 dark:text-blue-400 font-medium line-clamp-1 max-w-24">{pleito.titulo.substring(0, 20)}…</span>
+                    {pleito ? <span className="text-xs text-blue-600 dark:text-blue-400 font-medium line-clamp-1 max-w-24">{pleito.titulo.substring(0, 20)}…</span>
                       : <span className="text-muted-foreground/50 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">
