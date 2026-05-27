@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { eachMonthOfInterval, format, parseISO, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,6 +50,7 @@ function mesLabel(date) {
 function CelulaEditavel({ registro, campo, onSave }) {
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState("");
+  const cancelRef = React.useRef(false);
 
   const disabled =
     campo === "quantidade_realizada_mensal" &&
@@ -64,6 +66,10 @@ function CelulaEditavel({ registro, campo, onSave }) {
   const valor = registro[campo] ?? 0;
 
   const handleBlur = () => {
+    if (cancelRef.current) {
+      cancelRef.current = false;
+      return;
+    }
     onSave(registro, campo, Number(inputVal));
     setEditing(false);
   };
@@ -88,8 +94,14 @@ function CelulaEditavel({ registro, campo, onSave }) {
           onChange={(e) => setInputVal(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleBlur();
-            if (e.key === "Escape") setEditing(false);
+            if (e.key === "Enter") {
+              cancelRef.current = false;
+              handleBlur();
+            }
+            if (e.key === "Escape") {
+              cancelRef.current = true;
+              setEditing(false);
+            }
           }}
           className="w-10 text-center border rounded text-xs p-0"
         />
@@ -151,9 +163,11 @@ export default function HistogramaTabela({ tipo }) {
 
   const deleteRecurso = (nome_recurso) => {
     const toDelete = histogramas.filter((r) => r.nome_recurso === nome_recurso);
-    Promise.all(toDelete.map((r) => entities.Histograma.delete(r.id))).then(() =>
-      queryClient.invalidateQueries({ queryKey: ["histogramas", selectedProjectId, tipo] })
-    );
+    Promise.all(toDelete.map((r) => entities.Histograma.delete(r.id)))
+      .then(() =>
+        queryClient.invalidateQueries({ queryKey: ["histogramas", selectedProjectId, tipo] })
+      )
+      .catch(onErr);
   };
 
   const createRecurso = useMutation({
