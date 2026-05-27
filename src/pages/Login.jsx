@@ -264,30 +264,10 @@ export default function Login() {
             <span style={{ fontFamily: '"Inter",sans-serif', fontWeight: 700, letterSpacing: '.18em', fontSize: 12, color: '#e6eef7', textTransform: 'uppercase' }}>
               FuturizeNow
             </span>
-            <span style={{ width: 18, height: 1, background: '#8195A9', opacity: 0.5, flexShrink: 0 }} />
-            <span style={{ fontFamily: '"Inter",sans-serif', fontWeight: 500, letterSpacing: '.16em', fontSize: 11, textTransform: 'uppercase', color: '#8195A9' }}>
-              Sistema de Gestão Integrada
-            </span>
           </header>
 
           {/* Hero claim */}
           <div style={{ maxWidth: 620, display: 'flex', flexDirection: 'column', gap: 22 }}>
-            {/* Eyebrow pill */}
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 10,
-              padding: '6px 12px',
-              border: '1px solid rgba(38,255,255,.35)', color: '#26FFFF',
-              background: 'rgba(38,255,255,.12)',
-              borderRadius: 999,
-              fontFamily: '"Inter",sans-serif', fontWeight: 600, fontSize: 11,
-              letterSpacing: '.18em', textTransform: 'uppercase',
-              width: 'fit-content',
-              boxShadow: '0 0 8px rgba(38,255,255,.45)',
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: 999, background: '#26FFFF', boxShadow: '0 0 8px rgba(38,255,255,.45)', flexShrink: 0 }} />
-              Plataforma EPC
-            </span>
-
             <h1 style={{
               fontFamily: '"Inter",sans-serif', fontWeight: 800,
               fontSize: 'clamp(36px, 4.4vw, 60px)',

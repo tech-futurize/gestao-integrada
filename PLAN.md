@@ -133,9 +133,7 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 5 — PLANEJAMENTO: 6WLA
 
-> **Leitura obrigatória antes de iniciar:** `docs/temp/6wla-redesign.md`
-
-- [ ] Architect: `/brainstorming` — validar com PO a interação das pills S1–S6 + checkboxes inline de restrição antes de codificar. Brief já existe mas a UX precisa de aprovação explícita.
+- [x] Architect: `/brainstorming` — spec das pills S1–S6 + checkboxes inline de restrição aprovada pelo PO *(2026-05-27)*
 - [ ] Builder: Schema — adicionar 6 booleanos de restrição + `observacao TEXT` + índice único `(tarefa_cronograma_id, projeto_id)` em `itens_6wla`
 - [ ] Builder: Remover campo "Responsável" da UI (`SixWLA.jsx:46,257,278,337-340`)
 - [ ] Builder: Implementar vínculo bidirecional com cronograma — atividades via `tarefa_cronograma_id`, dados read-only
