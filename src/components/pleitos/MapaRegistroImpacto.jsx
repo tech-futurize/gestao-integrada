@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { format, endOfWeek, startOfWeek, isWithinInterval, addWeeks, subWeeks } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import HeatmapDrilldown from "./HeatmapDrilldown";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
@@ -120,32 +120,21 @@ export default function MapaRegistroImpacto({ incidentes }) {
       <div className="flex items-start justify-between mb-5 flex-wrap gap-3">
         <div>
           <h3 className="text-base font-bold text-foreground">Mapa de Registro (Heatmap Temporal)</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Impactos por categoria e semana
-            {responsabilidadeFiltro && (
-              <span
-                className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer bg-foreground text-background"
-                onClick={() => setResponsabilidadeFiltro(null)}
-                title="Clique para remover o filtro"
-              >
-                {responsabilidadeFiltro} ✕
-              </span>
-            )}
-          </p>
+          {responsabilidadeFiltro && (
+            <span
+              className="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold cursor-pointer bg-foreground text-background"
+              onClick={() => setResponsabilidadeFiltro(null)}
+              title="Clique para remover o filtro"
+            >
+              {responsabilidadeFiltro} ✕
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mr-1">Intensidade:</span>
-            {[
-              "#f1f5f9", "#dbeafe", "#93c5fd", "#f97316", "#ef4444", "#7f1d1d"
-            ].map((color, i) => (
-              <div key={i} className="w-5 h-5 rounded-sm" style={{ backgroundColor: color, border: i === 0 ? "1px solid #e2e8f0" : "none" }} />
-            ))}
-          </div>
-          <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-            <Download className="w-3.5 h-3.5" />
-            Export
-          </button>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mr-1">Intensidade:</span>
+          {HEATMAP_STEPS.map((step, i) => (
+            <div key={i} className="w-5 h-5 rounded-sm" style={{ backgroundColor: step.bg, border: i === 0 ? "1px solid #e2e8f0" : "none" }} />
+          ))}
         </div>
       </div>
 
@@ -261,11 +250,7 @@ export default function MapaRegistroImpacto({ incidentes }) {
         registros={getDrilldownRegistros()}
       />
 
-      {/* Footer */}
-      <div className="flex items-center gap-6 mt-4 pt-3 border-t border-border">
-        <span className="text-xs text-muted-foreground">Clique em uma célula para ver os registros detalhados.</span>
-        <span className="text-xs text-muted-foreground">Use as setas para navegar entre semanas.</span>
-      </div>
+      <div className="mt-4 pt-3 border-t border-border" />
 
       {/* Charts row */}
       <ChartsRow
@@ -275,6 +260,25 @@ export default function MapaRegistroImpacto({ incidentes }) {
         onPieClick={(name) => setResponsabilidadeFiltro(prev => prev === name ? null : name)}
       />
     </div>
+  );
+}
+
+function RadarAngleTick({ x, y, payload, cx, cy }) {
+  const words = payload.value.split(/\s+/);
+  const lineHeight = 11;
+  const totalHeight = words.length * lineHeight;
+  const startY = y - totalHeight / 2 + lineHeight / 2;
+
+  let textAnchor = "middle";
+  if (x < cx - 10) textAnchor = "end";
+  else if (x > cx + 10) textAnchor = "start";
+
+  return (
+    <text textAnchor={textAnchor} fontSize={9} fill="#6b7280">
+      {words.map((word, i) => (
+        <tspan key={i} x={x} y={startY + i * lineHeight}>{word}</tspan>
+      ))}
+    </text>
   );
 }
 
@@ -308,15 +312,12 @@ function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPi
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-5 border-t border-border">
       {/* Pie chart */}
       <div>
-        <h4 className="text-sm font-bold text-foreground mb-1">Responsabilidade Contratual</h4>
-        <p className="text-xs text-muted-foreground mb-3">
-          Clique em uma fatia para filtrar o mapa acima
+        <h4 className="text-sm font-bold text-foreground mb-3">
+          Responsabilidade Contratual
           {responsabilidadeFiltro && (
-            <span className="ml-2 font-semibold text-ocre">
-              — filtrando: {responsabilidadeFiltro}
-            </span>
+            <span className="ml-2 text-xs font-semibold text-ocre">— filtrando: {responsabilidadeFiltro}</span>
           )}
-        </p>
+        </h4>
         <ResponsiveContainer width="100%" height={240}>
           <PieChart>
             <Pie
@@ -349,14 +350,12 @@ function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPi
 
       {/* Radar chart */}
       <div>
-        <h4 className="text-sm font-bold text-foreground mb-1">Distribuição por Categoria</h4>
-        <p className="text-xs text-muted-foreground mb-3">Total de registros por categoria de impacto</p>
-        <ResponsiveContainer width="100%" height={240}>
-          <RadarChart data={radarData}>
+        <ResponsiveContainer width="100%" height={260}>
+          <RadarChart data={radarData} outerRadius="60%" margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
             <PolarGrid stroke="#e2e8f0" />
             <PolarAngleAxis
               dataKey="category"
-              tick={{ fontSize: 9, fill: "#6b7280", width: 60 }}
+              tick={<RadarAngleTick />}
             />
             <PolarRadiusAxis tick={{ fontSize: 9, fill: "#9ca3af" }} />
             <Radar
