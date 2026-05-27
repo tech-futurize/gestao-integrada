@@ -11,7 +11,12 @@ export default function RDOs() {
     return (
       <div className="flex flex-col h-full">
         <PageHeader />
-        <div className="flex-1"><PageEmptyState icon={FileText} description="Selecione um projeto na barra lateral para acessar os RDOs." /></div>
+        <div className="flex-1">
+          <PageEmptyState
+            icon={FileText}
+            description="Selecione um projeto na barra lateral para acessar os RDOs."
+          />
+        </div>
       </div>
     );
   }

@@ -19,7 +19,12 @@ export default function MapaImpacto() {
     return (
       <div className="flex flex-col h-full">
         <PageHeader />
-        <div className="flex-1"><PageEmptyState icon={MapPin} description="Selecione um projeto na barra lateral para ver o mapa de impacto." /></div>
+        <div className="flex-1">
+          <PageEmptyState
+            icon={MapPin}
+            description="Selecione um projeto na barra lateral para ver o mapa de impacto."
+          />
+        </div>
       </div>
     );
   }

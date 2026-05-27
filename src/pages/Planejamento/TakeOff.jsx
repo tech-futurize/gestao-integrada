@@ -11,7 +11,12 @@ export default function TakeOff() {
     return (
       <div className="flex flex-col h-full">
         <PageHeader />
-        <div className="flex-1"><PageEmptyState icon={Ruler} description="Selecione um projeto no menu lateral para acessar o Take-Off." /></div>
+        <div className="flex-1">
+          <PageEmptyState
+            icon={Ruler}
+            description="Selecione um projeto no menu lateral para acessar o Take-Off."
+          />
+        </div>
       </div>
     );
   }
