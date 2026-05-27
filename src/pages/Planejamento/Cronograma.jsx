@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useDeferredValue } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -42,6 +42,7 @@ export default function Cronograma() {
   const [showBaseline, setShowBaseline] = useState(false);
   const [showCritical, setShowCritical] = useState(false);
   const [busca, setBusca] = useState("");
+  const deferredBusca = useDeferredValue(busca);
   const [filtros, setFiltros] = useState({});
 
   const { data: tarefas = [], isLoading } = useQuery({
@@ -66,8 +67,8 @@ export default function Cronograma() {
     const areas     = filtros.area        || [];
     const discs     = filtros.disciplina  || [];
     return tarefas.filter(t => {
-      if (busca) {
-        const b = busca.toLowerCase();
+      if (deferredBusca) {
+        const b = deferredBusca.toLowerCase();
         if (!t.codigo_wbs?.toLowerCase().includes(b) && !t.nome?.toLowerCase().includes(b)) return false;
       }
       if (statuses.length > 0 && !statuses.includes(calcStatusLabel(t))) return false;
@@ -75,7 +76,7 @@ export default function Cronograma() {
       if (discs.length    > 0 && !discs.includes(t.disciplina))  return false;
       return true;
     });
-  }, [tarefas, busca, filtros]);
+  }, [tarefas, deferredBusca, filtros]);
 
   const handleImport = async (row) => {
     const payload = {

@@ -50,15 +50,10 @@ const EMPTY_FORM = {
 };
 
 // Gera lista de semanas do ano atual
-function getWeeksOfYear() {
-  const weeks = [];
-  const now = new Date();
-  const year = now.getFullYear();
-  for (let w = 1; w <= 52; w++) {
-    weeks.push(`${year}-W${String(w).padStart(2, "0")}`);
-  }
-  return weeks;
-}
+const WEEKS_OF_YEAR = (() => {
+  const year = new Date().getFullYear();
+  return Array.from({ length: 52 }, (_, i) => `${year}-W${String(i + 1).padStart(2, "0")}`);
+})();
 
 function formatWeek(semana_ano) {
   if (!semana_ano) return "—";
@@ -326,7 +321,7 @@ export default function SixWLAPage() {
               <Select value={form.semana_ano} onValueChange={v => setForm(f => ({ ...f, semana_ano: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecione a semana" /></SelectTrigger>
                 <SelectContent className="max-h-60">
-                  {getWeeksOfYear().map(w => <SelectItem key={w} value={w}>{formatWeek(w)}</SelectItem>)}
+                  {WEEKS_OF_YEAR.map(w => <SelectItem key={w} value={w}>{formatWeek(w)}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

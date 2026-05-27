@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -9,47 +10,58 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ProjectProvider } from '@/lib/ProjectContext';
 import { navigationGroups } from '@/lib/navigationConfig';
-
-import Login from './pages/Login';
 import Layout from './Layout';
-import Dashboard from './pages/Dashboard';
+
+// ── Lazy page imports ──────────────────────────────────────────────────────────
+const Login                = lazy(() => import('./pages/Login'));
+const Dashboard            = lazy(() => import('./pages/Dashboard'));
 
 // Engenharia
-import Documentos from './pages/Engenharia/Documentos';
+const Documentos           = lazy(() => import('./pages/Engenharia/Documentos'));
 
 // Suprimentos
-import MapaSuprimentos from './pages/Suprimentos/MapaSuprimentos';
+const MapaSuprimentos      = lazy(() => import('./pages/Suprimentos/MapaSuprimentos'));
 
 // Planejamento
-import PlanejamentoCronograma from './pages/Planejamento/Cronograma';
-import SixWLAPage from './pages/Planejamento/SixWLA';
-import TakeOff from './pages/Planejamento/TakeOff';
-import PlanejamentoHistograma from './pages/Planejamento/Histograma';
-import Avancos from './pages/Planejamento/Avancos';
+const PlanejamentoCronograma = lazy(() => import('./pages/Planejamento/Cronograma'));
+const SixWLAPage           = lazy(() => import('./pages/Planejamento/SixWLA'));
+const TakeOff              = lazy(() => import('./pages/Planejamento/TakeOff'));
+const PlanejamentoHistograma = lazy(() => import('./pages/Planejamento/Histograma'));
+const Avancos              = lazy(() => import('./pages/Planejamento/Avancos'));
 
 // Admin Contratual
-import Contratos from './pages/Contratos';
-import Medicoes from './pages/AdminContratual/Medicoes';
-import RDOs from './pages/AdminContratual/RDOs';
-import Registros from './pages/AdminContratual/Registros';
-import AdminPleitos from './pages/AdminContratual/Pleitos';
-import MapaImpacto from './pages/AdminContratual/MapaImpacto';
+const Contratos            = lazy(() => import('./pages/Contratos'));
+const Medicoes             = lazy(() => import('./pages/AdminContratual/Medicoes'));
+const RDOs                 = lazy(() => import('./pages/AdminContratual/RDOs'));
+const Registros            = lazy(() => import('./pages/AdminContratual/Registros'));
+const AdminPleitos         = lazy(() => import('./pages/AdminContratual/Pleitos'));
+const MapaImpacto          = lazy(() => import('./pages/AdminContratual/MapaImpacto'));
 
 // Riscos e Mudanças
-import GestaoRiscos from './pages/RiscosMudancas/GestaoRiscos';
-import GestaoMudancas from './pages/RiscosMudancas/GestaoMudancas';
+const GestaoRiscos         = lazy(() => import('./pages/RiscosMudancas/GestaoRiscos'));
+const GestaoMudancas       = lazy(() => import('./pages/RiscosMudancas/GestaoMudancas'));
 
 // Agentes
-import ExecutorDados from './pages/Agentes/ExecutorDados';
-import AnalistaNegocio from './pages/Agentes/AnalistaNegocio';
-import AnalistaContratual from './pages/Agentes/AnalistaContratual';
+const ExecutorDados        = lazy(() => import('./pages/Agentes/ExecutorDados'));
+const AnalistaNegocio      = lazy(() => import('./pages/Agentes/AnalistaNegocio'));
+const AnalistaContratual   = lazy(() => import('./pages/Agentes/AnalistaContratual'));
 
 // Configurações
-import GerenciarProjeto from './pages/Configuracoes/GerenciarProjeto';
-import AgenteConfig from './pages/Configuracoes/AgenteConfig';
-import Usuarios from './pages/Configuracoes/Usuarios';
+const GerenciarProjeto     = lazy(() => import('./pages/Configuracoes/GerenciarProjeto'));
+const AgenteConfig         = lazy(() => import('./pages/Configuracoes/AgenteConfig'));
+const Usuarios             = lazy(() => import('./pages/Configuracoes/Usuarios'));
 
+// ── Setup ──────────────────────────────────────────────────────────────────────
 setupIframeMessaging();
+
+// ── Page loading fallback ──────────────────────────────────────────────────────
+function PageLoader() {
+  return (
+    <div className="flex flex-1 items-center justify-center h-full min-h-[300px]">
+      <div className="w-7 h-7 border-4 border-border border-t-foreground rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function getCurrentPageName(pathname) {
   if (pathname === '/dashboard') return 'Dashboard';
@@ -86,14 +98,16 @@ const ProtectedRoute = ({ children }) => {
 const wrap = (Component) => (
   <ProtectedRoute>
     <LayoutWrapper>
-      <Component />
+      <Suspense fallback={<PageLoader />}>
+        <Component />
+      </Suspense>
     </LayoutWrapper>
   </ProtectedRoute>
 );
 
 const AuthenticatedApp = () => (
   <Routes>
-    <Route path="/login" element={<Login />} />
+    <Route path="/login" element={<Suspense fallback={<PageLoader />}><Login /></Suspense>} />
 
     {/* Rota raiz */}
     <Route path="/" element={<Navigate to="/dashboard" replace />} />

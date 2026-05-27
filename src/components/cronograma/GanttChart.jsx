@@ -6,9 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Date utilities ────────────────────────────────────────────────────────────
 
-const today = new Date();
-today.setHours(0, 0, 0, 0);
-
 function parseDate(str) {
   if (!str) return null;
   const d = new Date(str + "T00:00:00");
@@ -150,6 +147,12 @@ function ExtraCell({ col, t, bg }) {
 export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, showCritical, onView }) {
   const [collapsed, setCollapsed]       = useState(new Set());
   const [colsExpanded, setColsExpanded] = useState(false);
+
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   // parentRef: único container de scroll vertical (usado pelo virtualizador)
   const parentRef     = useRef(null);

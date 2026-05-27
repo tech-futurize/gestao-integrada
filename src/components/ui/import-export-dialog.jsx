@@ -1,6 +1,4 @@
 import { useState, useRef } from "react";
-import * as XLSX from "xlsx";
-import Papa from "papaparse";
 import {
   Dialog,
   DialogContent,
@@ -14,11 +12,12 @@ import { ColumnMappingDialog } from "@/components/ui/column-mapping-dialog";
 import { ImportProgressDialog } from "@/components/ui/import-progress-dialog";
 import { validateAndConvert } from "@/utils/importTypeValidator";
 
-function parseFileToRows(file) {
-  return new Promise((resolve, reject) => {
-    const ext = file.name.split(".").pop().toLowerCase();
+async function parseFileToRows(file) {
+  const ext = file.name.split(".").pop().toLowerCase();
 
-    if (ext === "csv") {
+  if (ext === "csv") {
+    const { default: Papa } = await import("papaparse");
+    return new Promise((resolve, reject) => {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
@@ -26,7 +25,10 @@ function parseFileToRows(file) {
         complete: (results) => resolve(results.data),
         error: reject,
       });
-    } else if (ext === "xlsx" || ext === "xls") {
+    });
+  } else if (ext === "xlsx" || ext === "xls") {
+    const XLSX = await import("xlsx");
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const workbook = XLSX.read(e.target.result, { type: "array" });
@@ -36,10 +38,10 @@ function parseFileToRows(file) {
       };
       reader.onerror = reject;
       reader.readAsArrayBuffer(file);
-    } else {
-      reject(new Error("Formato não suportado. Use CSV, XLSX ou XLS."));
-    }
-  });
+    });
+  } else {
+    throw new Error("Formato não suportado. Use CSV, XLSX ou XLS.");
+  }
 }
 
 export function ImportExportDialog({
@@ -152,7 +154,7 @@ export function ImportExportDialog({
     setPhase("done");
   }
 
-  function handleExport(format) {
+  async function handleExport(format) {
     const data = onExport();
     if (!data || data.length === 0) return;
 
@@ -165,6 +167,7 @@ export function ImportExportDialog({
     });
 
     if (format === "csv") {
+      const { default: Papa } = await import("papaparse");
       const csv = Papa.unparse(exportData);
       const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -174,6 +177,7 @@ export function ImportExportDialog({
       a.click();
       URL.revokeObjectURL(url);
     } else {
+      const XLSX = await import("xlsx");
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Dados");

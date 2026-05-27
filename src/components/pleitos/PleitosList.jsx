@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { FileText, ChevronRight, AlertCircle, Clock, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -73,6 +74,15 @@ function LoadingSkeleton() {
 
 /* ── Main Component ─────────────────────────────────────────────────────── */
 export default function PleitosList({ casos, isLoading, onSelect }) {
+  const parentRef = useRef(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: casos.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 60,
+    overscan: 5,
+  });
+
   if (isLoading) return <LoadingSkeleton />;
 
   const total = casos.length;
@@ -142,73 +152,89 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
           ))}
         </div>
 
-        {/* Linhas */}
-        {casos.map((pleito, idx) => (
-          <div
-            key={pleito.id}
-            onClick={() => onSelect(pleito)}
-            className={`grid items-center px-5 py-3.5 cursor-pointer transition-colors hover:bg-muted/50 ${
-              idx < casos.length - 1 ? "border-b border-border" : ""
-            }`}
-            style={{ gridTemplateColumns: "3fr 1.5fr 1fr 1fr 1.5fr 1fr 40px" }}
-          >
-            {/* Título */}
-            <div className="min-w-0 pr-3">
-              <p className="text-sm font-semibold text-foreground truncate">{pleito.titulo}</p>
-              {pleito.descricao_problema && (
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{pleito.descricao_problema}</p>
-              )}
-            </div>
+        {/* Linhas virtualizadas */}
+        <div
+          ref={parentRef}
+          className="overflow-y-auto max-h-[min(600px,60vh)]"
+        >
+          <div style={{ height: rowVirtualizer.getTotalSize(), position: "relative" }}>
+            {rowVirtualizer.getVirtualItems().map(vr => {
+              const pleito = casos[vr.index];
+              return (
+                <div
+                  key={vr.key}
+                  onClick={() => onSelect(pleito)}
+                  className={`grid items-center px-5 py-3.5 cursor-pointer transition-colors hover:bg-muted/50 ${
+                    vr.index < casos.length - 1 ? "border-b border-border" : ""
+                  }`}
+                  style={{
+                    gridTemplateColumns: "3fr 1.5fr 1fr 1fr 1.5fr 1fr 40px",
+                    position: "absolute",
+                    top: vr.start,
+                    left: 0,
+                    right: 0,
+                  }}
+                >
+                  {/* Título */}
+                  <div className="min-w-0 pr-3">
+                    <p className="text-sm font-semibold text-foreground truncate">{pleito.titulo}</p>
+                    {pleito.descricao_problema && (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{pleito.descricao_problema}</p>
+                    )}
+                  </div>
 
-            {/* Categoria */}
-            <div className="flex flex-wrap gap-1">
-              {(pleito.categorias || []).slice(0, 2).map(cat => (
-                <span key={cat} className="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-muted text-muted-foreground border border-border">
-                  {cat}
-                </span>
-              ))}
-            </div>
+                  {/* Categoria */}
+                  <div className="flex flex-wrap gap-1">
+                    {(pleito.categorias || []).slice(0, 2).map(cat => (
+                      <span key={cat} className="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-muted text-muted-foreground border border-border">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
 
-            {/* Prioridade */}
-            <div>
-              {(() => {
-                const b = prioridadeBadge(pleito.prioridade);
-                return (
-                  <span className={`${badgeBase} ${b.cls}`} style={b.glow ? { boxShadow: b.glow } : undefined}>
-                    {pleito.prioridade}
-                  </span>
-                );
-              })()}
-            </div>
+                  {/* Prioridade */}
+                  <div>
+                    {(() => {
+                      const b = prioridadeBadge(pleito.prioridade);
+                      return (
+                        <span className={`${badgeBase} ${b.cls}`} style={b.glow ? { boxShadow: b.glow } : undefined}>
+                          {pleito.prioridade}
+                        </span>
+                      );
+                    })()}
+                  </div>
 
-            {/* Status */}
-            <div>
-              {(() => {
-                const b = statusBadge(pleito.status);
-                return (
-                  <span className={`${badgeBase} ${b.cls}`} style={b.glow ? { boxShadow: b.glow } : undefined}>
-                    {pleito.status}
-                  </span>
-                );
-              })()}
-            </div>
+                  {/* Status */}
+                  <div>
+                    {(() => {
+                      const b = statusBadge(pleito.status);
+                      return (
+                        <span className={`${badgeBase} ${b.cls}`} style={b.glow ? { boxShadow: b.glow } : undefined}>
+                          {pleito.status}
+                        </span>
+                      );
+                    })()}
+                  </div>
 
-            {/* Responsável */}
-            <div className="text-xs text-muted-foreground truncate">{pleito.responsavel || "—"}</div>
+                  {/* Responsável */}
+                  <div className="text-xs text-muted-foreground truncate">{pleito.responsavel || "—"}</div>
 
-            {/* Data */}
-            <div className="text-xs text-muted-foreground">
-              {pleito.data_abertura
-                ? format(new Date(pleito.data_abertura), "dd/MM/yyyy", { locale: ptBR })
-                : "—"}
-            </div>
+                  {/* Data */}
+                  <div className="text-xs text-muted-foreground">
+                    {pleito.data_abertura
+                      ? format(new Date(pleito.data_abertura), "dd/MM/yyyy", { locale: ptBR })
+                      : "—"}
+                  </div>
 
-            {/* Chevron */}
-            <div className="flex justify-end">
-              <ChevronRight size={16} className="text-muted-foreground" />
-            </div>
+                  {/* Chevron */}
+                  <div className="flex justify-end">
+                    <ChevronRight size={16} className="text-muted-foreground" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );

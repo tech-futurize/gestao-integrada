@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/lib/ProjectContext";
@@ -42,11 +42,13 @@ export default function HistogramaEquipamentos() {
     enabled: !!selectedProjectId,
   });
 
-  const tp = filtros.tipo || [];
-  const sorted = [...histogramas]
-    .filter(h => h.tipo_equipamento)
-    .filter(h => tp.length === 0 || tp.includes(h.tipo_equipamento))
-    .sort((a, b) => new Date(a.mes_referencia) - new Date(b.mes_referencia));
+  const sorted = useMemo(() => {
+    const tp = filtros.tipo || [];
+    return [...histogramas]
+      .filter(h => h.tipo_equipamento)
+      .filter(h => tp.length === 0 || tp.includes(h.tipo_equipamento))
+      .sort((a, b) => new Date(a.mes_referencia) - new Date(b.mes_referencia));
+  }, [histogramas, filtros.tipo]);
 
   const createMutation = useMutation({
     mutationFn: (data) => entities.Histograma.create({ ...data, projeto_id: selectedProjectId }),
@@ -70,11 +72,11 @@ export default function HistogramaEquipamentos() {
     onError: onErr,
   });
 
-  const dadosGrafico = sorted.map((h) => ({
+  const dadosGrafico = useMemo(() => sorted.map((h) => ({
     semana: `S${format(new Date(h.mes_referencia + "T12:00:00"), "ww", { locale: ptBR })} (${format(new Date(h.mes_referencia + "T12:00:00"), "dd/MM")})`,
     previsto: h.quantidade_prevista_mensal || 0,
     rdo: h.quantidade_rdo_mensal || 0,
-  }));
+  })), [sorted]);
 
   return (
     <div className="space-y-6">
