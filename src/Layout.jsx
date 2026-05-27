@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AnimatedThemeToggler } from "@/components/ui/AnimatedThemeToggler";
 import { navigationGroups } from "@/lib/navigationConfig";
 import {
   ChevronDown,
@@ -21,7 +20,7 @@ import {
 
 const LOGO_URL = "/logo.png";
 
-export default function Layout({ children, currentPageName }) {
+export default function Layout({ children }) {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -209,25 +208,7 @@ export default function Layout({ children, currentPageName }) {
 
         {/* ── MAIN ── */}
         <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <header className="bg-background border-b border-border px-6 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-            <h1 className="text-xl font-bold text-foreground">
-              {currentPageName}
-            </h1>
-            <div className="flex items-center gap-3">
-              <AnimatedThemeToggler
-                variant="circle"
-                duration={400}
-                className="w-9 h-9 flex items-center justify-center rounded-lg border border-border bg-muted text-foreground hover:bg-accent transition-colors"
-              />
-              <img
-                src={LOGO_URL}
-                alt="Futurize"
-                className="h-9 object-contain"
-              />
-            </div>
-          </header>
-
-          <div className="flex-1 overflow-auto bg-background">
+          <div className="flex-1 flex flex-col overflow-hidden bg-background">
             {children}
           </div>
         </main>

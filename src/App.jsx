@@ -4,12 +4,11 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { setupIframeMessaging } from './lib/iframe-messaging';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ProjectProvider } from '@/lib/ProjectContext';
-import { navigationGroups } from '@/lib/navigationConfig';
 import Layout from './Layout';
 
 // ── Lazy page imports ──────────────────────────────────────────────────────────
@@ -63,22 +62,8 @@ function PageLoader() {
   );
 }
 
-function getCurrentPageName(pathname) {
-  if (pathname === '/dashboard') return 'Dashboard';
-  for (const group of navigationGroups) {
-    if (group.path === pathname) return group.title;
-    if (group.children) {
-      const child = group.children.find(c => c.path === pathname);
-      if (child) return child.title;
-    }
-  }
-  return '';
-}
-
 const LayoutWrapper = ({ children }) => {
-  const location = useLocation();
-  const currentPageName = getCurrentPageName(location.pathname);
-  return <Layout currentPageName={currentPageName}>{children}</Layout>;
+  return <Layout>{children}</Layout>;
 };
 
 const ProtectedRoute = ({ children }) => {
