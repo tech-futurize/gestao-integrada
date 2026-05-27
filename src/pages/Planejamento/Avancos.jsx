@@ -102,8 +102,8 @@ export default function Avancos() {
     avancos.forEach((r) => {
       if (r.semana_iso <= currentWK) {
         prev += r.avanco_previsto_mensal ?? 0;
-        real += r.avanco_realizado_mensal ?? 0;
       }
+      real += r.avanco_realizado_mensal ?? 0;
       proj += r.avanco_projetado ?? 0;
     });
     return { prevAcum: prev, realAcum: real, projAcum: proj, desvio: real - prev };
