@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 
 const EXPORT_COLUMNS = [
-  { key: "nome_recurso",                label: "Recurso",       type: "string", required: true },
-  { key: "tipo",                        label: "Tipo",          type: "string", required: true },
-  { key: "mes_referencia",              label: "Mês (YYYY-MM)", type: "string", required: true },
-  { key: "quantidade_prevista_mensal",  label: "Qtd Prevista",  type: "number" },
-  { key: "quantidade_realizada_mensal", label: "Qtd Real",      type: "number" },
-  { key: "qtd_projetado",               label: "Qtd Projetado", type: "number" },
+  { key: "nome_recurso",  label: "Recurso",       type: "string", required: true },
+  { key: "tipo",          label: "Tipo",          type: "string", required: true },
+  { key: "mes_referencia", label: "Mês (YYYY-MM)", type: "string", required: true },
+  { key: "qtd_prevista",  label: "Qtd Prevista",  type: "number" },
+  { key: "qtd_real",      label: "Qtd Real",      type: "number" },
+  { key: "qtd_projetado", label: "Qtd Projetado", type: "number" },
 ];
 
 export default function Histograma() {
@@ -25,8 +25,6 @@ export default function Histograma() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("MO");
   const [showImportExport, setShowImportExport] = useState(false);
-  const [_importing, setImporting] = useState(false);
-
   const { data: histogramas = [] } = useQuery({
     queryKey: ["histogramas-all", selectedProjectId],
     queryFn: () => entities.Histograma.filter({ projeto_id: selectedProjectId }),
@@ -34,18 +32,17 @@ export default function Histograma() {
   });
 
   const handleImport = async (row) => {
-    setImporting(true);
     try {
-      const mesRef = row.mes_referencia?.length === 7
-        ? `${row.mes_referencia}-01`
-        : row.mes_referencia;
+      const YYYY_MM_RE = /^\d{4}-\d{2}$/;
+      const rawMes = (row.mes_referencia ?? "").trim();
+      const mesRef = YYYY_MM_RE.test(rawMes) ? `${rawMes}-01` : row.mes_referencia;
       const payload = {
         projeto_id: selectedProjectId,
         nome_recurso: row.nome_recurso || "",
-        tipo: row.tipo === "MO" ? "MO" : "Equipamento",
+        tipo: (row.tipo ?? "").trim().toUpperCase() === "MO" ? "MO" : "Equipamento",
         mes_referencia: mesRef,
-        quantidade_prevista_mensal: Number(row.quantidade_prevista_mensal) || 0,
-        quantidade_realizada_mensal: Number(row.quantidade_realizada_mensal) || 0,
+        quantidade_prevista_mensal:  Number(row.qtd_prevista)  || 0,
+        quantidade_realizada_mensal: Number(row.qtd_real)       || 0,
         qtd_projetado: Number(row.qtd_projetado) || 0,
       };
       const existing = await entities.Histograma.filter({
@@ -60,10 +57,9 @@ export default function Histograma() {
         await entities.Histograma.create(payload);
       }
       queryClient.invalidateQueries({ queryKey: ["histogramas"] });
+      queryClient.invalidateQueries({ queryKey: ["histogramas-all", selectedProjectId] });
     } catch (e) {
       toast({ title: "Erro ao importar", description: friendlyMessage(e), variant: "destructive" });
-    } finally {
-      setImporting(false);
     }
   };
 
@@ -120,8 +116,12 @@ export default function Histograma() {
         exportFileName="histograma"
         columns={EXPORT_COLUMNS}
         onExport={() => histogramas.map((h) => ({
-          ...h,
+          nome_recurso:   h.nome_recurso,
+          tipo:           h.tipo,
           mes_referencia: h.mes_referencia?.slice(0, 7),
+          qtd_prevista:   h.quantidade_prevista_mensal,
+          qtd_real:       h.quantidade_realizada_mensal,
+          qtd_projetado:  h.qtd_projetado,
         }))}
         onImport={handleImport}
       />
