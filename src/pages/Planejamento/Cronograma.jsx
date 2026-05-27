@@ -45,8 +45,9 @@ export default function Cronograma() {
   const [busca, setBusca] = useState("");
   const deferredBusca = useDeferredValue(busca);
   const [filtros, setFiltros] = useState({});
+  const [show6WLA, setShow6WLA] = useState(false);
 
-  const { data: tarefas = [], isLoading } = useQuery({
+  const { data: tarefas = [], isLoading, isError } = useQuery({
     queryKey: ["tarefas_cronograma", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -59,14 +60,17 @@ export default function Cronograma() {
     const real = t.avanco_realizado ?? 0;
     const prev = t.avanco_previsto ?? 0;
     if (real >= 100) return "Concluído";
-    if (real >= prev) return "Em Dia";
-    return "Atrasado";
+    if (real === 0)  return "A Iniciar";
+    if (real < prev) return "Atrasada";
+    return "Em Andamento";
   };
 
   const filteredTarefas = useMemo(() => {
     const statuses  = filtros.status      || [];
     const areas     = filtros.area        || [];
     const discs     = filtros.disciplina  || [];
+    const today     = new Date(); today.setHours(0, 0, 0, 0);
+    const sixWeeks  = new Date(today); sixWeeks.setDate(today.getDate() + 42);
     return tarefas.filter(t => {
       if (deferredBusca) {
         const b = deferredBusca.toLowerCase();
@@ -75,9 +79,15 @@ export default function Cronograma() {
       if (statuses.length > 0 && !statuses.includes(calcStatusLabel(t))) return false;
       if (areas.length    > 0 && !areas.includes(t.area))        return false;
       if (discs.length    > 0 && !discs.includes(t.disciplina))  return false;
+      if (show6WLA) {
+        const inicio = t.data_inicio_planejada ? new Date(t.data_inicio_planejada + "T00:00:00") : null;
+        const fim    = t.data_fim_planejada    ? new Date(t.data_fim_planejada    + "T00:00:00") : null;
+        if (!inicio || !fim) return false;
+        if (fim < today || inicio > sixWeeks) return false;
+      }
       return true;
     });
-  }, [tarefas, deferredBusca, filtros]);
+  }, [tarefas, deferredBusca, filtros, show6WLA]);
 
   const handleImport = async (row) => {
     const payload = {
@@ -117,6 +127,17 @@ export default function Cronograma() {
         <PageHeader />
         <div className="flex-1">
           <PageEmptyState icon={CalendarDays} description="Selecione um projeto na barra lateral para ver o cronograma." />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={CalendarDays} description="Erro ao carregar o cronograma. Verifique sua conexão e tente novamente." />
         </div>
       </div>
     );
@@ -167,7 +188,7 @@ export default function Cronograma() {
         <FilterBar
           storageKey="cronograma-filtros"
           filters={[
-            { key: "status",      label: "Status",     options: ["Em Dia", "Atrasado", "Concluído"] },
+            { key: "status",      label: "Status",     options: ["A Iniciar", "Em Andamento", "Atrasada", "Concluído"] },
             { key: "area",        label: "Área",        options: areaOptions },
             { key: "disciplina",  label: "Disciplina",  options: discOptions },
           ]}
@@ -196,6 +217,9 @@ export default function Cronograma() {
         </Button>
         <Button variant={showCritical ? "default" : "outline"} size="sm" onClick={() => setShowCritical(c => !c)}>
           <GitBranch className="w-3.5 h-3.5 mr-1" /> Caminho Crítico
+        </Button>
+        <Button variant={show6WLA ? "default" : "outline"} size="sm" onClick={() => setShow6WLA(v => !v)}>
+          <CalendarDays className="w-3.5 h-3.5 mr-1" /> 6WLA
         </Button>
       </div>
 

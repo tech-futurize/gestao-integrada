@@ -25,9 +25,10 @@ function fmtDate(str) {
 function calcStatus(t) {
   const real = t.avanco_realizado ?? 0;
   const prev = t.avanco_previsto ?? 0;
-  if (real >= 100) return { label: "Concluído", color: "#16a34a" };
-  if (real >= prev) return { label: "Em Dia",   color: "#2563eb" };
-  return                  { label: "Atrasado",  color: "#ef4444" };
+  if (real >= 100) return { label: "Concluído",    color: "#16a34a" };
+  if (real === 0)  return { label: "A Iniciar",    color: "#6b7280" };
+  if (real < prev) return { label: "Atrasada",     color: "#ef4444" };
+  return                  { label: "Em Andamento", color: "#2563eb" };
 }
 
 // ── WBS sort ──────────────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ const TIPO_COLORS = { Resumo: "#26405d", Atividade: "#3b82f6", Marco: "#c35e1e" 
 
 const W_ID   = 96;
 const W_NIV  = 40;
-const W_NOME = 500;
+const W_NOME = 320;
 const W_ACT  = 43;
 
 const LEVEL_BG = {
@@ -178,7 +179,6 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
   }, [sortedTarefas]);
 
   const hasChildren = (t) => t.codigo_wbs ? childrenSet.has(t.codigo_wbs) : false;
-  const _isLeaf      = (t) => !hasChildren(t);
 
   // ── collapsedWbsSet: O(1) ancestor check por profundidade ──
   const collapsedWbsSet = useMemo(() => {
@@ -225,15 +225,23 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
 
     const hdrs = [];
     let cur = new Date(minD);
-    while (cur <= maxD) {
-      hdrs.push({ label: cur.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }), date: new Date(cur) });
-      cur.setDate(cur.getDate() + (zoom === "dias" ? 1 : 7));
+    if (zoom === "meses") {
+      cur.setDate(1);
+      while (cur <= maxD) {
+        hdrs.push({ label: cur.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }), date: new Date(cur) });
+        cur.setMonth(cur.getMonth() + 1);
+      }
+    } else {
+      while (cur <= maxD) {
+        hdrs.push({ label: cur.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }), date: new Date(cur) });
+        cur.setDate(cur.getDate() + 7);
+      }
     }
     return { minDate: minD, headers: hdrs };
   }, [sortedTarefas, zoom]);
 
-  const CELL_W     = zoom === "dias" ? 32 : 80;
-  const scale      = CELL_W / (zoom === "dias" ? 1 : 7);
+  const CELL_W     = zoom === "meses" ? 120 : 80;
+  const scale      = zoom === "meses" ? 120 / 30.44 : 80 / 7;
   const ganttWidth = Math.max(headers.length * CELL_W, 400);
 
   const getBar = (t) => {
