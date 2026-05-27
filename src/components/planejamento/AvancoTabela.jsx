@@ -148,5 +148,50 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave }) {
 // ── AvancoTabela ──────────────────────────────────────────────────────────────
 
 export default function AvancoTabela({ projectWeeks, weekMap, prevAcum, realAcum, projAcum, onSave }) {
-  return <div>placeholder</div>;
+  const monthGroups = useMemo(() => groupWeeksByMonth(projectWeeks), [projectWeeks]);
+
+  if (projectWeeks.length === 0) return null;
+
+  return (
+    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="text-sm border-collapse w-max min-w-full">
+          <thead className="sticky top-0 z-20">
+            {/* Linha 1: coluna label (rowspan=2) + meses (colspan=N semanas) */}
+            <tr className="bg-muted border-b border-border">
+              <th
+                rowSpan={2}
+                className="sticky left-0 z-30 bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap min-w-[160px]"
+              >
+                —
+              </th>
+              {monthGroups.map(({ label, weeks }) => (
+                <th
+                  key={label}
+                  colSpan={weeks.length}
+                  className="px-2 py-2 text-center text-xs font-semibold text-muted-foreground border-l-2 border-border whitespace-nowrap"
+                >
+                  {label}
+                </th>
+              ))}
+            </tr>
+            {/* Linha 2: dd/MM de cada segunda-feira */}
+            <tr className="bg-muted/60 border-b border-border">
+              {projectWeeks.map((w) => (
+                <th
+                  key={weekKey(w)}
+                  className="px-2 py-1 text-center text-[10px] font-medium text-muted-foreground border-l border-border whitespace-nowrap"
+                >
+                  {weekLabel(w)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {/* Task 4 adicionará as linhas aqui */}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
