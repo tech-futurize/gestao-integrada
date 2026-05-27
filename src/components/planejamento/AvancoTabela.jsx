@@ -188,7 +188,100 @@ export default function AvancoTabela({ projectWeeks, weekMap, prevAcum, realAcum
             </tr>
           </thead>
           <tbody>
-            {/* Task 4 adicionará as linhas aqui */}
+            {/* ── Linha Previsto ─────────────────────────────── */}
+            <tr className="border-b border-border bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100/50 dark:hover:bg-blue-900/20 transition-colors">
+              <td className="sticky left-0 z-10 bg-blue-50 dark:bg-blue-950/20 px-4 py-2 min-w-[160px] border-r border-border">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                  <span className="text-xs font-bold text-blue-700 dark:text-blue-300">Previsto</span>
+                  <span className="text-[10px] text-muted-foreground ml-1">{prevAcum.toFixed(1)}%</span>
+                </div>
+              </td>
+              {projectWeeks.map((w) => {
+                const wk = weekKey(w);
+                return (
+                  <CelulaEditavelAvanco
+                    key={wk + "-prev"}
+                    registro={weekMap.get(wk) ?? null}
+                    campo="avanco_previsto_mensal"
+                    blocked={false}
+                    onSave={(campo, valor) => onSave(wk, campo, valor)}
+                  />
+                );
+              })}
+            </tr>
+
+            {/* ── Linha Real ──────────────────────────────────── */}
+            <tr className="border-b border-border bg-green-50 dark:bg-green-950/20 hover:bg-green-100/50 dark:hover:bg-green-900/20 transition-colors">
+              <td className="sticky left-0 z-10 bg-green-50 dark:bg-green-950/20 px-4 py-2 min-w-[160px] border-r border-border">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                  <span className="text-xs font-bold text-green-700 dark:text-green-300">Real</span>
+                  <span className="text-[10px] text-muted-foreground ml-1">{realAcum.toFixed(1)}%</span>
+                </div>
+                {prevAcum > 0 && (
+                  <>
+                    <div className="h-[3px] bg-muted rounded-full mt-1.5">
+                      <div
+                        className="h-[3px] bg-green-500 rounded-full"
+                        style={{ width: `${Math.min((realAcum / prevAcum) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">
+                      {realAcum.toFixed(1)} / {prevAcum.toFixed(1)} prev
+                    </div>
+                  </>
+                )}
+              </td>
+              {projectWeeks.map((w) => {
+                const wk = weekKey(w);
+                return (
+                  <CelulaEditavelAvanco
+                    key={wk + "-real"}
+                    registro={weekMap.get(wk) ?? null}
+                    campo="avanco_realizado_mensal"
+                    blocked={!isCurrentOrPastWeek(w)}
+                    onSave={(campo, valor) => onSave(wk, campo, valor)}
+                  />
+                );
+              })}
+            </tr>
+
+            {/* ── Linha Projetado ─────────────────────────────── */}
+            <tr className="border-b border-border bg-yellow-50 dark:bg-yellow-950/20 hover:bg-yellow-100/50 dark:hover:bg-yellow-900/20 transition-colors">
+              <td className="sticky left-0 z-10 bg-yellow-50 dark:bg-yellow-950/20 px-4 py-2 min-w-[160px] border-r border-border">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
+                  <span className="text-xs font-bold text-amber-700 dark:text-amber-300">Projetado</span>
+                  <span className="text-[10px] text-muted-foreground ml-1">{projAcum.toFixed(1)}%</span>
+                </div>
+                {prevAcum > 0 && (
+                  <>
+                    <div className="h-[3px] bg-muted rounded-full mt-1.5">
+                      <div
+                        className="h-[3px] bg-amber-500 rounded-full"
+                        style={{ width: `${Math.min((projAcum / prevAcum) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-[9px] text-muted-foreground mt-0.5">
+                      {projAcum.toFixed(1)} / {prevAcum.toFixed(1)} prev
+                    </div>
+                  </>
+                )}
+              </td>
+              {projectWeeks.map((w) => {
+                const wk = weekKey(w);
+                return (
+                  <CelulaEditavelAvanco
+                    key={wk + "-proj"}
+                    registro={weekMap.get(wk) ?? null}
+                    campo="avanco_projetado"
+                    blocked={false}
+                    onSave={(campo, valor) => onSave(wk, campo, valor)}
+                  />
+                );
+              })}
+            </tr>
           </tbody>
         </table>
       </div>
