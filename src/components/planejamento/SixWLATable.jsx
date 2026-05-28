@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { getWeekBadgeStyle } from "@/utils/sixWLAUtils";
+import { useDarkMode } from "@/hooks/useDarkMode";
 
 /**
  * @param {{
@@ -27,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
  */
 export default function SixWLATable({ items, restricoes, isLoading, onUpdate, onDelete }) {
   const [editingObs, setEditingObs] = useState(null); // { id: string, value: string }
+  const isDark = useDarkMode();
 
   const handleObsClose = (open, item) => {
     if (!open && editingObs?.id === item.id) {
@@ -96,7 +99,11 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                     <div className="flex flex-wrap gap-1 justify-center">
                       {item.semanasBadge.length > 0
                         ? item.semanasBadge.map(s => (
-                            <span key={s} className="text-xs font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                            <span
+                              key={s}
+                              style={getWeekBadgeStyle(parseInt(s.slice(1), 10) - 1, isDark)}
+                              className="text-xs font-semibold px-1.5 py-0.5 rounded border"
+                            >
                               {s}
                             </span>
                           ))
