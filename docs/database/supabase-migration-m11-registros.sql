@@ -4,6 +4,8 @@
 -- 1. Colunas de schema
 ALTER TABLE registros ADD COLUMN IF NOT EXISTS tipo_registro TEXT DEFAULT 'Ata de Reunião';
 ALTER TABLE registros ADD COLUMN IF NOT EXISTS responsabilidade TEXT;
+ALTER TABLE registros ADD COLUMN IF NOT EXISTS anexos JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE registros ADD COLUMN IF NOT EXISTS atividades_vinculadas JSONB DEFAULT '[]'::jsonb;
 
 -- 2. Bucket de storage para anexos de registros
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

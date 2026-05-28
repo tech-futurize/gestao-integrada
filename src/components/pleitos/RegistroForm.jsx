@@ -152,6 +152,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
   };
 
   const formatBytes = (bytes) => {
+    if (!bytes && bytes !== 0) return "";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -385,7 +386,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
           </div>
 
           {/* Modal de seleção de atividades */}
-          <Dialog open={showAtivModal} onOpenChange={setShowAtivModal}>
+          <Dialog open={showAtivModal} onOpenChange={(open) => { setShowAtivModal(open); if (!open) setModalSearch(""); }}>
             <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Vincular Atividades ao Cronograma</DialogTitle>
