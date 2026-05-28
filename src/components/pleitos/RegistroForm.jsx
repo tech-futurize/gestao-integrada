@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toDateInput, toUtcIso } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Paperclip, X as XIcon } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 
 const IMPACTO_CATEGORIES = [
@@ -50,6 +51,8 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
   const [existingAnexos, setExistingAnexos] = useState(incidente?.anexos || []);
   const [removedPaths, setRemovedPaths] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
+  const fileInputRef = useRef(null);
 
   const isRDO = formData.tipo_registro === "RDO";
 
@@ -71,6 +74,10 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (newFiles.length > 0 && !selectedProjectId) {
+      toast({ title: "Projeto não selecionado", description: "Selecione um projeto antes de anexar arquivos.", variant: "destructive" });
+      return;
+    }
     setIsUploading(true);
 
     try {
@@ -89,6 +96,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
         uploaded.push({
           nome: file.name,
           url: urlData.publicUrl,
+          path,
           tipo: file.type,
           tamanho: file.size,
         });
@@ -96,7 +104,8 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
 
       // Deletar arquivos removidos do storage
       if (removedPaths.length > 0) {
-        await supabase.storage.from("registros-anexos").remove(removedPaths);
+        const { error: deleteError } = await supabase.storage.from("registros-anexos").remove(removedPaths);
+        if (deleteError) console.warn("Storage delete parcial:", deleteError.message);
       }
 
       onSubmit({
@@ -109,7 +118,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
         anexos: [...existingAnexos, ...uploaded],
       });
     } catch (err) {
-      throw err;
+      toast({ title: "Erro ao enviar arquivo", description: err.message, variant: "destructive" });
     } finally {
       setIsUploading(false);
     }
@@ -128,8 +137,8 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
   };
 
   const handleRemoveExisting = (anexo) => {
-    const path = anexo.url.split("/registros-anexos/")[1];
-    if (path) setRemovedPaths(prev => [...prev, path]);
+    const storagePath = anexo.path || anexo.url.split("/registros-anexos/")[1];
+    if (storagePath) setRemovedPaths(prev => [...prev, storagePath]);
     setExistingAnexos(prev => prev.filter(a => a.url !== anexo.url));
   };
 
@@ -370,13 +379,13 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => document.getElementById("registro-file-input").click()}
+                onClick={() => fileInputRef.current?.click()}
               >
                 <Paperclip className="w-3 h-3 mr-1" />
                 Adicionar arquivo
               </Button>
               <input
-                id="registro-file-input"
+                ref={fileInputRef}
                 type="file"
                 multiple
                 className="hidden"
@@ -390,8 +399,8 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
             )}
 
             {/* Anexos já salvos */}
-            {existingAnexos.map((anexo, idx) => (
-              <div key={`existing-${idx}`} className="flex items-center justify-between gap-2 p-2 bg-muted rounded-md">
+            {existingAnexos.map((anexo) => (
+              <div key={anexo.url} className="flex items-center justify-between gap-2 p-2 bg-muted rounded-md">
                 <a
                   href={anexo.url}
                   target="_blank"
