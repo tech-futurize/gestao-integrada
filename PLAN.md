@@ -235,7 +235,7 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 11 — REGISTROS
 
-- [ ] Designer: Cards superiores: Qtd por Tipo, Qtd por Responsabilidade, Qtd por Status
+- [x] Designer: Cards superiores: Qtd por Tipo, Qtd por Responsabilidade, Qtd por Status *(2026-05-28)*
 - [ ] Builder: Adicionar filtros: Responsabilidade e Período (Início/Término)
 - [ ] Builder: Remover campo Hora (`IncidenteForm.jsx:115`)
 - [ ] Builder: Suporte a anexo de arquivos
