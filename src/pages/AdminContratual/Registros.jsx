@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import FilterBar from "@/components/ui/FilterBar";
 import { entities } from "@/api/supabaseEntities";
 import RegistroForm from "@/components/pleitos/RegistroForm";
@@ -46,6 +56,7 @@ export default function Registros() {
 
   const [showForm, setShowForm] = useState(false);
   const [editingRegistro, setEditingRegistro] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filtros, setFiltros] = useState({});
   const [dateFrom, setDateFrom] = useState("");
@@ -69,6 +80,7 @@ export default function Registros() {
       queryClient.invalidateQueries({ queryKey: ["registros"] });
       setShowForm(false);
       setEditingRegistro(null);
+      toast({ title: "Registro criado com sucesso." });
     },
     onError: (e) => onErr(e.message),
   });
@@ -79,13 +91,17 @@ export default function Registros() {
       queryClient.invalidateQueries({ queryKey: ["registros"] });
       setShowForm(false);
       setEditingRegistro(null);
+      toast({ title: "Registro atualizado com sucesso." });
     },
     onError: (e) => onErr(e.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => entities.Registro.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["registros"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["registros"] });
+      toast({ title: "Registro excluído." });
+    },
     onError: (e) => onErr(e.message),
   });
 
@@ -226,7 +242,16 @@ export default function Registros() {
             </div>
 
             {dimensionGroups.map(({ title, items }) => (
-              <div key={title} className="flex-1 rounded-xl px-4 py-3 bg-card border border-border">
+              <div
+                key={title}
+                className="flex-1 rounded-xl px-4 py-3"
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                }}
+              >
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2.5">{title}</p>
                 <div className="flex flex-col gap-2">
                   {items.map(({ label, count }) => {
@@ -386,6 +411,7 @@ export default function Registros() {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8"
+                        aria-label="Editar registro"
                         onClick={() => { setEditingRegistro(inc); setShowForm(true); }}
                       >
                         <Edit className="w-4 h-4" />
@@ -394,7 +420,8 @@ export default function Registros() {
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-status-critical hover:bg-status-critical/10"
-                        onClick={() => deleteMutation.mutate(inc.id)}
+                        aria-label="Excluir registro"
+                        onClick={() => setConfirmDeleteId(inc.id)}
                         disabled={deleteMutation.isPending}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -409,6 +436,26 @@ export default function Registros() {
 
       </div>
       </div>
+
+      <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir registro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O registro será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-status-critical hover:bg-status-critical/90"
+              onClick={() => { deleteMutation.mutate(confirmDeleteId); setConfirmDeleteId(null); }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

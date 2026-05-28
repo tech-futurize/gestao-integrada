@@ -44,12 +44,12 @@ function StatusBadge({ avanco_realizado, avanco_previsto }) {
 export default function ViewTarefaModal({ tarefa, onClose }) {
   if (!tarefa) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 overflow-y-auto py-6 px-4">
-      <div className="w-full max-w-xl bg-card rounded-xl shadow-2xl border border-border overflow-hidden flex flex-col my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-xl bg-card rounded-xl shadow-2xl border border-border flex flex-col max-h-[90vh]">
 
         {/* Barra colorida + cabeçalho */}
         <div className="h-1.5 w-full" style={{ backgroundColor: ACCENT }} />
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${ACCENT}20` }}>
               <CalendarDays className="w-5 h-5" style={{ color: ACCENT }} />
@@ -70,7 +70,7 @@ export default function ViewTarefaModal({ tarefa, onClose }) {
         </div>
 
         {/* Corpo */}
-        <div className="p-6 space-y-4 overflow-y-auto">
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
 
           <SectionDivider label="Identificação" color="#6366f1" />
           <div className="grid grid-cols-2 gap-4">
@@ -130,7 +130,7 @@ export default function ViewTarefaModal({ tarefa, onClose }) {
           </div>
         </div>
 
-        <div className="px-6 py-3 border-t border-border flex justify-end">
+        <div className="px-6 py-3 border-t border-border flex justify-end shrink-0">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium bg-muted hover:bg-muted/80 text-foreground transition-colors">
             Fechar
           </button>

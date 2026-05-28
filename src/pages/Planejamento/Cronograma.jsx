@@ -8,7 +8,7 @@ import ViewTarefaModal from "@/components/cronograma/ViewTarefaModal";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import FilterBar from "@/components/ui/FilterBar";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Upload, Eye, GitBranch, Search } from "lucide-react";
+import { CalendarDays, Upload, Eye, GitBranch, Search, Layers } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 
 const EXPORT_COLUMNS = [
@@ -40,6 +40,9 @@ export default function Cronograma() {
   const [zoom, setZoom] = useState("semanas");
   const [showBaseline, setShowBaseline] = useState(false);
   const [showCritical, setShowCritical] = useState(false);
+  const [selectedLevels, setSelectedLevels] = useState(new Set());
+  const [levelsOpen, setLevelsOpen] = useState(false);
+  const [somenteAtividades, setSomenteAtividades] = useState(false);
   const [busca, setBusca] = useState("");
   const deferredBusca = useDeferredValue(busca);
   const [filtros, setFiltros] = useState({});
@@ -77,6 +80,11 @@ export default function Cronograma() {
       if (statuses.length > 0 && !statuses.includes(calcStatusLabel(t))) return false;
       if (areas.length    > 0 && !areas.includes(t.area))        return false;
       if (discs.length    > 0 && !discs.includes(t.disciplina))  return false;
+      if (selectedLevels.size > 0 || somenteAtividades) {
+        const matchesLevel     = selectedLevels.size > 0 && selectedLevels.has(t.nivel);
+        const matchesAtividade = somenteAtividades && t.tipo === "Atividade";
+        if (!matchesLevel && !matchesAtividade) return false;
+      }
       if (show6WLA) {
         const inicio = t.data_inicio_planejada ? new Date(t.data_inicio_planejada + "T00:00:00") : null;
         const fim    = t.data_fim_planejada    ? new Date(t.data_fim_planejada    + "T00:00:00") : null;
@@ -85,7 +93,7 @@ export default function Cronograma() {
       }
       return true;
     });
-  }, [tarefas, deferredBusca, filtros, show6WLA]);
+  }, [tarefas, deferredBusca, filtros, show6WLA, selectedLevels, somenteAtividades]);
 
   const handleImport = async (row) => {
     const payload = {
@@ -143,8 +151,16 @@ export default function Cronograma() {
 
   const totalTarefas = filteredTarefas.length;
   const concluidas   = filteredTarefas.filter(t => (t.avanco_realizado || 0) === 100).length;
+  const emAndamento  = filteredTarefas.filter(t => (t.avanco_realizado || 0) > 0 && (t.avanco_realizado || 0) < 100).length;
   const atrasadas    = filteredTarefas.filter(t => t.data_fim_planejada && new Date(t.data_fim_planejada) < new Date() && (t.avanco_realizado || 0) < 100).length;
   const criticas     = filteredTarefas.filter(t => t.caminho_critico).length;
+  const _hoje6wla    = new Date(); _hoje6wla.setHours(0, 0, 0, 0);
+  const _fim6wla     = new Date(_hoje6wla); _fim6wla.setDate(_hoje6wla.getDate() + 42);
+  const tarefas6WLA  = filteredTarefas.filter(t => {
+    const inicio = t.data_inicio_planejada ? new Date(t.data_inicio_planejada + "T00:00:00") : null;
+    const fim    = t.data_fim_planejada    ? new Date(t.data_fim_planejada    + "T00:00:00") : null;
+    return inicio && fim && inicio <= _fim6wla && fim >= _hoje6wla;
+  }).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -163,12 +179,14 @@ export default function Cronograma() {
       <div className="flex-1 overflow-hidden p-6 flex flex-col gap-4">
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 shrink-0">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
         {[
-          { label: "Total de Tarefas",  value: totalTarefas, color: "#26405d" },
+          { label: "Total de Atividades", value: totalTarefas, color: "#26405d" },
           { label: "Concluídas",        value: concluidas,   color: "#16a34a" },
+          { label: "Em Andamento",      value: emAndamento,  color: "#eab308" },
           { label: "Atrasadas",         value: atrasadas,    color: "#ef4444" },
           { label: "Caminho Crítico",   value: criticas,     color: "#c35e1e" },
+          { label: "Atividades 6WLA",    value: tarefas6WLA,  color: "#6366f1" },
         ].map(kpi => (
           <div key={kpi.label} className="bg-card rounded-xl border border-border p-4">
             <p className="text-xs text-muted-foreground">{kpi.label}</p>
@@ -177,8 +195,8 @@ export default function Cronograma() {
         ))}
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-start gap-2 shrink-0">
+      {/* Filtros + Controles — linha única */}
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
           <input
@@ -197,11 +215,11 @@ export default function Cronograma() {
           ]}
           onChange={setFiltros}
         />
-      </div>
 
-      {/* Controles */}
-      <div className="flex gap-2 flex-wrap items-center shrink-0">
-        <div className="flex rounded-lg border border-border overflow-hidden">
+        {/* Separador visual */}
+        <div className="w-px h-6 bg-border mx-1 shrink-0" />
+
+        <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
           <button
             onClick={() => setZoom("semanas")}
             className={`px-3 py-1.5 text-sm font-medium transition-colors ${zoom === "semanas" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
@@ -221,6 +239,58 @@ export default function Cronograma() {
         <Button variant={showCritical ? "default" : "outline"} size="sm" onClick={() => setShowCritical(c => !c)}>
           <GitBranch className="w-3.5 h-3.5 mr-1" /> Caminho Crítico
         </Button>
+
+        {/* Filtro de Níveis */}
+        <div className="relative">
+          <Button
+            variant={(selectedLevels.size > 0 || somenteAtividades) ? "default" : "outline"}
+            size="sm"
+            onClick={() => setLevelsOpen(v => !v)}
+          >
+            <Layers className="w-3.5 h-3.5 mr-1" />
+            Níveis{selectedLevels.size > 0 ? ` (${selectedLevels.size})` : ""}{somenteAtividades ? " ·A" : ""}
+          </Button>
+          {levelsOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setLevelsOpen(false)} />
+              <div className="absolute top-full mt-1 left-0 z-20 bg-card border border-border rounded-lg shadow-lg p-2 min-w-[130px]">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
+                  <label key={lvl} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedLevels.has(lvl)}
+                      onChange={() => setSelectedLevels(prev => {
+                        const next = new Set(prev);
+                        if (next.has(lvl)) next.delete(lvl); else next.add(lvl);
+                        return next;
+                      })}
+                      className="rounded accent-primary"
+                    />
+                    <span className="text-sm text-foreground">Nível {lvl}</span>
+                  </label>
+                ))}
+                <div className="my-1.5 border-t border-border" />
+                <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={somenteAtividades}
+                    onChange={() => setSomenteAtividades(v => !v)}
+                    className="rounded accent-primary"
+                  />
+                  <span className="text-sm text-foreground">Atividades</span>
+                </label>
+                {(selectedLevels.size > 0 || somenteAtividades) && (
+                  <button
+                    onClick={() => { setSelectedLevels(new Set()); setSomenteAtividades(false); }}
+                    className="w-full mt-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                  >
+                    Limpar filtro
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Gantt — flex-1 min-h-0 para ocupar o restante da altura disponível */}

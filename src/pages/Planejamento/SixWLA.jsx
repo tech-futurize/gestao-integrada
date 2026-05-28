@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Plus, Info, X, AlertCircle } from "lucide-react";
+import { CalendarRange, Plus, Info, X, AlertCircle, FileSpreadsheet } from "lucide-react";
+import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { cn } from "@/lib/utils";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -11,6 +12,16 @@ import { useToast } from "@/components/ui/use-toast";
 import { getSemanas, getSemanasBadge, formatData } from "@/utils/sixWLAUtils";
 import SixWLATable from "@/components/planejamento/SixWLATable";
 import AdicionarCronogramaModal from "@/components/planejamento/AdicionarCronogramaModal";
+
+const SIXWLA_EXPORT_COLUMNS = [
+  { key: "tarefa_nome",            label: "Atividade",           type: "string" },
+  { key: "restricao_projeto_eng",  label: "Proj/Engenharia",     type: "string" },
+  { key: "restricao_material",     label: "Material",            type: "string" },
+  { key: "restricao_mao_obra",     label: "Mão de Obra",         type: "string" },
+  { key: "restricao_equipamentos", label: "Equipamentos",        type: "string" },
+  { key: "restricao_externas",     label: "Externas/Regulatório", type: "string" },
+  { key: "restricao_informacoes",  label: "Informações/Decisões", type: "string" },
+];
 
 const RESTRICOES = [
   { key: "restricao_projeto_eng",  label: "Proj/Eng", full: "Projeto/Engenharia" },
@@ -28,6 +39,7 @@ export default function SixWLAPage() {
 
   const semanas = useMemo(() => getSemanas(new Date()), []);
   const [semanasAtivas, setSemanasAtivas] = useState(() => semanas.map(s => s.label));
+  const [showImportExport, setShowImportExport] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [novasAtividades, setNovasAtividades] = useState([]);
@@ -185,10 +197,16 @@ export default function SixWLAPage() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar do Cronograma
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar do Cronograma
+            </Button>
+          </div>
         }
       />
 
@@ -275,6 +293,24 @@ export default function SixWLAPage() {
         onClose={() => setShowModal(false)}
         tarefas={tarefasDisponiveis}
         onConfirm={(ids) => { bulkCreateMut.mutate(ids); setShowModal(false); }}
+      />
+      <ImportExportDialog
+        open={showImportExport}
+        onOpenChange={setShowImportExport}
+        exportOnly
+        columns={SIXWLA_EXPORT_COLUMNS}
+        exportFileName="6wla-restricoes"
+        title="6WLA — Exportar Restrições"
+        onExport={() => filtered.map(item => ({
+          ...item,
+          tarefa_nome: item.tarefa?.nome || "",
+          restricao_projeto_eng:  item.restricao_projeto_eng  ? "Sim" : "Não",
+          restricao_material:     item.restricao_material     ? "Sim" : "Não",
+          restricao_mao_obra:     item.restricao_mao_obra     ? "Sim" : "Não",
+          restricao_equipamentos: item.restricao_equipamentos ? "Sim" : "Não",
+          restricao_externas:     item.restricao_externas     ? "Sim" : "Não",
+          restricao_informacoes:  item.restricao_informacoes  ? "Sim" : "Não",
+        }))}
       />
     </div>
   );
