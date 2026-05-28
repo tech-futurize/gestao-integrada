@@ -115,11 +115,11 @@ export default function Medicoes() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
               <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
             </Button>
-            <Button onClick={() => { setEditMedicao(null); setShowForm(true); }}>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditMedicao(null); setShowForm(true); }}>
               <Plus className="w-4 h-4 mr-2" /> Nova Medição
             </Button>
           </div>
