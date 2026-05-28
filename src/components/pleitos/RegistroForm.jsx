@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Paperclip, X as XIcon } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
+import { supabase } from "@/lib/supabaseClient";
 
 const IMPACTO_CATEGORIES = [
   "Engenharia", "Suprimentos", "Escopo", "Planejamento",
@@ -16,7 +17,7 @@ const IMPACTO_CATEGORIES = [
   "Segurança", "Qualidade", "Gestão & Comunicação"
 ];
 
-export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting }) {
+export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting, tarefas = [], selectedProjectId = "" }) {
   const [formData, setFormData] = useState({
     tipo_registro: incidente?.tipo_registro || "Ata de Reunião",
     data_hora: toDateInput(incidente?.data_hora) || toDateInput(new Date()),
@@ -45,6 +46,10 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
   const [impactoOcorrencia, setImpactoOcorrencia] = useState(
     incidente?.impacto_ocorrencia || []
   );
+  const [newFiles, setNewFiles] = useState([]);
+  const [existingAnexos, setExistingAnexos] = useState(incidente?.anexos || []);
+  const [removedPaths, setRemovedPaths] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const isRDO = formData.tipo_registro === "RDO";
 
@@ -64,19 +69,75 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
   const updateEquipamento = (idx, field, value) =>
     setEquipamentosRdo(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit({
-      ...formData,
-      data_hora: toUtcIso(formData.data_hora),
-      pleito_id: formData.pleito_id || null,
-      mao_de_obra: isRDO ? maoDeObra.filter(r => r.quantidade || r.funcao) : [],
-      equipamentos_rdo: isRDO ? equipamentosRdo.filter(r => r.quantidade || r.equipamento) : [],
-      impacto_ocorrencia: impactoOcorrencia,
-    });
+    setIsUploading(true);
+
+    try {
+      // Upload de arquivos novos
+      const uploaded = [];
+      for (const file of newFiles) {
+        const ext = file.name.split(".").pop();
+        const path = `${selectedProjectId}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage
+          .from("registros-anexos")
+          .upload(path, file, { upsert: false });
+        if (error) throw new Error(`Erro ao enviar ${file.name}: ${error.message}`);
+        const { data: urlData } = supabase.storage
+          .from("registros-anexos")
+          .getPublicUrl(path);
+        uploaded.push({
+          nome: file.name,
+          url: urlData.publicUrl,
+          tipo: file.type,
+          tamanho: file.size,
+        });
+      }
+
+      // Deletar arquivos removidos do storage
+      if (removedPaths.length > 0) {
+        await supabase.storage.from("registros-anexos").remove(removedPaths);
+      }
+
+      onSubmit({
+        ...formData,
+        data_hora: toUtcIso(formData.data_hora),
+        pleito_id: formData.pleito_id || null,
+        mao_de_obra: isRDO ? maoDeObra.filter(r => r.quantidade || r.funcao) : [],
+        equipamentos_rdo: isRDO ? equipamentosRdo.filter(r => r.quantidade || r.equipamento) : [],
+        impacto_ocorrencia: impactoOcorrencia,
+        anexos: [...existingAnexos, ...uploaded],
+      });
+    } catch (err) {
+      throw err;
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const set = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
+  const handleFileAdd = (e) => {
+    const files = Array.from(e.target.files || []);
+    setNewFiles(prev => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const handleRemoveNewFile = (idx) => {
+    setNewFiles(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleRemoveExisting = (anexo) => {
+    const path = anexo.url.split("/registros-anexos/")[1];
+    if (path) setRemovedPaths(prev => [...prev, path]);
+    setExistingAnexos(prev => prev.filter(a => a.url !== anexo.url));
+  };
+
+  const formatBytes = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   return (
     <Card className="border-0 shadow-lg">
@@ -301,6 +362,79 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
             </div>
           </div>
 
+          {/* Anexos */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Anexos</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById("registro-file-input").click()}
+              >
+                <Paperclip className="w-3 h-3 mr-1" />
+                Adicionar arquivo
+              </Button>
+              <input
+                id="registro-file-input"
+                type="file"
+                multiple
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.txt"
+                onChange={handleFileAdd}
+              />
+            </div>
+
+            {existingAnexos.length === 0 && newFiles.length === 0 && (
+              <p className="text-xs text-muted-foreground italic">Nenhum anexo adicionado.</p>
+            )}
+
+            {/* Anexos já salvos */}
+            {existingAnexos.map((anexo, idx) => (
+              <div key={`existing-${idx}`} className="flex items-center justify-between gap-2 p-2 bg-muted rounded-md">
+                <a
+                  href={anexo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 min-w-0 text-sm text-blue-600 hover:underline"
+                >
+                  <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{anexo.nome}</span>
+                  <span className="text-muted-foreground text-xs shrink-0">{formatBytes(anexo.tamanho)}</span>
+                </a>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 shrink-0"
+                  onClick={() => handleRemoveExisting(anexo)}
+                >
+                  <XIcon className="w-3 h-3 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+
+            {/* Novos arquivos selecionados */}
+            {newFiles.map((file, idx) => (
+              <div key={`new-${idx}`} className="flex items-center justify-between gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Paperclip className="w-3.5 h-3.5 shrink-0 text-blue-600" />
+                  <span className="text-sm truncate">{file.name}</span>
+                  <span className="text-muted-foreground text-xs shrink-0">{formatBytes(file.size)}</span>
+                </div>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 shrink-0"
+                  onClick={() => handleRemoveNewFile(idx)}
+                >
+                  <XIcon className="w-3 h-3 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+          </div>
+
           {/* Associar Pleito */}
           <div className="space-y-2">
             <Label>Associar a Pleito (Opcional)</Label>
@@ -317,8 +451,8 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" variant="save" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Salvar Registro"}
+            <Button type="submit" variant="save" disabled={isSubmitting || isUploading}>
+              {isUploading ? "Enviando arquivos..." : isSubmitting ? "Salvando..." : "Salvar Registro"}
             </Button>
           </div>
         </form>
