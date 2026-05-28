@@ -62,7 +62,7 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting 
               <Input value={formData.titulo} onChange={(e) => set("titulo", e.target.value)} placeholder="Título resumido..." required />
             </div>
             <div className="space-y-2">
-              <Label>Data da Ocorrência</Label>
+              <Label>Data do Registro</Label>
               <Input type="date" value={formData.data_ocorrencia} onChange={(e) => set("data_ocorrencia", e.target.value)} />
             </div>
           </div>

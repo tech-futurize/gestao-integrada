@@ -32,7 +32,7 @@ const MUDANCA_COLUMNS = [
   { key: "descricao",          label: "Descrição",           type: "string" },
   { key: "origem",             label: "Origem",              type: "string" },
   { key: "status",             label: "Status",              type: "string" },
-  { key: "data_ocorrencia",    label: "Data Ocorrência",     type: "date" },
+  { key: "data_ocorrencia",    label: "Data Registro",       type: "date" },
   { key: "impacto_custo",      label: "Impacto Custo (R$)",  type: "number" },
   { key: "impacto_prazo_dias", label: "Impacto Prazo (dias)", type: "number" },
   { key: "impacto_escopo",     label: "Impacto Escopo",      type: "string" },
