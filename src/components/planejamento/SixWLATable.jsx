@@ -57,7 +57,7 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                   className="px-2 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap"
                   title={r.full}
                 >
-                  {r.label}
+                  {r.tableLabel}
                 </th>
               ))}
               <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Obs.</th>

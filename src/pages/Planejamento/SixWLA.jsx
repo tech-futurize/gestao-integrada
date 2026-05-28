@@ -252,7 +252,7 @@ export default function SixWLAPage() {
               className="rounded-xl border p-3 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40"
               title={r.full}
             >
-              <p className="text-xs font-medium text-amber-900/70 dark:text-amber-500/80 truncate">{r.label}</p>
+              <p className="text-xs font-medium text-amber-900/70 dark:text-amber-500/80 truncate">{r.cardLabel}</p>
               <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{kpis[r.key]}</p>
             </div>
           ))}
