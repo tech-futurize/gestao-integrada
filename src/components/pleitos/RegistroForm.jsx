@@ -7,7 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Paperclip, X as XIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, Paperclip, X as XIcon, Link2 } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
@@ -51,6 +53,12 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
   const [existingAnexos, setExistingAnexos] = useState(incidente?.anexos || []);
   const [removedPaths, setRemovedPaths] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [atividadesVinculadas, setAtividadesVinculadas] = useState(incidente?.atividades_vinculadas || []);
+  const [showAtivModal, setShowAtivModal] = useState(false);
+  const [modalSearch, setModalSearch] = useState("");
+  const [modalSelected, setModalSelected] = useState(
+    new Set((incidente?.atividades_vinculadas || []).map(a => a.id))
+  );
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
@@ -116,6 +124,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
         equipamentos_rdo: isRDO ? equipamentosRdo.filter(r => r.quantidade || r.equipamento) : [],
         impacto_ocorrencia: impactoOcorrencia,
         anexos: [...existingAnexos, ...uploaded],
+        atividades_vinculadas: atividadesVinculadas,
       });
     } catch (err) {
       toast({ title: "Erro ao enviar arquivo", description: err.message, variant: "destructive" });
@@ -147,6 +156,27 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
+
+  const handleConfirmAtividades = () => {
+    const selecionadas = tarefas
+      .filter(t => modalSelected.has(t.id))
+      .map(t => ({ id: t.id, nome: t.nome || t.titulo || t.descricao || t.id }));
+    setAtividadesVinculadas(selecionadas);
+    setShowAtivModal(false);
+    setModalSearch("");
+  };
+
+  const toggleModalTarefa = (id) => {
+    setModalSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const tarefasFiltradas = tarefas.filter(t =>
+    (t.nome || t.titulo || t.descricao || "").toLowerCase().includes(modalSearch.toLowerCase())
+  );
 
   return (
     <Card className="border-0 shadow-lg">
@@ -325,6 +355,91 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
             <Textarea value={formData.ocorrencias} onChange={(e) => set("ocorrencias", e.target.value)}
               placeholder="Registre ocorrências..." rows={3} className="resize-none" />
           </div>
+
+          {/* Vincular Atividades */}
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setModalSelected(new Set(atividadesVinculadas.map(a => a.id)));
+                setShowAtivModal(true);
+              }}
+            >
+              <Link2 className="w-4 h-4 mr-2" />
+              Vincular Atividades
+              {atividadesVinculadas.length > 0 && (
+                <Badge variant="secondary" className="ml-2">{atividadesVinculadas.length}</Badge>
+              )}
+            </Button>
+
+            {atividadesVinculadas.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {atividadesVinculadas.map(a => (
+                  <Badge key={a.id} variant="outline" className="text-xs font-normal">
+                    {a.nome}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Modal de seleção de atividades */}
+          <Dialog open={showAtivModal} onOpenChange={setShowAtivModal}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Vincular Atividades ao Cronograma</DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-3">
+                <Input
+                  placeholder="Buscar tarefa..."
+                  value={modalSearch}
+                  onChange={(e) => setModalSearch(e.target.value)}
+                />
+
+                <div className="max-h-72 overflow-y-auto space-y-1 border rounded-md p-2">
+                  {tarefasFiltradas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">
+                      {tarefas.length === 0
+                        ? "Nenhuma tarefa no cronograma"
+                        : "Nenhuma tarefa encontrada"}
+                    </p>
+                  ) : (
+                    tarefasFiltradas.map(t => {
+                      const nome = t.nome || t.titulo || t.descricao || t.id;
+                      return (
+                        <div
+                          key={t.id}
+                          className="flex items-center gap-3 p-2 rounded hover:bg-muted cursor-pointer"
+                          onClick={() => toggleModalTarefa(t.id)}
+                        >
+                          <Checkbox
+                            checked={modalSelected.has(t.id)}
+                            onCheckedChange={() => toggleModalTarefa(t.id)}
+                          />
+                          <span className="text-sm">{nome}</span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  {modalSelected.size} {modalSelected.size === 1 ? "atividade selecionada" : "atividades selecionadas"}
+                </p>
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setShowAtivModal(false)}>
+                  Cancelar
+                </Button>
+                <Button type="button" onClick={handleConfirmAtividades}>
+                  Confirmar seleção
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Responsabilidade + Impacto da Ocorrência */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
