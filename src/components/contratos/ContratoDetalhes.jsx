@@ -7,11 +7,10 @@ const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency:
 const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
 
 const STATUS_COLORS = {
-  Ativo: "bg-status-positive/15 text-status-positive",
-  "Em Revisão": "bg-status-attention/15 text-status-attention",
-  Suspenso: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-  Encerrado: "bg-muted text-muted-foreground",
-  Cancelado: "bg-status-critical/15 text-status-critical",
+  "A iniciar":    "bg-muted text-muted-foreground",
+  "Em andamento": "bg-status-positive/15 text-status-positive",
+  "Concluído":    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  "Paralisado":   "bg-status-critical/15 text-status-critical",
 };
 
 const MEDICAO_STATUS_COLORS = {
