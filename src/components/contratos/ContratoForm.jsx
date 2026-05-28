@@ -17,7 +17,11 @@ const formatBR = (v) => {
 
 const parseBRFloat = (s) => {
   if (!s) return 0;
-  return parseFloat(String(s).replace(/\./g, "").replace(",", ".")) || 0;
+  const str = String(s).trim();
+  if (str.includes(",")) {
+    return parseFloat(str.replace(/\./g, "").replace(",", ".")) || 0;
+  }
+  return parseFloat(str) || 0;
 };
 
 export default function ContratoForm({ contrato, onSave, onClose }) {
