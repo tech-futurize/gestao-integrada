@@ -7,20 +7,31 @@ import { Plus, FileText, DollarSign } from "lucide-react";
 import ContratosList from "@/components/contratos/ContratosList";
 import ContratoForm from "@/components/contratos/ContratoForm";
 import ContratoDetalhes from "@/components/contratos/ContratoDetalhes";
+import AditivoForm from "@/components/contratos/AditivoForm";
+import MedicaoForm from "@/components/contratos/MedicaoForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
-export default function Contratos({ initialTab: _initialTab = "contratos" }) {
+const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+
+export default function Contratos() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
+
   const [showContratoForm, setShowContratoForm] = useState(false);
   const [editContrato, setEditContrato] = useState(null);
   const [selectedContrato, setSelectedContrato] = useState(null);
 
+  const [showAditivoForm, setShowAditivoForm] = useState(false);
+  const [editAditivo, setEditAditivo] = useState(null);
+
+  const [showMedicaoForm, setShowMedicaoForm] = useState(false);
+
+  // ── Contratos ──────────────────────────────────────────────────
   const { data: contratos = [], isLoading: loadingContratos } = useQuery({
     queryKey: ["contratos", selectedProjectId],
     queryFn: () => entities.Contrato.filter({ projeto_id: selectedProjectId }),
@@ -35,13 +46,55 @@ export default function Contratos({ initialTab: _initialTab = "contratos" }) {
 
   const updateContrato = useMutation({
     mutationFn: ({ id, data }) => entities.Contrato.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["contratos"] }); setShowContratoForm(false); setEditContrato(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contratos"] });
+      setShowContratoForm(false);
+      setEditContrato(null);
+    },
     onError: onErr,
   });
 
   const deleteContrato = useMutation({
     mutationFn: (id) => entities.Contrato.delete(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["contratos"] }); setSelectedContrato(null); },
+    onError: onErr,
+  });
+
+  // ── Aditivos (ativo quando há contrato selecionado) ───────────
+  const { data: aditivos = [] } = useQuery({
+    queryKey: ["aditivos", selectedContrato?.id],
+    queryFn: () => entities.Aditivo.filter({ contrato_id: selectedContrato.id }),
+    enabled: !!selectedContrato?.id,
+  });
+
+  const createAditivo = useMutation({
+    mutationFn: (data) => entities.Aditivo.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["aditivos"] }); setShowAditivoForm(false); },
+    onError: onErr,
+  });
+
+  const updateAditivo = useMutation({
+    mutationFn: ({ id, data }) => entities.Aditivo.update(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["aditivos"] }); setShowAditivoForm(false); setEditAditivo(null); },
+    onError: onErr,
+  });
+
+  const deleteAditivo = useMutation({
+    mutationFn: (id) => entities.Aditivo.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["aditivos"] }),
+    onError: onErr,
+  });
+
+  // ── Medições (ativo quando há contrato selecionado) ───────────
+  const { data: medicoes = [] } = useQuery({
+    queryKey: ["medicoes", "contrato", selectedContrato?.id],
+    queryFn: () => entities.Medicao.filter({ contrato_id: selectedContrato.id }),
+    enabled: !!selectedContrato?.id,
+  });
+
+  const createMedicao = useMutation({
+    mutationFn: (data) => entities.Medicao.create(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["medicoes"] }); setShowMedicaoForm(false); },
     onError: onErr,
   });
 
@@ -57,12 +110,20 @@ export default function Contratos({ initialTab: _initialTab = "contratos" }) {
   }
 
   const totalContratado = contratos.reduce((s, c) => s + (c.valor_total || 0), 0);
-  const contratosAtivos = contratos.filter(c => c.status === "Ativo").length;
-  const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+  const emAndamento = contratos.filter(c => c.status === "Em andamento").length;
 
   const handleSaveContrato = (data) => {
     if (editContrato) updateContrato.mutate({ id: editContrato.id, data });
     else createContrato.mutate({ ...data, projeto_id: selectedProjectId });
+  };
+
+  const handleSaveAditivo = (data) => {
+    if (editAditivo) updateAditivo.mutate({ id: editAditivo.id, data });
+    else createAditivo.mutate({ ...data, contrato_id: selectedContrato.id, projeto_id: selectedProjectId });
+  };
+
+  const handleSaveMedicao = (data) => {
+    createMedicao.mutate({ ...data, contrato_id: selectedContrato.id, projeto_id: selectedProjectId });
   };
 
   return (
@@ -79,7 +140,7 @@ export default function Contratos({ initialTab: _initialTab = "contratos" }) {
         <div className="grid grid-cols-2 gap-4">
           {[
             { label: "Total Contratado", value: fmt(totalContratado), icon: DollarSign, color: "#26405d" },
-            { label: "Contratos Ativos", value: contratosAtivos, icon: FileText, color: "#c35e1e" },
+            { label: "Em Andamento", value: emAndamento, icon: FileText, color: "#c35e1e" },
           ].map(({ label, value, icon: Icon, color }) => (
             <Card key={label} className="bg-card shadow-sm">
               <CardContent className="p-4 flex items-center gap-3">
@@ -98,11 +159,15 @@ export default function Contratos({ initialTab: _initialTab = "contratos" }) {
         {selectedContrato ? (
           <ContratoDetalhes
             contrato={selectedContrato}
-            medicoes={[]}
+            medicoes={medicoes}
+            aditivos={aditivos}
             onBack={() => setSelectedContrato(null)}
             onEdit={(c) => { setEditContrato(c); setShowContratoForm(true); }}
             onDelete={(id) => deleteContrato.mutate(id)}
-            onNovaMedicao={() => {}}
+            onNovaMedicao={() => setShowMedicaoForm(true)}
+            onAddAditivo={() => { setEditAditivo(null); setShowAditivoForm(true); }}
+            onEditAditivo={(a) => { setEditAditivo(a); setShowAditivoForm(true); }}
+            onDeleteAditivo={(id) => deleteAditivo.mutate(id)}
           />
         ) : (
           <ContratosList
@@ -120,6 +185,28 @@ export default function Contratos({ initialTab: _initialTab = "contratos" }) {
             contrato={editContrato}
             onSave={handleSaveContrato}
             onClose={() => { setShowContratoForm(false); setEditContrato(null); }}
+          />
+        )}
+
+        {showAditivoForm && (
+          <AditivoForm
+            key={editAditivo?.id || "new-aditivo"}
+            aditivo={editAditivo}
+            contratoId={selectedContrato?.id}
+            projetoId={selectedProjectId}
+            onSave={handleSaveAditivo}
+            onClose={() => { setShowAditivoForm(false); setEditAditivo(null); }}
+          />
+        )}
+
+        {showMedicaoForm && (
+          <MedicaoForm
+            key="new-medicao-from-contrato"
+            medicao={null}
+            contratos={contratos}
+            defaultContratoId={selectedContrato?.id}
+            onSave={handleSaveMedicao}
+            onClose={() => setShowMedicaoForm(false)}
           />
         )}
       </div>
