@@ -263,39 +263,76 @@ export default function SixWLAPage() {
             <p className="text-2xl font-bold text-[#26FFFF]">{kpis.total}</p>
             <p className="text-[10px] text-[#8195A9]/70 mt-0.5">no 6WLA</p>
           </div>
-          {RESTRICOES.map(r => (
-            <div
-              key={r.key}
-              className="rounded-xl border p-3 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40"
-              title={r.full}
-            >
-              <p className="text-xs font-medium text-amber-900/70 dark:text-amber-500/80 truncate">{r.cardLabel}</p>
-              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{kpis[r.key]}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Pills S1–S6 — filtro multi-select da tabela */}
-        <div className="flex flex-wrap gap-2">
-          {semanas.map((s, i) => {
-            const ativa = semanasAtivas.includes(s.label);
+          {RESTRICOES.map(r => {
+            const isActive = filtroRestricao === r.key;
             return (
-              <button
-                key={s.label}
-                onClick={() => toggleSemana(s.label)}
-                title={`${formatData(s.start)} – ${formatData(s.end)}`}
-                style={ativa ? getWeekBadgeStyle(i, isDark) : undefined}
+              <div
+                key={r.key}
+                onClick={() => setFiltroRestricao(isActive ? null : r.key)}
                 className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
-                  ativa
-                    ? ""
-                    : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                  "rounded-xl border p-3 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40 cursor-pointer transition-all select-none",
+                  isActive && "ring-2 ring-amber-500"
                 )}
+                title={isActive ? `Clique para remover filtro: ${r.full}` : r.full}
               >
-                {s.label}-{formatDataDDMM(s.start)}
-              </button>
+                <p className="text-xs font-medium text-amber-900/70 dark:text-amber-500/80 truncate">{r.cardLabel}</p>
+                <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{kpis[r.key]}</p>
+              </div>
             );
           })}
+        </div>
+
+        {/* Row semanas + filtros */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+            {semanas.map((s, i) => {
+              const ativa = semanasAtivas.includes(s.label);
+              return (
+                <button
+                  key={s.label}
+                  onClick={() => toggleSemana(s.label)}
+                  title={`${formatData(s.start)} – ${formatData(s.end)}`}
+                  style={ativa ? getWeekBadgeStyle(i, isDark) : undefined}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                    ativa
+                      ? ""
+                      : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                  )}
+                >
+                  {s.label}-{formatDataDDMM(s.start)}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <input
+              type="text"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              placeholder="Buscar por ID ou atividade..."
+              className="h-8 px-3 text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-56"
+            />
+            <Button
+              size="sm"
+              variant={filtroHoje ? "default" : "outline"}
+              onClick={() => setFiltroHoje(v => !v)}
+              className="h-8 text-xs"
+            >
+              Hoje
+            </Button>
+            <select
+              value={filtroDisciplina}
+              onChange={e => setFiltroDisciplina(e.target.value)}
+              className="h-8 px-2 text-xs rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Todas as disciplinas</option>
+              {disciplinas.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Visualização — pills S1–S6 por linha, 6 checkboxes de restrição, observacao */}
