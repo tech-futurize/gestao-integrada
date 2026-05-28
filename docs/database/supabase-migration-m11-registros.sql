@@ -19,15 +19,39 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- 3. Políticas de storage
-CREATE POLICY "registros-anexos: upload autenticado"
-ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (bucket_id = 'registros-anexos');
+-- 3. Políticas de storage (idempotentes)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'registros-anexos: upload autenticado'
+  ) THEN
+    EXECUTE 'CREATE POLICY "registros-anexos: upload autenticado"
+      ON storage.objects FOR INSERT TO authenticated
+      WITH CHECK (bucket_id = ''registros-anexos'')';
+  END IF;
+END $$;
 
-CREATE POLICY "registros-anexos: leitura pública"
-ON storage.objects FOR SELECT TO public
-USING (bucket_id = 'registros-anexos');
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'registros-anexos: leitura pública'
+  ) THEN
+    EXECUTE 'CREATE POLICY "registros-anexos: leitura pública"
+      ON storage.objects FOR SELECT TO public
+      USING (bucket_id = ''registros-anexos'')';
+  END IF;
+END $$;
 
-CREATE POLICY "registros-anexos: deleção autenticada"
-ON storage.objects FOR DELETE TO authenticated
-USING (bucket_id = 'registros-anexos');
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND policyname = 'registros-anexos: deleção autenticada'
+  ) THEN
+    EXECUTE 'CREATE POLICY "registros-anexos: deleção autenticada"
+      ON storage.objects FOR DELETE TO authenticated
+      USING (bucket_id = ''registros-anexos'')';
+  END IF;
+END $$;
