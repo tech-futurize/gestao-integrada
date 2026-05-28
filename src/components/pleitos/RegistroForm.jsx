@@ -417,6 +417,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
                           <Checkbox
                             checked={modalSelected.has(t.id)}
                             onCheckedChange={() => toggleModalTarefa(t.id)}
+                            onClick={(e) => e.stopPropagation()}
                           />
                           <span className="text-sm">{nome}</span>
                         </div>
@@ -431,7 +432,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
               </div>
 
               <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setShowAtivModal(false)}>
+                <Button type="button" variant="ghost" onClick={() => { setShowAtivModal(false); setModalSearch(""); }}>
                   Cancelar
                 </Button>
                 <Button type="button" onClick={handleConfirmAtividades}>
