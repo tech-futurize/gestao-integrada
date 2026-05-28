@@ -13,15 +13,18 @@ export function getSemanas(hoje) {
 
 /**
  * Retorna quais labels de semana uma tarefa sobrepõe.
- * Considera null/undefined em datas como "sem sobreposição".
- * @param {{ inicio_previsto: string|null, termino_previsto: string|null }} tarefa
+ * Usa data_inicio_planejada/data_fim_planejada com fallback para inicio_previsto/termino_previsto.
+ * Datas são parseadas como horário local (T00:00:00) para evitar desvio de fuso.
+ * @param {{ data_inicio_planejada?: string|null, data_fim_planejada?: string|null, inicio_previsto?: string|null, termino_previsto?: string|null }} tarefa
  * @param {{ label: string, start: Date, end: Date }[]} semanas
  * @returns {string[]}
  */
 export function getSemanasBadge(tarefa, semanas) {
-  if (!tarefa.inicio_previsto || !tarefa.termino_previsto) return [];
-  const inicio = new Date(tarefa.inicio_previsto);
-  const termino = new Date(tarefa.termino_previsto);
+  const iniStr = tarefa.data_inicio_planejada || tarefa.inicio_previsto;
+  const fimStr = tarefa.data_fim_planejada    || tarefa.termino_previsto;
+  if (!iniStr || !fimStr) return [];
+  const inicio = new Date(iniStr + "T00:00:00");
+  const termino = new Date(fimStr + "T00:00:00");
   return semanas
     .filter(s => inicio <= s.end && termino >= s.start)
     .map(s => s.label);
@@ -75,7 +78,7 @@ export function getWeekBadgeStyle(weekIndex, isDark) {
 }
 
 /**
- * Formata uma string de data ISO (YYYY-MM-DD) como "23 jun" em pt-BR.
+ * Formata uma string de data ISO (YYYY-MM-DD) como "dd/mm/aa" em pt-BR.
  * Retorna "—" para valores null/undefined/vazios.
  * @param {string|null} val
  * @returns {string}
@@ -83,7 +86,7 @@ export function getWeekBadgeStyle(weekIndex, isDark) {
 export function fmtDateStr(val) {
   if (!val) return "—";
   const d = new Date(val + "T00:00:00");
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 // ── helpers internos ──────────────────────────────────────────────
