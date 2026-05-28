@@ -202,18 +202,20 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 9 — ADM. CONTRATUAL
 
+> ✅ **C1–C4 Concluídos** *(2026-05-27)*
+
 #### Contratos
-- [ ] Builder: Renomear tipo "Misto" → "Fornecimento + Serviço" (UI + CHECK no schema)
-- [ ] Builder: Formatação BR (ponto milhar / vírgula decimal) em campos de valor
-- [ ] Builder: UI de Aditivos (Escopo texto, Prazo dias, Valor R$) usando tabela `aditivos` já existente
-- [ ] Builder: Calcular `inicio_atual` e `termino_atual` dinamicamente a partir de aditivos
-- [ ] Builder: Trocar opções de Status para: A iniciar / Em andamento / Concluído / Paralisado
-- [ ] Builder: Botão de Medições abrindo histórico + pop-up para nova medição
+- [x] Builder: Renomear tipo "Misto" → "Fornecimento + Serviço" (UI + CHECK no schema)
+- [x] Builder: Formatação BR (ponto milhar / vírgula decimal) em campos de valor
+- [x] Builder: UI de Aditivos (Escopo texto, Prazo dias, Valor R$) usando tabela `aditivos` já existente
+- [x] Builder: Calcular `inicio_atual` e `termino_atual` dinamicamente a partir de aditivos
+- [x] Builder: Trocar opções de Status para: A iniciar / Em andamento / Concluído / Paralisado
+- [x] Builder: Botão de Medições abrindo histórico + pop-up para nova medição
 
 #### Medições
-- [ ] Builder: Remover campos "Elaborador", "Valor Bruto", "Retenção" (`MedicaoForm.jsx:12,75-77,92`)
-- [ ] Builder: Renomear "Valor Líquido" → "Valor" (read-only, soma automática dos itens)
-- [ ] Builder: Integrar `ImportExportDialog` + `ColumnMappingDialog` em `Medicoes.jsx`
+- [x] Builder: Remover campos "Elaborador", "Valor Bruto", "Retenção" (`MedicaoForm.jsx:12,75-77,92`)
+- [x] Builder: Renomear "Valor Líquido" → "Valor" (read-only, soma automática dos itens)
+- [x] Builder: Integrar `ImportExportDialog` + `ColumnMappingDialog` em `Medicoes.jsx`
 
 ---
 
