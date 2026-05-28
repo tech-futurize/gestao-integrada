@@ -21,15 +21,17 @@ import PlanoAcao from "@/components/riscos/PlanoAcao";
 const CATEGORIAS = ["Técnico", "Financeiro", "Prazo", "Segurança", "Regulatório", "Ambiental", "Outros"];
 
 const RISCO_COLUMNS = [
-  { key: "codigo",         label: "Código",          type: "string" },
-  { key: "descricao",      label: "Descrição",        type: "string", required: true },
-  { key: "categoria",      label: "Categoria",        type: "string" },
-  { key: "probabilidade",  label: "Probabilidade",    type: "number" },
-  { key: "impacto",        label: "Impacto",          type: "number" },
-  { key: "status",         label: "Status",           type: "string" },
-  { key: "responsavel",    label: "Responsável",      type: "string" },
-  { key: "plano_resposta", label: "Plano de Resposta", type: "string" },
-  { key: "impactos",       label: "Impactos",          type: "string" },
+  { key: "codigo",         label: "Código",                    type: "string" },
+  { key: "descricao",      label: "Descrição",                 type: "string", required: true },
+  { key: "categoria",      label: "Categoria",                 type: "string" },
+  { key: "probabilidade",  label: "Probabilidade",             type: "number" },
+  { key: "impacto",        label: "Impacto",                   type: "number" },
+  { key: "status",         label: "Status",                    type: "string" },
+  { key: "responsavel",    label: "Responsável",               type: "string" },
+  { key: "plano_resposta", label: "Plano de Resposta",         type: "string" },
+  { key: "escopo_texto",   label: "Impacto no Escopo",         type: "string" },
+  { key: "prazo_dias",     label: "Impacto Prazo (dias)",      type: "number" },
+  { key: "valor_impacto",  label: "Impacto Financeiro (R$)",   type: "number" },
 ];
 const STATUS_OPTIONS = ["Ativo", "Mitigado", "Encerrado"];
 
@@ -347,7 +349,7 @@ export default function GestaoRiscos() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1 flex-wrap">
-                        {(r.impactos || []).map(dim => (
+                        {(Array.isArray(r.impactos) ? r.impactos : []).map(dim => (
                           <span key={dim} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
                             {dim}
                           </span>
