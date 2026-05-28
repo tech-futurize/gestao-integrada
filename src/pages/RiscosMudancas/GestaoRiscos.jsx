@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldAlert, Plus, Pencil, Trash2 } from "lucide-react";
+import { ShieldAlert, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
+import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,17 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
 
 const CATEGORIAS = ["Técnico", "Financeiro", "Prazo", "Segurança", "Regulatório", "Ambiental", "Outros"];
+
+const RISCO_COLUMNS = [
+  { key: "codigo",         label: "Código",          type: "string" },
+  { key: "descricao",      label: "Descrição",        type: "string", required: true },
+  { key: "categoria",      label: "Categoria",        type: "string" },
+  { key: "probabilidade",  label: "Probabilidade",    type: "number" },
+  { key: "impacto",        label: "Impacto",          type: "number" },
+  { key: "status",         label: "Status",           type: "string" },
+  { key: "responsavel",    label: "Responsável",      type: "string" },
+  { key: "plano_resposta", label: "Plano de Resposta", type: "string" },
+];
 const STATUS_OPTIONS = ["Ativo", "Mitigado", "Encerrado"];
 
 const SCORE_COLORS = {
@@ -66,6 +78,7 @@ export default function GestaoRiscos() {
   const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [showImportExport, setShowImportExport] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [filtros, setFiltros] = useState({});
 
@@ -168,9 +181,15 @@ export default function GestaoRiscos() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" /> Novo Risco
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Importar / Exportar
+            </Button>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" /> Novo Risco
+            </Button>
+          </div>
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-6">
@@ -364,6 +383,15 @@ export default function GestaoRiscos() {
         </DialogContent>
       </Dialog>
     </div>
+      <ImportExportDialog
+        open={showImportExport}
+        onOpenChange={setShowImportExport}
+        columns={RISCO_COLUMNS}
+        exportFileName="riscos"
+        title="Riscos — Importar / Exportar"
+        onExport={() => filtered}
+        onImport={(row) => createMut.mutateAsync({ ...row, projeto_id: selectedProjectId })}
+      />
     </div>
   );
 }

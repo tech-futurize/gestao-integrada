@@ -61,7 +61,11 @@ npm run dev
 
 ## Milestone Atual: Backlog 2026-Q2 — Onda 2
 
-**Status:** 🔴 Aguardando execução
+**Status:** 🟡 Em progresso — M0–M12 concluídos · M13 Ativo
+**Progresso:** ████████████░░░ 12/15 módulos fechados
+
+> **Atenção:** 6 arquivos com mudanças não commitadas (GanttChart, ViewTarefaModal, Cronograma, SixWLA, Registros, GestaoRiscos). Commitar antes de iniciar novos módulos.
+
 **Objetivo:** Completar os módulos remanescentes do backlog consolidado pelo PO, fechando um módulo de cada vez com QA ≥ 9 antes de avançar.
 
 > Cada módulo abaixo é uma fase autônoma — fechar e validar com `/audit` antes de iniciar o próximo.

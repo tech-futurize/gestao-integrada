@@ -3,10 +3,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function MultiSelectDropdown({ label, options = [], selected = [], onChange, placeholder = "Pesquisar..." }) {
+export default function MultiSelectDropdown({ label, options = [], selected = [], onChange, onClear, placeholder = "Pesquisar..." }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -31,68 +31,79 @@ export default function MultiSelectDropdown({ label, options = [], selected = []
   };
 
   return (
-    <Popover open={open} onOpenChange={v => { setOpen(v); if (!v) setSearch(""); }}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn(
-            "h-8 gap-1.5 text-sm font-normal",
-            selected.length > 0 && "border-primary text-primary bg-primary/5"
-          )}
-        >
-          <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-          {label}
-          {selected.length > 0 && (
-            <span className="rounded-full bg-primary text-primary-foreground px-1.5 text-xs font-bold leading-4">
-              {selected.length}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56 p-2" align="start">
-        <Input
-          placeholder={placeholder}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="h-7 text-sm mb-2"
-        />
-        <div
-          className="flex items-center gap-2 px-1 py-1.5 rounded hover:bg-muted cursor-pointer"
-          onClick={toggleAll}
-        >
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={toggleAll}
-            id={`${label}-all`}
+    <div className="relative inline-flex">
+      <Popover open={open} onOpenChange={v => { setOpen(v); if (!v) setSearch(""); }}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn(
+              "h-8 gap-1.5 text-sm font-normal",
+              selected.length > 0 && "border-primary text-primary bg-primary/5"
+            )}
+          >
+            <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+            {label}
+            {selected.length > 0 && (
+              <span className="rounded-full bg-primary text-primary-foreground px-1.5 text-xs font-bold leading-4">
+                {selected.length}
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-2" align="start">
+          <Input
+            placeholder={placeholder}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="h-7 text-sm mb-2"
           />
-          <label htmlFor={`${label}-all`} className="text-sm cursor-pointer select-none font-medium">
-            Selecionar todos
-          </label>
-        </div>
-        <div className="my-1 border-t border-border" />
-        <div className="max-h-48 overflow-y-auto space-y-0.5">
-          {filteredOptions.map(option => (
-            <div
-              key={option}
-              className="flex items-center gap-2 px-1 py-1.5 rounded hover:bg-muted cursor-pointer"
-              onClick={() => toggle(option)}
-            >
-              <Checkbox
-                checked={selected.includes(option)}
-                onCheckedChange={() => toggle(option)}
-                id={`${label}-${option}`}
-              />
-              <label htmlFor={`${label}-${option}`} className="text-sm cursor-pointer select-none">
-                {option}
-              </label>
-            </div>
-          ))}
-          {filteredOptions.length === 0 && (
-            <p className="text-xs text-muted-foreground px-1 py-2 text-center">Nenhum resultado</p>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+          <div
+            className="flex items-center gap-2 px-1 py-1.5 rounded hover:bg-muted cursor-pointer"
+            onClick={toggleAll}
+          >
+            <Checkbox
+              checked={allSelected}
+              onCheckedChange={toggleAll}
+              id={`${label}-all`}
+            />
+            <label htmlFor={`${label}-all`} className="text-sm cursor-pointer select-none font-medium">
+              Selecionar todos
+            </label>
+          </div>
+          <div className="my-1 border-t border-border" />
+          <div className="max-h-48 overflow-y-auto space-y-0.5">
+            {filteredOptions.map(option => (
+              <div
+                key={option}
+                className="flex items-center gap-2 px-1 py-1.5 rounded hover:bg-muted cursor-pointer"
+                onClick={() => toggle(option)}
+              >
+                <Checkbox
+                  checked={selected.includes(option)}
+                  onCheckedChange={() => toggle(option)}
+                  id={`${label}-${option}`}
+                />
+                <label htmlFor={`${label}-${option}`} className="text-sm cursor-pointer select-none">
+                  {option}
+                </label>
+              </div>
+            ))}
+            {filteredOptions.length === 0 && (
+              <p className="text-xs text-muted-foreground px-1 py-2 text-center">Nenhum resultado</p>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+      {selected.length > 0 && onClear && (
+        <button
+          className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/80 z-10 transition-colors"
+          onClick={e => { e.stopPropagation(); onClear(); }}
+          aria-label={`Limpar filtro ${label}`}
+        >
+          <X className="w-2.5 h-2.5" />
+        </button>
+      )}
+    </div>
   );
 }
