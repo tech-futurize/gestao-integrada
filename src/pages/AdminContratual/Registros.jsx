@@ -225,80 +225,31 @@ export default function Registros() {
               <span className="text-[10px] text-muted-foreground">registros</span>
             </div>
 
-            {/* Por Tipo */}
-            <div className="flex-1 rounded-xl px-4 py-3 bg-card border border-border">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2.5">Por Tipo</p>
-              <div className="flex flex-col gap-2">
-                {kpis.porTipo.map(({ label, count }) => {
-                  const colors = DIMENSION_COLORS[label] || { text: "text-foreground", bar: "#8195A9" };
-                  const pct = kpis.total > 0 ? (count / kpis.total) * 100 : 0;
-                  return (
-                    <div key={label} className="flex flex-col gap-0.5">
-                      <div className="flex justify-between items-center">
-                        <span className={`text-[11px] font-medium ${colors.text}`}>{label}</span>
-                        <span className={`text-xs font-bold ${colors.text}`}>{count}</span>
+            {dimensionGroups.map(({ title, items }) => (
+              <div key={title} className="flex-1 rounded-xl px-4 py-3 bg-card border border-border">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2.5">{title}</p>
+                <div className="flex flex-col gap-2">
+                  {items.map(({ label, count }) => {
+                    const colors = DIMENSION_COLORS[label] || { text: "text-foreground", bar: "#8195A9" };
+                    const pct = kpis.total > 0 ? (count / kpis.total) * 100 : 0;
+                    return (
+                      <div key={label} className="flex flex-col gap-0.5">
+                        <div className="flex justify-between items-center">
+                          <span className={`text-[11px] font-medium ${colors.text}`}>{label}</span>
+                          <span className={`text-xs font-bold ${colors.text}`}>{count}</span>
+                        </div>
+                        <div className="h-[3px] w-full rounded-full bg-muted/30">
+                          <div
+                            className="h-[3px] rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, background: colors.bar }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-[3px] w-full rounded-full bg-muted/40">
-                        <div
-                          className="h-[3px] rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, background: colors.bar }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-
-            {/* Por Responsabilidade */}
-            <div className="flex-1 rounded-xl px-4 py-3 bg-card border border-border">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2.5">Por Responsabilidade</p>
-              <div className="flex flex-col gap-2">
-                {kpis.porResp.map(({ label, count }) => {
-                  const colors = DIMENSION_COLORS[label] || { text: "text-foreground", bar: "#8195A9" };
-                  const pct = kpis.total > 0 ? (count / kpis.total) * 100 : 0;
-                  return (
-                    <div key={label} className="flex flex-col gap-0.5">
-                      <div className="flex justify-between items-center">
-                        <span className={`text-[11px] font-medium ${colors.text}`}>{label}</span>
-                        <span className={`text-xs font-bold ${colors.text}`}>{count}</span>
-                      </div>
-                      <div className="h-[3px] w-full rounded-full bg-muted/40">
-                        <div
-                          className="h-[3px] rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, background: colors.bar }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Por Status */}
-            <div className="flex-1 rounded-xl px-4 py-3 bg-card border border-border">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2.5">Por Status</p>
-              <div className="flex flex-col gap-2">
-                {kpis.porStatus.map(({ label, count }) => {
-                  const colors = DIMENSION_COLORS[label] || { text: "text-foreground", bar: "#8195A9" };
-                  const pct = kpis.total > 0 ? (count / kpis.total) * 100 : 0;
-                  return (
-                    <div key={label} className="flex flex-col gap-0.5">
-                      <div className="flex justify-between items-center">
-                        <span className={`text-[11px] font-medium ${colors.text}`}>{label}</span>
-                        <span className={`text-xs font-bold ${colors.text}`}>{count}</span>
-                      </div>
-                      <div className="h-[3px] w-full rounded-full bg-muted/40">
-                        <div
-                          className="h-[3px] rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, background: colors.bar }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            ))}
 
           </div>
         )}
