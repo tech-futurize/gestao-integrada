@@ -11,7 +11,7 @@ import CloseButton from "@/components/ui/CloseButton";
 
 const CATEGORIAS = ["Escopo", "Prazo", "Custo"];
 
-export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting }) {
+export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting, pleitos = [] }) {
   const [formData, setFormData] = useState({
     titulo: mudanca?.titulo || "",
     descricao: mudanca?.descricao || "",
@@ -21,8 +21,10 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting 
     impacto_custo: mudanca?.impacto_custo ?? "",
     impacto_prazo_dias: mudanca?.impacto_prazo_dias ?? "",
     impacto_escopo: mudanca?.impacto_escopo || "",
+    impacto_escopo_tipo: mudanca?.impacto_escopo_tipo || null,
     responsavel: mudanca?.responsavel || "",
     observacoes: mudanca?.observacoes || "",
+    pleito_id: mudanca?.pleito_id || null,
   });
   const [categorias, setCategorias] = useState(mudanca?.categorias || []);
 
@@ -66,6 +68,29 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting 
               <Input type="date" value={formData.data_ocorrencia} onChange={(e) => set("data_ocorrencia", e.target.value)} />
             </div>
           </div>
+
+          {/* Pleito Vinculado */}
+          {pleitos.length > 0 && (
+            <div className="space-y-2">
+              <Label>Pleito Vinculado</Label>
+              <Select
+                value={formData.pleito_id || "__none__"}
+                onValueChange={(v) => set("pleito_id", v === "__none__" ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nenhum" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
+                  {pleitos.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.titulo || "(sem título)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Origem (toggle) */}
           <div className="space-y-2">

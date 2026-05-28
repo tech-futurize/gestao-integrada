@@ -61,6 +61,12 @@ export default function GestaoMudancas() {
     enabled: !!selectedProjectId,
   });
 
+  const { data: pleitos = [] } = useQuery({
+    queryKey: ["pleitos", selectedProjectId],
+    queryFn: () => entities.Pleito.filter({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId,
+  });
+
   const createMut = useMutation({
     mutationFn: (data) => entities.MudancaContratual.create(data),
     onSuccess: () => {
@@ -153,6 +159,7 @@ export default function GestaoMudancas() {
           onSubmit={handleSubmit}
           onCancel={() => { setShowForm(false); setEditing(null); }}
           isSubmitting={createMut.isPending || updateMut.isPending}
+          pleitos={pleitos}
         />
       )}
 
