@@ -154,7 +154,7 @@ export default function Cronograma() {
             <Button variant={show6WLA ? "default" : "outline"} size="sm" onClick={() => setShow6WLA(v => !v)}>
               <CalendarDays className="w-4 h-4 mr-2" /> 6WLA
             </Button>
-            <Button variant="outline" onClick={() => setShowImportExport(true)}>
+            <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
               <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
             </Button>
           </div>
