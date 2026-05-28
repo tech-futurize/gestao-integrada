@@ -36,6 +36,43 @@ export function formatData(date) {
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
+/**
+ * Formata uma Date como "DD/MM" em pt-BR.
+ * @param {Date} date
+ * @returns {string}
+ */
+export function formatDataDDMM(date) {
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
+const WEEK_ALPHAS = [
+  { bg: 0.22, border: 1.00, text: 1.00, glow: true  },
+  { bg: 0.17, border: 0.80, text: 0.90, glow: false },
+  { bg: 0.12, border: 0.60, text: 0.73, glow: false },
+  { bg: 0.08, border: 0.42, text: 0.57, glow: false },
+  { bg: 0.05, border: 0.28, text: 0.42, glow: false },
+  { bg: 0.02, border: 0.18, text: 0.30, glow: false },
+];
+
+/**
+ * Retorna inline style para o badge/pill de uma semana.
+ * @param {number} weekIndex 0 (S1) a 5 (S6)
+ * @param {boolean} isDark
+ * @returns {React.CSSProperties}
+ */
+export function getWeekBadgeStyle(weekIndex, isDark) {
+  const a = WEEK_ALPHAS[Math.min(weekIndex, 5)];
+  const [r, g, b] = isDark ? [38, 255, 255] : [16, 42, 68];
+  return {
+    background:  `rgba(${r},${g},${b},${a.bg})`,
+    borderColor: `rgba(${r},${g},${b},${a.border})`,
+    color:       `rgba(${r},${g},${b},${a.text})`,
+    ...(a.glow && isDark
+      ? { boxShadow: `0 0 8px rgba(${r},${g},${b},0.5)` }
+      : {}),
+  };
+}
+
 // ── helpers internos ──────────────────────────────────────────────
 
 function _startOfWeek(date) {
