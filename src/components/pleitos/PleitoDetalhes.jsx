@@ -4,10 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Edit, FileText, CheckSquare, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Edit, FileText, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import PlanoAcao from "./PlanoAcao";
 
 const statusColors = {
   Aberto: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -52,14 +51,10 @@ export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
         </div>
 
         <Tabs defaultValue="detalhes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:grid-cols-2">
             <TabsTrigger value="detalhes" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">Detalhes</span>
-            </TabsTrigger>
-            <TabsTrigger value="acoes" className="flex items-center gap-2">
-              <CheckSquare className="w-4 h-4" />
-              <span className="hidden sm:inline">Plano de Ação</span>
             </TabsTrigger>
             <TabsTrigger value="incidentes" className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
@@ -116,10 +111,6 @@ export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="acoes">
-            <PlanoAcao pleitoId={pleito.id} />
           </TabsContent>
 
           <TabsContent value="incidentes">

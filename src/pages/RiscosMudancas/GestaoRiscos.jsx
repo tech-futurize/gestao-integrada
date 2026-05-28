@@ -16,6 +16,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
+import PlanoAcao from "@/components/riscos/PlanoAcao";
 
 const CATEGORIAS = ["Técnico", "Financeiro", "Prazo", "Segurança", "Regulatório", "Ambiental", "Outros"];
 
@@ -85,6 +86,7 @@ export default function GestaoRiscos() {
   const [showImportExport, setShowImportExport] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [filtros, setFiltros] = useState({});
+  const [tab, setTab] = useState("riscos");
 
   const { data: riscos = [], isLoading } = useQuery({
     queryKey: ["riscos", selectedProjectId],
@@ -213,7 +215,26 @@ export default function GestaoRiscos() {
           </div>
         }
       />
-      <div className="flex-1 overflow-auto p-6 space-y-6">
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-border px-6">
+        {["riscos", "plano-acao"].map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              tab === t
+                ? "border-emerald-600 text-emerald-700"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t === "riscos" ? "Riscos" : "Plano de Ação"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "plano-acao" && <PlanoAcao projectId={selectedProjectId} />}
+
+      {tab === "riscos" && <div className="flex-1 overflow-auto p-6 space-y-6">
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -460,7 +481,7 @@ export default function GestaoRiscos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>}
       <ImportExportDialog
         open={showImportExport}
         onOpenChange={setShowImportExport}

@@ -29,22 +29,30 @@ const emptyForm = {
   responsavel: "",
   status: "Pendente",
   observacoes: "",
+  registro_risco_id: null,
+  registro_mudanca_id: null,
 };
 
-export default function PlanoAcao({ pleitoId }) {
+function getVinculoLabel(acao) {
+  if (acao.registro_risco_id) return "Risco";
+  if (acao.registro_mudanca_id) return "Mudança";
+  return "—";
+}
+
+export default function PlanoAcao({ projectId }) {
   const [showForm, setShowForm] = useState(false);
   const [editingAcao, setEditingAcao] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
   const queryClient = useQueryClient();
 
   const { data: acoes = [] } = useQuery({
-    queryKey: ["acoes", pleitoId],
-    queryFn: () => entities.Acao.filter({ pleito_id: pleitoId }),
-    enabled: !!pleitoId,
+    queryKey: ["acoes", projectId],
+    queryFn: () => entities.Acao.filter({ projeto_id: projectId }),
+    enabled: !!projectId,
   });
 
   const createAcaoMutation = useMutation({
-    mutationFn: (data) => entities.Acao.create({ ...data, pleito_id: pleitoId }),
+    mutationFn: (data) => entities.Acao.create({ ...data, projeto_id: projectId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acoes"] });
       setShowForm(false);
@@ -76,12 +84,18 @@ export default function PlanoAcao({ pleitoId }) {
     }
   };
 
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingAcao(null);
+    setFormData(emptyForm);
+  };
+
   const acoesCompletas = acoes.filter((a) => a.status === "Concluída").length;
   const acoesPendentes = acoes.filter((a) => ["Pendente", "Em Andamento"].includes(a.status)).length;
   const acoesAtrasadas = acoes.filter((a) => a.status === "Atrasada").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
           <CardContent className="p-4 flex items-center justify-between">
@@ -196,7 +210,7 @@ export default function PlanoAcao({ pleitoId }) {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingAcao(null); }}>
+                <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancelar
                 </Button>
                 <Button type="submit" variant="save"
@@ -216,6 +230,7 @@ export default function PlanoAcao({ pleitoId }) {
                 <TableHeader>
                   <TableRow className="bg-muted">
                     <TableHead>Descrição</TableHead>
+                    <TableHead>Vínculo</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Previsão</TableHead>
                     <TableHead>Status</TableHead>
@@ -229,6 +244,7 @@ export default function PlanoAcao({ pleitoId }) {
                         <p className="font-medium text-foreground line-clamp-2">{acao.descricao}</p>
                         <p className="text-xs text-muted-foreground mt-1">{acao.formato_tratativa}</p>
                       </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{getVinculoLabel(acao)}</TableCell>
                       <TableCell className="text-sm">{acao.responsavel || "-"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {acao.data_fim_prevista ? format(new Date(acao.data_fim_prevista), "dd/MM/yyyy", { locale: ptBR }) : "-"}
@@ -239,7 +255,21 @@ export default function PlanoAcao({ pleitoId }) {
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Button size="sm" variant="outline" className="text-muted-foreground border-border"
-                            onClick={() => { setEditingAcao(acao); setFormData({ descricao: acao.descricao, formato_tratativa: acao.formato_tratativa || "Reunião", data_inicio_prevista: acao.data_inicio_prevista || "", data_fim_prevista: acao.data_fim_prevista || "", responsavel: acao.responsavel || "", status: acao.status, observacoes: acao.observacoes || "" }); setShowForm(true); }}>
+                            onClick={() => {
+                              setEditingAcao(acao);
+                              setFormData({
+                                descricao: acao.descricao,
+                                formato_tratativa: acao.formato_tratativa || "Reunião",
+                                data_inicio_prevista: acao.data_inicio_prevista || "",
+                                data_fim_prevista: acao.data_fim_prevista || "",
+                                responsavel: acao.responsavel || "",
+                                status: acao.status,
+                                observacoes: acao.observacoes || "",
+                                registro_risco_id: acao.registro_risco_id || null,
+                                registro_mudanca_id: acao.registro_mudanca_id || null,
+                              });
+                              setShowForm(true);
+                            }}>
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button size="sm" variant="outline" className="text-status-critical border-status-critical/30 hover:bg-status-critical/10"
