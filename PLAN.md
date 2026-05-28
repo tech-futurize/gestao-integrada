@@ -222,28 +222,32 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 10 — RDO
 
-- [ ] Builder: Remover botão "Anexar à Medição" (`RDOModule.jsx:425`)
-- [ ] Builder: Remover "KM" do campo Área; remover campo Hora (manter apenas Data)
-- [ ] Builder: Desvincular Condição × Praticabilidade — permitir qualquer combinação
-- [ ] Builder: Padronizar MO e Equipamentos — botões "Adicionar" gerando Nome / Função-Identificação / Quantidade
-- [ ] Builder: Botão "Vincular Atividades" — pop-up de cronograma com filtros e checkbox múltiplo
-- [ ] Builder: Replicar vínculo na seção "Ocorrências e Impactos"
-- [ ] Builder: Campo de Evidências (upload de arquivo / captura de foto)
-- [ ] Builder: Importação em massa com `ColumnMappingDialog`
+> ✅ **Concluído** *(2026-05-28)*
+
+- [x] Builder: Remover botão "Anexar à Medição" (`RDOModule.jsx:425`)
+- [x] Builder: Remover "KM" do campo Área; remover campo Hora (manter apenas Data)
+- [x] Builder: Desvincular Condição × Praticabilidade — permitir qualquer combinação
+- [x] Builder: Padronizar MO e Equipamentos — botões "Adicionar" gerando Nome / Função-Identificação / Quantidade
+- [x] Builder: Botão "Vincular Atividades" — pop-up de cronograma com filtros e checkbox múltiplo
+- [x] Builder: Replicar vínculo na seção "Ocorrências e Impactos"
+- [x] Builder: Campo de Evidências (upload de arquivo / captura de foto)
+- [x] Builder: Importação em massa com `ColumnMappingDialog`
+- [x] Builder: Emojis → ícones Lucide nos painéis do RDOForm *(2026-05-28)*
+- [x] Builder: Ações Novo RDO / Importar movidas para slot actions do PageHeader *(2026-05-28)*
 
 ---
 
 ### Módulo 11 — REGISTROS
 
-> ⏳ **Implementação concluída — aguardando `/audit`** *(2026-05-28)*
+> ✅ **Verified & Polished! — Audit score ≥ 9 — Visual 9 · Functional 9 · Trust 9** *(2026-05-28)*
 
 - [x] Designer: Cards superiores: Qtd por Tipo, Qtd por Responsabilidade, Qtd por Status *(2026-05-28)*
 - [x] Builder: Adicionar filtros: Responsabilidade e Período (Início/Término) *(2026-05-28)*
 - [x] Builder: Remover campo Hora — `RegistroForm.jsx` usa `type="date"` *(2026-05-28)*
 - [x] Builder: Suporte a anexo de arquivos via Supabase Storage *(2026-05-28)*
 - [x] Builder: Botão "Vincular Atividades" do cronograma *(2026-05-28)*
-- [ ] Tester: `/audit` — score ≥ 9
-- [ ] Tester: Criar `docs/modulos/11-Registros.md`
+- [x] Tester: `/audit` — score ≥ 9 — Visual 9 · Functional 9 · Trust 9 *(2026-05-28)*
+- [x] Tester: Criar `docs/modulos/11-Registros.md` *(2026-05-28)*
 
 ---
 
