@@ -7,12 +7,7 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from "recharts";
-
-const CATEGORIES = [
-  "Engenharia", "Suprimentos", "Liberação de Área",
-  "Escopo", "Planejamento", "Gestão & Comunicação",
-  "Recursos", "Produtividade", "Segurança", "Qualidade"
-];
+import { IMPACT_CATEGORIES as CATEGORIES } from "@/lib/constants";
 
 
 const VISIBLE_WEEKS = 12;

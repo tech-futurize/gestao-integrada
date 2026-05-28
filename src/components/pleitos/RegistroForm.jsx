@@ -13,12 +13,7 @@ import { Plus, Trash2, Paperclip, X as XIcon, Link2 } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
-
-const IMPACTO_CATEGORIES = [
-  "Engenharia", "Suprimentos", "Escopo", "Planejamento",
-  "Recursos", "Produtividade", "Liberação de Área",
-  "Segurança", "Qualidade", "Gestão & Comunicação"
-];
+import { IMPACT_CATEGORIES as IMPACTO_CATEGORIES } from "@/lib/constants";
 
 export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting, tarefas = [], selectedProjectId = "" }) {
   const [formData, setFormData] = useState({
