@@ -74,14 +74,14 @@ export default function MapaSuprimentos() {
   };
 
   const headerActions = (
-    <>
+    <div className="flex items-center gap-2">
       <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
         <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
       </Button>
-      <Button size="sm" onClick={() => setTriggerNew(t => t + 1)}>
-        <Plus className="w-4 h-4 mr-1" /> Novo Item
+      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setTriggerNew(t => t + 1)}>
+        <Plus className="w-4 h-4 mr-2" /> Novo Item
       </Button>
-    </>
+    </div>
   );
 
   if (!selectedProjectId) {
