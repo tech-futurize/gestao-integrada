@@ -37,7 +37,8 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ ...form, valor: valorCalculado });
+    const valor = (form.itens || []).length > 0 ? valorCalculado : (medicao?.valor ?? valorCalculado);
+    onSave({ ...form, valor });
   };
 
   return (
