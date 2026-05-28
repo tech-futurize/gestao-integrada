@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Ruler, FileSpreadsheet } from "lucide-react";
+import { Ruler, Upload } from "lucide-react";
 import TakeOffCommodities from "@/components/planejamento/TakeOffCommodities";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
@@ -29,7 +29,7 @@ export default function TakeOff() {
       <PageHeader
         actions={
           <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            <Upload className="w-4 h-4 mr-2" />
             Importar / Exportar
           </Button>
         }
