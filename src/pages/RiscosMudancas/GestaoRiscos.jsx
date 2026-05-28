@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import FilterBar from "@/components/ui/FilterBar";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
@@ -61,6 +62,7 @@ const CAT_COLORS = {
 const EMPTY_FORM = {
   codigo: "", descricao: "", categoria: "", probabilidade: 3, impacto: 3,
   status: "Ativo", responsavel: "", plano_resposta: "",
+  impactos: [],
 };
 
 // 5×5 matrix cell colors
@@ -114,6 +116,14 @@ export default function GestaoRiscos() {
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  const toggleImpacto = (dim) =>
+    setForm(f => ({
+      ...f,
+      impactos: f.impactos.includes(dim)
+        ? f.impactos.filter(d => d !== dim)
+        : [...f.impactos, dim],
+    }));
+
   const filtered = useMemo(() => {
     const st = filtros.status || [];
     const cat = filtros.categoria || [];
@@ -151,6 +161,7 @@ export default function GestaoRiscos() {
       status: risco.status || "Ativo",
       responsavel: risco.responsavel || "",
       plano_resposta: risco.plano_resposta || "",
+      impactos: risco.impactos || [],
     });
     setShowForm(true);
   };
@@ -273,6 +284,7 @@ export default function GestaoRiscos() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Código</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Descrição</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Categoria</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Impactos</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">P</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">I</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Score</th>
@@ -282,8 +294,8 @@ export default function GestaoRiscos() {
               </tr>
             </thead>
             <tbody>
-              {isLoading && <tr><td colSpan={9} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
-              {!isLoading && filtered.length === 0 && <tr><td colSpan={9} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
+              {isLoading && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
+              {!isLoading && filtered.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
               {filtered.map((r, i) => {
                 const score = r.score || (r.probabilidade * r.impacto) || 0;
                 const statusColor = { Ativo: "text-amber-600", Mitigado: "text-blue-600", Encerrado: "text-green-600" }[r.status] || "";
@@ -300,6 +312,15 @@ export default function GestaoRiscos() {
                           {r.categoria}
                         </span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1 flex-wrap">
+                        {(r.impactos || []).map(dim => (
+                          <span key={dim} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
+                            {dim}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-center font-bold text-foreground">{r.probabilidade}</td>
                     <td className="px-4 py-3 text-center font-bold text-foreground">{r.impacto}</td>
@@ -371,6 +392,20 @@ export default function GestaoRiscos() {
             <div className="space-y-1 col-span-2">
               <Label>Plano de Resposta</Label>
               <Textarea value={form.plano_resposta} onChange={e => setForm(f => ({ ...f, plano_resposta: e.target.value }))} rows={2} placeholder="Ações de mitigação..." />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label>Dimensões de Impacto</Label>
+              <div className="flex gap-4 flex-wrap">
+                {["Escopo", "Prazo", "Valor"].map(dim => (
+                  <label key={dim} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={form.impactos.includes(dim)}
+                      onCheckedChange={() => toggleImpacto(dim)}
+                    />
+                    <span className="text-sm">{dim}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter className="gap-2">
