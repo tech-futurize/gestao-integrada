@@ -52,11 +52,11 @@ projetos (1)
   ├── riscos (N)
   ├── contratos (N) → medicoes (N)
   │              └── aditivos (N)
-  ├── tarefas_cronograma (N, self-ref pai_id)
+  ├── atividades_cronograma (N, self-ref pai_id)
   │   └── itens_6wla (N) via tarefa_cronograma_id
   ├── commodities (N) → lancamentos_commodity (N)
   ├── itens_mas (N)
-  ├── documentos_engenharia (N) → tarefas_cronograma (FK opcional)
+  ├── documentos_engenharia (N) → atividades_cronograma (FK opcional)
   ├── histogramas (N) via recurso_id
   └── usuarios (N)
 ```
@@ -113,7 +113,7 @@ Registros de ocorrências / notificações (módulo Registros na UI).
 | status | TEXT | Registrado / Em Análise / Resolvido (status "Fechado" removido) |
 | responsavel_registro | TEXT | |
 | pleito_id | UUID FK → pleitos | SET NULL |
-| atividades_vinculadas | JSONB | IDs de tarefas_cronograma vinculadas |
+| atividades_vinculadas | JSONB | IDs de atividades_cronograma vinculadas |
 | anexos | JSONB | URLs do Supabase Storage (bucket `registros-anexos`) |
 
 > Colunas RDO removidas: `rdo_data`, `numero_rdo`, `area`, `disciplina`, `condicoes_climaticas_*`, `turnos_*`, `horarios_*`, `mao_de_obra`, `equipamentos_rdo`, `atividades`, `ocorrencias`, `responsabilidade`, `impacto_ocorrencia`.
@@ -133,7 +133,7 @@ Relatórios Diários de Obra — desacoplado de `registros`.
 | clima | JSONB | `{manha, tarde, noite}` com condicao/praticabilidade independentes |
 | mao_de_obra | JSONB | Array `[{nome, funcao, quantidade}]` |
 | equipamentos | JSONB | Array `[{nome, identificacao, quantidade}]` |
-| atividades_vinculadas | JSONB | Array de IDs de tarefas_cronograma |
+| atividades_vinculadas | JSONB | Array de IDs de atividades_cronograma |
 | ocorrencias | JSONB | Array de ocorrências com atividades_vinculadas próprias |
 | impactos | JSONB | |
 | evidencias | JSONB | URLs do Supabase Storage (bucket `rdo-evidencias`) |
@@ -347,13 +347,14 @@ Cotações vinculadas a requisições de compra.
 
 ---
 
-### tarefas_cronograma
+### atividades_cronograma
 Estrutura WBS do cronograma com hierarquia pai/filho (até 9 níveis).
+> Tabela renomeada de `atividades_cronograma`.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
 | projeto_id | UUID FK → projetos | CASCADE |
-| pai_id | UUID FK → tarefas_cronograma | SET NULL (self-ref) |
+| pai_id | UUID FK → atividades_cronograma | SET NULL (self-ref) |
 | codigo_wbs | TEXT | |
 | nome | TEXT NOT NULL | |
 | tipo | TEXT | Resumo / Atividade / Marco |
@@ -367,10 +368,8 @@ Estrutura WBS do cronograma com hierarquia pai/filho (até 9 níveis).
 | area | TEXT | |
 | disciplina | TEXT | |
 | caminho_critico | BOOLEAN | default false |
-| predecessoras | TEXT | |
-| status | TEXT | Calculado: A Iniciar / Em Andamento / Atrasada / Concluído |
 
-> **Fórmula de status:** `Se prev=0 e real=0 → "A Iniciar"; Se real=100 → "Concluído"; Se prev > real → "Atrasada"; Se real >= prev → "Em Andamento"`
+> **Fórmula de status (calculado no front):** `Se prev=0 e real=0 → "A Iniciar"; Se real=100 → "Concluído"; Se prev > real → "Atrasada"; Se real >= prev → "Em Andamento"`
 
 ---
 
@@ -467,7 +466,7 @@ Itens do Mapa de Acompanhamento de Suprimentos (MAS). Submódulos "Requisições
 | numero_sc | TEXT NOT NULL | Label UI: "N SC/OC" |
 | solicitante | TEXT | Label UI: "Responsável" |
 | fornecedor | TEXT | |
-| id_cronograma | UUID FK → tarefas_cronograma | SET NULL |
+| id_cronograma | UUID FK → atividades_cronograma | SET NULL |
 | data_cronograma | DATE | Preenchida ao vincular a tarefa |
 | status | TEXT | A iniciar / Em andamento / Concluído / Cancelado |
 | etapas | JSONB | Array `[{nome, data_prevista, data_real}]` |
@@ -575,11 +574,18 @@ Look-ahead de 6 semanas — vínculo obrigatório com o cronograma.
 | Coluna | Tipo | Notas |
 |--------|------|-------|
 | projeto_id | UUID FK → projetos | CASCADE |
-| tarefa_cronograma_id | UUID FK → tarefas_cronograma | NOT NULL |
+| tarefa_cronograma_id | UUID FK → atividades_cronograma | NOT NULL |
 | observacao | TEXT | |
-| restricoes | JSONB | `{documentos, material, equipamentos, mao_obra, seguranca, qualidade}` — cada um array bool[6] |
+| adicionado_manualmente | BOOLEAN NOT NULL | DEFAULT FALSE — true para adições via modal, false para auto-import |
+| restricao_projeto_eng | BOOLEAN NOT NULL | DEFAULT FALSE |
+| restricao_material | BOOLEAN NOT NULL | DEFAULT FALSE |
+| restricao_mao_obra | BOOLEAN NOT NULL | DEFAULT FALSE |
+| restricao_equipamentos | BOOLEAN NOT NULL | DEFAULT FALSE |
+| restricao_externas | BOOLEAN NOT NULL | DEFAULT FALSE |
+| restricao_informacoes | BOOLEAN NOT NULL | DEFAULT FALSE |
 
 > `semanas` (array bool[6] de atividade ativa) é calculado no front pela sobreposição de `[inicio_previsto, termino_previsto]` da tarefa com a janela de cada semana. Não persistido.
+> **Unique:** `(tarefa_cronograma_id, projeto_id)`
 
 ---
 
@@ -593,8 +599,9 @@ Look-ahead de 6 semanas — vínculo obrigatório com o cronograma.
 |------|---------|-----------|---------|
 | 2026-Q1 | `supabase-migration.sql` | Criação inicial do schema (~30 tabelas) | Todas as tabelas base |
 | 2026-Q2 | `supabase-migration-2026-q2.sql` | Refatoração Geral: Drop Qualidade, criação de `unidades_medida`, `plano_acao`, `rdo`, `usuarios`; ALTER em 10+ tabelas | Ver seção "Tabelas removidas/adicionadas" acima |
-| 2026-05-27 | `supabase-migration-m4-cronograma.sql` | M4.4 — Adiciona `area TEXT` e `disciplina TEXT` em `tarefas_cronograma` | `tarefas_cronograma` |
+| 2026-05-27 | `supabase-migration-m4-cronograma.sql` | M4.4 — Adiciona `area TEXT` e `disciplina TEXT` em `atividades_cronograma` | `atividades_cronograma` |
 | 2026-05-27 | `supabase-migration-m8-avanco.sql` | M8 — Adiciona `semana_iso TEXT` e `avanco_projetado NUMERIC`; converte histórico; depreca `mes_referencia` | `avanco_fisico` |
+| 2026-05-28 | `supabase-migration-m6-6wla-v2.sql` | M6 — Adiciona `adicionado_manualmente BOOLEAN NOT NULL DEFAULT FALSE` em `itens_6wla` | `itens_6wla` |
 
 ---
 

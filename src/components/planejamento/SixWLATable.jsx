@@ -14,6 +14,7 @@ import { useDarkMode } from "@/hooks/useDarkMode";
  *     id: string,
  *     tarefa: object|null,
  *     semanasBadge: string[],
+ *     adicionado_manualmente: boolean,
  *     restricao_projeto_eng: boolean,
  *     restricao_material: boolean,
  *     restricao_mao_obra: boolean,
@@ -22,7 +23,7 @@ import { useDarkMode } from "@/hooks/useDarkMode";
  *     restricao_informacoes: boolean,
  *     observacao: string|null
  *   }>,
- *   restricoes: { key: string, label: string, full: string }[],
+ *   restricoes: { key: string, cardLabel: string, tableLabel: string, full: string }[],
  *   isLoading: boolean,
  *   onUpdate: (id: string, data: object) => void,
  *   onDelete: (id: string) => void

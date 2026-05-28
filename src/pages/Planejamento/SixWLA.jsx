@@ -99,6 +99,44 @@ export default function SixWLAPage() {
     [merged]
   );
 
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }) => entities.Item6WLA.update(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
+    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id) => entities.Item6WLA.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
+    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  const bulkCreateMut = useMutation({
+    mutationFn: ({ tarefaIds, manualmente = false }) =>
+      Promise.all(
+        tarefaIds.map(tarefa_cronograma_id =>
+          entities.Item6WLA.create({
+            projeto_id: selectedProjectId,
+            tarefa_cronograma_id,
+            adicionado_manualmente: manualmente,
+            restricao_projeto_eng:  false,
+            restricao_material:     false,
+            restricao_mao_obra:     false,
+            restricao_equipamentos: false,
+            restricao_externas:     false,
+            restricao_informacoes:  false,
+          })
+        )
+      ),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["itens_6wla"] });
+      if (variables.manualmente) {
+        toast({ variant: "success", description: "Atividades adicionadas ao 6WLA." });
+      }
+    },
+    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
   // Resetar guard ao trocar projeto para permitir re-execução do auto-import
   useEffect(() => {
     autoImported.current = false;
@@ -157,44 +195,6 @@ export default function SixWLAPage() {
     total: merged.length,
     ...Object.fromEntries(RESTRICOES.map(r => [r.key, merged.filter(i => i[r.key]).length])),
   }), [merged]);
-
-  const updateMut = useMutation({
-    mutationFn: ({ id, data }) => entities.Item6WLA.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
-  });
-
-  const deleteMut = useMutation({
-    mutationFn: (id) => entities.Item6WLA.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
-  });
-
-  const bulkCreateMut = useMutation({
-    mutationFn: ({ tarefaIds, manualmente = false }) =>
-      Promise.all(
-        tarefaIds.map(tarefa_cronograma_id =>
-          entities.Item6WLA.create({
-            projeto_id: selectedProjectId,
-            tarefa_cronograma_id,
-            adicionado_manualmente: manualmente,
-            restricao_projeto_eng:  false,
-            restricao_material:     false,
-            restricao_mao_obra:     false,
-            restricao_equipamentos: false,
-            restricao_externas:     false,
-            restricao_informacoes:  false,
-          })
-        )
-      ),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["itens_6wla"] });
-      if (variables.manualmente) {
-        toast({ variant: "success", description: "Atividades adicionadas ao 6WLA." });
-      }
-    },
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
-  });
 
   const toggleSemana = (label) =>
     setSemanasAtivas(prev =>
@@ -315,6 +315,7 @@ export default function SixWLAPage() {
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
               placeholder="Buscar por ID ou atividade..."
+              aria-label="Buscar atividade"
               className="h-8 px-3 text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-56"
             />
             <Button
@@ -328,6 +329,7 @@ export default function SixWLAPage() {
             <select
               value={filtroDisciplina}
               onChange={e => setFiltroDisciplina(e.target.value)}
+              aria-label="Filtrar por disciplina"
               className="h-8 px-2 text-xs rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="">Todas as disciplinas</option>
