@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,15 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2 } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
 
+const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+
 export default function MedicaoForm({ medicao, contratos, defaultContratoId, onSave, onClose }) {
   const [form, setForm] = useState({
     numero: "", contrato_id: defaultContratoId || "", periodo_inicio: "", periodo_fim: "",
-    status: "Elaboração",
-    elaborador: "", observacoes: "", itens: [],
+    status: "Elaboração", observacoes: "", itens: [],
     ...medicao,
-    valor_bruto: medicao?.valor_bruto ?? "",
-    valor_retencao: medicao?.valor_retencao ?? "",
-    valor_liquido: medicao?.valor_liquido ?? "",
   });
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -32,14 +30,14 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
     set("itens", items);
   };
 
+  const valorCalculado = useMemo(() =>
+    (form.itens || []).reduce((s, item) => s + (parseFloat(item.valor_total) || 0), 0),
+    [form.itens]
+  );
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({
-      ...form,
-      valor_bruto: parseFloat(form.valor_bruto) || 0,
-      valor_retencao: parseFloat(form.valor_retencao) || 0,
-      valor_liquido: parseFloat(form.valor_liquido) || 0,
-    });
+    onSave({ ...form, valor: valorCalculado });
   };
 
   return (
@@ -71,12 +69,6 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
             <div><Label>Período Fim</Label><Input type="date" value={form.periodo_fim} onChange={e => set("periodo_fim", e.target.value)} /></div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div><Label>Valor Bruto (R$)</Label><Input type="number" step="0.01" value={form.valor_bruto} onChange={e => set("valor_bruto", e.target.value)} /></div>
-            <div><Label>Retenção (R$)</Label><Input type="number" step="0.01" value={form.valor_retencao} onChange={e => set("valor_retencao", e.target.value)} /></div>
-            <div><Label>Valor Líquido (R$)</Label><Input type="number" step="0.01" value={form.valor_liquido} onChange={e => set("valor_liquido", e.target.value)} /></div>
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Status</Label>
@@ -89,7 +81,10 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>Elaborador</Label><Input value={form.elaborador} onChange={e => set("elaborador", e.target.value)} placeholder="Nome do elaborador" /></div>
+            <div>
+              <Label>Valor (R$)</Label>
+              <Input value={fmt(valorCalculado)} readOnly disabled className="bg-muted cursor-not-allowed" />
+            </div>
           </div>
 
           <div>
