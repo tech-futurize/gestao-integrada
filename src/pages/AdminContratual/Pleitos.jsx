@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, FileSpreadsheet } from "lucide-react";
+import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
 import { entities } from "@/api/supabaseEntities";
 import PleitoForm from "@/components/pleitos/PleitoForm";
@@ -11,11 +12,22 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast } from "@/components/ui/use-toast";
 
+const PLEITO_COLUMNS = [
+  { key: "titulo",              label: "Título",             type: "string", required: true },
+  { key: "descricao_problema",  label: "Descrição",          type: "string" },
+  { key: "contexto",            label: "Contexto",           type: "string" },
+  { key: "data_abertura",       label: "Data Abertura",      type: "date" },
+  { key: "status",              label: "Status",             type: "string" },
+  { key: "responsavel",         label: "Responsável",        type: "string" },
+  { key: "prioridade",          label: "Prioridade",         type: "string" },
+];
+
 export default function Pleitos() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const onErr = (msg) => toast({ title: "Erro ao salvar", description: msg, variant: "destructive" });
+  const [showImportExport, setShowImportExport] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingPleito, setEditingPleito] = useState(null);
   const [selectedPleito, setSelectedPleito] = useState(null);
@@ -77,10 +89,16 @@ export default function Pleitos() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditingPleito(null); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Pleito
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Importar / Exportar
+            </Button>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditingPleito(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Pleito
+            </Button>
+          </div>
         }
       />
       <div className="flex-1 overflow-auto p-6 md:p-8">
@@ -98,6 +116,15 @@ export default function Pleitos() {
           <PleitosList casos={casos} isLoading={isLoading} onSelect={setSelectedPleito} />
         </div>
       </div>
+      <ImportExportDialog
+        open={showImportExport}
+        onOpenChange={setShowImportExport}
+        columns={PLEITO_COLUMNS}
+        exportFileName="pleitos"
+        title="Pleitos — Importar / Exportar"
+        onExport={() => casos}
+        onImport={(row) => createMutation.mutateAsync({ ...row, projeto_id: selectedProjectId })}
+      />
     </div>
   );
 }

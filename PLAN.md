@@ -235,11 +235,15 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 11 — REGISTROS
 
+> ⏳ **Implementação concluída — aguardando `/audit`** *(2026-05-28)*
+
 - [x] Designer: Cards superiores: Qtd por Tipo, Qtd por Responsabilidade, Qtd por Status *(2026-05-28)*
-- [ ] Builder: Adicionar filtros: Responsabilidade e Período (Início/Término)
-- [ ] Builder: Remover campo Hora (`IncidenteForm.jsx:115`)
-- [ ] Builder: Suporte a anexo de arquivos
-- [ ] Builder: Botão "Vincular Atividades" do cronograma (mesma pattern do RDO)
+- [x] Builder: Adicionar filtros: Responsabilidade e Período (Início/Término) *(2026-05-28)*
+- [x] Builder: Remover campo Hora — `RegistroForm.jsx` usa `type="date"` *(2026-05-28)*
+- [x] Builder: Suporte a anexo de arquivos via Supabase Storage *(2026-05-28)*
+- [x] Builder: Botão "Vincular Atividades" do cronograma *(2026-05-28)*
+- [ ] Tester: `/audit` — score ≥ 9
+- [ ] Tester: Criar `docs/modulos/11-Registros.md`
 
 ---
 

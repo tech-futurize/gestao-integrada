@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, FileText, DollarSign } from "lucide-react";
+import { Plus, FileText, DollarSign, FileSpreadsheet } from "lucide-react";
+import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import ContratosList from "@/components/contratos/ContratosList";
 import ContratoForm from "@/components/contratos/ContratoForm";
 import ContratoDetalhes from "@/components/contratos/ContratoDetalhes";
@@ -16,12 +17,25 @@ import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 
+const CONTRATO_COLUMNS = [
+  { key: "numero",      label: "Número",       type: "string" },
+  { key: "objeto",      label: "Objeto",        type: "string", required: true },
+  { key: "fornecedor",  label: "Fornecedor",    type: "string" },
+  { key: "cnpj",        label: "CNPJ",          type: "string" },
+  { key: "tipo",        label: "Tipo",          type: "string" },
+  { key: "status",      label: "Status",        type: "string" },
+  { key: "valor_total", label: "Valor Total",   type: "number" },
+  { key: "data_inicio", label: "Data Início",   type: "date" },
+  { key: "data_fim",    label: "Data Fim",      type: "date" },
+];
+
 export default function Contratos() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
 
+  const [showImportExport, setShowImportExport] = useState(false);
   const [showContratoForm, setShowContratoForm] = useState(false);
   const [editContrato, setEditContrato] = useState(null);
   const [selectedContrato, setSelectedContrato] = useState(null);
@@ -141,10 +155,16 @@ export default function Contratos() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditContrato(null); setShowContratoForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Contrato
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Importar / Exportar
+            </Button>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditContrato(null); setShowContratoForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Contrato
+            </Button>
+          </div>
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-6">
@@ -221,6 +241,15 @@ export default function Contratos() {
           />
         )}
       </div>
+      <ImportExportDialog
+        open={showImportExport}
+        onOpenChange={setShowImportExport}
+        columns={CONTRATO_COLUMNS}
+        exportFileName="contratos"
+        title="Contratos — Importar / Exportar"
+        onExport={() => contratos}
+        onImport={(row) => createContrato.mutateAsync({ ...row, projeto_id: selectedProjectId })}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightLeft, Plus, Pencil, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
+import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import DashboardExecutivo from "@/components/mudancas/DashboardExecutivo";
@@ -26,6 +27,19 @@ const ORIGEM_COLORS = {
 
 const STATUS_OPTIONS = ["Identificada", "Em Análise", "Em Negociação", "Aprovada", "Rejeitada"];
 
+const MUDANCA_COLUMNS = [
+  { key: "titulo",             label: "Título",              type: "string", required: true },
+  { key: "descricao",          label: "Descrição",           type: "string" },
+  { key: "origem",             label: "Origem",              type: "string" },
+  { key: "status",             label: "Status",              type: "string" },
+  { key: "data_ocorrencia",    label: "Data Ocorrência",     type: "date" },
+  { key: "impacto_custo",      label: "Impacto Custo (R$)",  type: "number" },
+  { key: "impacto_prazo_dias", label: "Impacto Prazo (dias)", type: "number" },
+  { key: "impacto_escopo",     label: "Impacto Escopo",      type: "string" },
+  { key: "responsavel",        label: "Responsável",         type: "string" },
+  { key: "observacoes",        label: "Observações",         type: "string" },
+];
+
 function fmtCurrency(val) {
   if (val === null || val === undefined || val === "") return "—";
   const abs = Math.abs(val).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -36,6 +50,7 @@ export default function GestaoMudancas() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [showImportExport, setShowImportExport] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [filtros, setFiltros] = useState({});
@@ -105,9 +120,15 @@ export default function GestaoMudancas() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" /> Nova Mudança
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              Importar / Exportar
+            </Button>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setShowForm(true); }}>
+              <Plus className="w-4 h-4 mr-2" /> Nova Mudança
+            </Button>
+          </div>
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-6">
@@ -201,6 +222,15 @@ export default function GestaoMudancas() {
         </div>
       </div>
     </div>
+      <ImportExportDialog
+        open={showImportExport}
+        onOpenChange={setShowImportExport}
+        columns={MUDANCA_COLUMNS}
+        exportFileName="mudancas-contratuais"
+        title="Mudanças — Importar / Exportar"
+        onExport={() => filtered}
+        onImport={(row) => createMut.mutateAsync({ ...row, projeto_id: selectedProjectId })}
+      />
     </div>
   );
 }

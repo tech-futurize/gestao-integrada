@@ -49,6 +49,7 @@ export function ImportExportDialog({
   exportFileName = "export",
   columns = [],
   title = "Importar / Exportar",
+  exportOnly = false,
 }) {
   const [phase, setPhase] = useState("idle"); // idle | mapping | processing | done
   const [selectedFile, setSelectedFile] = useState(null);
@@ -241,7 +242,7 @@ export function ImportExportDialog({
             </div>
 
             {/* Importar */}
-            <div>
+            {!exportOnly && <div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2.5 h-2.5 rounded-sm bg-sky-500 flex-shrink-0" />
                 <span className="text-xs font-bold uppercase tracking-wider text-sky-600">Importar dados</span>
@@ -300,6 +301,7 @@ export function ImportExportDialog({
                 onChange={(e) => handleFileSelected(e.target.files[0])}
               />
             </div>
+            }
 
           </div>
 
@@ -308,13 +310,13 @@ export function ImportExportDialog({
             <Button variant="secondary" onClick={handleClose}>
               Cancelar
             </Button>
-            <Button
+            {!exportOnly && <Button
               disabled={!hasFileReady}
               onClick={() => setPhase("mapping")}
               className="bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
             >
               Próximo: Mapear Colunas →
-            </Button>
+            </Button>}
           </div>
 
         </DialogContent>

@@ -55,7 +55,7 @@ const TIPO_COLORS = { Resumo: "#26405d", Atividade: "#3b82f6", Marco: "#c35e1e" 
 
 const W_ID   = 64;
 const W_NIV  = 40;
-const W_NOME = 220;
+const W_NOME = 275;
 const W_ACT  = 43;
 
 const LEVEL_BG = {
