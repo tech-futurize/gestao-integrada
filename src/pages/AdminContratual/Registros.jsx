@@ -27,6 +27,17 @@ const TIPO_COLORS = {
   Notificação: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
 };
 
+const DIMENSION_COLORS = {
+  "Ata de Reunião": { text: "text-purple-400", bar: "#c084fc" },
+  "E-mail": { text: "text-orange-400", bar: "#fb923c" },
+  "Notificação": { text: "text-red-400", bar: "#f87171" },
+  "Contratada": { text: "text-blue-400", bar: "#60a5fa" },
+  "Contratante": { text: "text-amber-400", bar: "#fbbf24" },
+  "Registrado": { text: "text-blue-400", bar: "#60a5fa" },
+  "Em Análise": { text: "text-amber-400", bar: "#fbbf24" },
+  "Resolvido": { text: "text-green-400", bar: "#4ade80" },
+};
+
 export default function Registros() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
@@ -40,9 +51,15 @@ export default function Registros() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const { data: incidentes = [], isLoading } = useQuery({
+  const { data: incidentes = [], isLoading, isError } = useQuery({
     queryKey: ["registros", selectedProjectId],
     queryFn: () => entities.Registro.filter({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId,
+  });
+
+  const { data: tarefas = [] } = useQuery({
+    queryKey: ["tarefas_cronograma", selectedProjectId],
+    queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
 
@@ -105,12 +122,32 @@ export default function Registros() {
     });
   }, [baseList, filtros, searchText, dateFrom, dateTo]);
 
-  const kpis = useMemo(() => ({
-    total: baseList.length,
-    registrado: baseList.filter((i) => i.status === "Registrado").length,
-    emAnalise: baseList.filter((i) => i.status === "Em Análise").length,
-    resolvido: baseList.filter((i) => i.status === "Resolvido").length,
-  }), [baseList]);
+  const kpis = useMemo(() => {
+    const total = baseList.length;
+    return {
+      total,
+      porTipo: [
+        { label: "Ata de Reunião", count: baseList.filter((i) => i.tipo_registro === "Ata de Reunião").length },
+        { label: "E-mail", count: baseList.filter((i) => i.tipo_registro === "E-mail").length },
+        { label: "Notificação", count: baseList.filter((i) => i.tipo_registro === "Notificação").length },
+      ],
+      porResp: [
+        { label: "Contratada", count: baseList.filter((i) => i.responsabilidade === "Contratada").length },
+        { label: "Contratante", count: baseList.filter((i) => i.responsabilidade === "Contratante").length },
+      ],
+      porStatus: [
+        { label: "Registrado", count: baseList.filter((i) => i.status === "Registrado").length },
+        { label: "Em Análise", count: baseList.filter((i) => i.status === "Em Análise").length },
+        { label: "Resolvido", count: baseList.filter((i) => i.status === "Resolvido").length },
+      ],
+    };
+  }, [baseList]);
+
+  const dimensionGroups = [
+    { title: "Por Tipo", items: kpis.porTipo },
+    { title: "Por Responsabilidade", items: kpis.porResp },
+    { title: "Por Status", items: kpis.porStatus },
+  ];
 
   if (!selectedProjectId) {
     return (
@@ -139,35 +176,132 @@ export default function Registros() {
       <div className="flex-1 overflow-auto p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
 
+        {isError && (
+          <div className="rounded-xl border border-status-critical/30 bg-status-critical/10 px-4 py-3 text-sm text-status-critical">
+            Erro ao carregar registros. Tente recarregar a página.
+          </div>
+        )}
+
         {/* Form inline */}
         {showForm && (
           <RegistroForm
             key={editingRegistro?.id || "new-incidente"}
             incidente={editingRegistro}
             casos={[]}
+            tarefas={tarefas}
+            selectedProjectId={selectedProjectId}
             onSubmit={handleSubmit}
             onCancel={() => { setShowForm(false); setEditingRegistro(null); }}
             isSubmitting={createMutation.isPending || updateMutation.isPending}
           />
         )}
 
-        {/* KPI Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: "Total", value: kpis.total, color: "text-foreground" },
-            { label: "Registrado", value: kpis.registrado, color: "text-blue-600 dark:text-blue-400" },
-            { label: "Em Análise", value: kpis.emAnalise, color: "text-amber-600 dark:text-amber-400" },
-            { label: "Resolvido", value: kpis.resolvido, color: "text-green-600 dark:text-green-400" },
-          ].map(({ label, value, color }) => (
+        {/* KPI Cards */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-20 rounded-xl flex-1" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-3">
+
+            {/* Card Total */}
             <div
-              key={label}
-              className="bg-card border rounded-lg px-4 py-3 flex flex-col gap-1 shadow-sm"
+              className="rounded-xl px-4 py-4 flex flex-col justify-center gap-1 lg:min-w-[110px]"
+              style={{
+                background: "rgba(38,255,255,0.06)",
+                border: "1px solid rgba(38,255,255,0.2)",
+                boxShadow: "0 0 14px rgba(38,255,255,0.12)",
+              }}
             >
-              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</span>
-              <span className={`text-2xl font-bold ${color}`}>{value}</span>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Total</span>
+              <span
+                className="text-3xl font-bold leading-none text-cyan-electric"
+                style={{ textShadow: "0 0 14px rgba(38,255,255,0.6)" }}
+              >
+                {kpis.total}
+              </span>
+              <span className="text-[10px] text-muted-foreground">registros</span>
             </div>
-          ))}
-        </div>
+
+            {/* Por Tipo */}
+            <div className="flex-1 rounded-xl px-4 py-3 bg-card border border-border">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2.5">Por Tipo</p>
+              <div className="flex flex-col gap-2">
+                {kpis.porTipo.map(({ label, count }) => {
+                  const colors = DIMENSION_COLORS[label] || { text: "text-foreground", bar: "#8195A9" };
+                  const pct = kpis.total > 0 ? (count / kpis.total) * 100 : 0;
+                  return (
+                    <div key={label} className="flex flex-col gap-0.5">
+                      <div className="flex justify-between items-center">
+                        <span className={`text-[11px] font-medium ${colors.text}`}>{label}</span>
+                        <span className={`text-xs font-bold ${colors.text}`}>{count}</span>
+                      </div>
+                      <div className="h-[3px] w-full rounded-full bg-muted/40">
+                        <div
+                          className="h-[3px] rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, background: colors.bar }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Por Responsabilidade */}
+            <div className="flex-1 rounded-xl px-4 py-3 bg-card border border-border">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2.5">Por Responsabilidade</p>
+              <div className="flex flex-col gap-2">
+                {kpis.porResp.map(({ label, count }) => {
+                  const colors = DIMENSION_COLORS[label] || { text: "text-foreground", bar: "#8195A9" };
+                  const pct = kpis.total > 0 ? (count / kpis.total) * 100 : 0;
+                  return (
+                    <div key={label} className="flex flex-col gap-0.5">
+                      <div className="flex justify-between items-center">
+                        <span className={`text-[11px] font-medium ${colors.text}`}>{label}</span>
+                        <span className={`text-xs font-bold ${colors.text}`}>{count}</span>
+                      </div>
+                      <div className="h-[3px] w-full rounded-full bg-muted/40">
+                        <div
+                          className="h-[3px] rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, background: colors.bar }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Por Status */}
+            <div className="flex-1 rounded-xl px-4 py-3 bg-card border border-border">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2.5">Por Status</p>
+              <div className="flex flex-col gap-2">
+                {kpis.porStatus.map(({ label, count }) => {
+                  const colors = DIMENSION_COLORS[label] || { text: "text-foreground", bar: "#8195A9" };
+                  const pct = kpis.total > 0 ? (count / kpis.total) * 100 : 0;
+                  return (
+                    <div key={label} className="flex flex-col gap-0.5">
+                      <div className="flex justify-between items-center">
+                        <span className={`text-[11px] font-medium ${colors.text}`}>{label}</span>
+                        <span className={`text-xs font-bold ${colors.text}`}>{count}</span>
+                      </div>
+                      <div className="h-[3px] w-full rounded-full bg-muted/40">
+                        <div
+                          className="h-[3px] rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, background: colors.bar }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-col gap-3">
@@ -276,13 +410,23 @@ export default function Registros() {
 
                   {/* Card Footer */}
                   <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30 gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
                       <Badge variant="outline" className={`text-xs ${statusClass} shrink-0`}>
                         {inc.status || "—"}
                       </Badge>
                       {inc.responsavel_registro && (
                         <span className="text-xs text-muted-foreground truncate">
                           {inc.responsavel_registro}
+                        </span>
+                      )}
+                      {inc.anexos?.length > 0 && (
+                        <span className="text-xs text-muted-foreground shrink-0" title={`${inc.anexos.length} anexo(s)`}>
+                          📎 {inc.anexos.length}
+                        </span>
+                      )}
+                      {inc.atividades_vinculadas?.length > 0 && (
+                        <span className="text-xs text-muted-foreground shrink-0" title={`${inc.atividades_vinculadas.length} atividade(s) vinculada(s)`}>
+                          🔗 {inc.atividades_vinculadas.length}
                         </span>
                       )}
                     </div>
