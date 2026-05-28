@@ -168,7 +168,7 @@ export default function GestaoRiscos() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
             <Plus className="w-4 h-4 mr-2" /> Novo Risco
           </Button>
         }

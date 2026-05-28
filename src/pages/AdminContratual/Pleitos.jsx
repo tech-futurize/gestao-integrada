@@ -77,7 +77,7 @@ export default function Pleitos() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button onClick={() => { setEditingPleito(null); setShowForm(true); }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditingPleito(null); setShowForm(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             Novo Pleito
           </Button>

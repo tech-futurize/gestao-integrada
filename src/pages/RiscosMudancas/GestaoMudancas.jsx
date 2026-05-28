@@ -105,7 +105,7 @@ export default function GestaoMudancas() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button onClick={() => { setEditing(null); setShowForm(true); }}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setShowForm(true); }}>
             <Plus className="w-4 h-4 mr-2" /> Nova Mudança
           </Button>
         }
