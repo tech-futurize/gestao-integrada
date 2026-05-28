@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { toDatetimeLocal, toUtcIso } from "@/lib/dateUtils";
+import { toDateInput, toUtcIso } from "@/lib/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ const IMPACTO_CATEGORIES = [
 export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting }) {
   const [formData, setFormData] = useState({
     tipo_registro: incidente?.tipo_registro || "Ata de Reunião",
-    data_hora: toDatetimeLocal(incidente?.data_hora) || toDatetimeLocal(new Date()),
+    data_hora: toDateInput(incidente?.data_hora) || new Date().toISOString().slice(0, 10),
     responsavel_registro: incidente?.responsavel_registro || "",
     descricao: incidente?.descricao || "",
     impacto_preliminar: incidente?.impacto_preliminar || "",
@@ -111,8 +111,8 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Data e Hora *</Label>
-              <Input type="datetime-local" value={formData.data_hora}
+              <Label>Data *</Label>
+              <Input type="date" value={formData.data_hora}
                 onChange={(e) => set("data_hora", e.target.value)} required />
             </div>
             <div className="space-y-2">
