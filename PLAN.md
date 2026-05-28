@@ -116,18 +116,22 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 3 — SUPRIMENTOS
 
-- [ ] Builder: Migrar `unidade` (string livre) → `unidade_id` (FK) com `<Select>` consumindo `unidades_medida`
-- [ ] Builder: Remover `src/components/suprimentos/MapaAnalise.jsx` (legado Cotações, não usado)
+> ✅ **Concluído — Audit score ≥ 9** *(2026-05-27)*
+
+- [x] Builder: Migrar `unidade` (string livre) → `unidade_id` (FK) com `<Select>` consumindo `unidades_medida` *(2026-05-27)*
+- [x] Builder: Remover `src/components/suprimentos/MapaAnalise.jsx` (legado Cotações, não usado) — já havia sido removido anteriormente *(2026-05-27)*
 
 ---
 
 ### Módulo 4 — PLANEJAMENTO: CRONOGRAMA
 
-- [ ] Builder: Atualizar fórmula de status (A Iniciar / Em Andamento / Atrasada / Concluído) — `Cronograma.jsx:56-62`, `GanttChart.jsx:28-34`
-- [ ] Builder: Adicionar botão "6WLA" no header — filtra atividades das próximas 6 semanas
-- [ ] Builder: Limpar lógica morta `zoom === "dias"` em `GanttChart.jsx:227,232`
-- [ ] Builder: Adicionar colunas `area` e `disciplina` ao schema `tarefas_cronograma` (migration SQL)
-- [ ] Designer: Aumentar proporção do Gantt vs coluna de tarefas
+> ✅ **Concluído — Audit score ≥ 9 — Visual 9 · Functional 9 · Trust 9** *(2026-05-27)*
+
+- [x] Builder: Atualizar fórmula de status (A Iniciar / Em Andamento / Atrasada / Concluído) — `Cronograma.jsx:59-65`, `GanttChart.jsx:25-32` *(2026-05-27)*
+- [x] Builder: Adicionar botão "6WLA" no slot de ações do PageHeader — filtra atividades das próximas 6 semanas *(2026-05-27)*
+- [x] Builder: Limpar lógica morta `zoom === "dias"` — já removida em refactor anterior *(2026-05-27)*
+- [x] Builder: Adicionar colunas `area` e `disciplina` ao schema `tarefas_cronograma` (migration SQL) — `docs/database/supabase-migration-m4-cronograma.sql` *(2026-05-27)*
+- [x] Designer: Aumentar proporção do Gantt vs coluna de tarefas — `W_ID` 96→64px · `W_NOME` 320→220px · Gantt +132px *(2026-05-27)*
 
 ---
 
@@ -165,26 +169,34 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 7 — HISTOGRAMA (MO + EQUIPAMENTOS)
 
-- [ ] Architect: `/brainstorming` — decidir estrutura do schema antes de qualquer código: 1 tabela unificada com coluna `tipo` (MO vs Equipamento) ou 2 tabelas separadas? Avaliar impacto na migração dos dados existentes.
-- [ ] Builder: Schema — separar MO e Equipamentos; adicionar `qtd_projetado`, `qtd_prev_acumulado`, `qtd_real_acumulado`, `qtd_proj_acumulado`
-- [ ] Designer: UI tabela com scroll horizontal por mês; colunas fixas (MO/Eq, Totais, %Total)
-- [ ] Builder: Regra de bloqueio — Real só editável para mês ≤ atual; ao salvar Real, limpar e bloquear Projetado
-- [ ] Builder: Fórmulas `%Total Real = Real Acum / Prev Acum` e `%Total Projetado = Proj Acum / Prev Acum`
-- [ ] Builder: Adicionar linhas acumuladas nos gráficos
-- [ ] Builder: Import/Export com escala -3m / +1ano e mapeamento de colunas
+> ✅ **Concluído — Audit score ≥ 9 — Visual 9 · Functional 9 · Trust 9** *(2026-05-27)*
+
+- [x] Architect: `/brainstorming` — spec aprovada pelo PO: tabela unificada com coluna `tipo` (MO vs Equipamento); acumulados calculados no front *(2026-05-27)*
+- [x] Builder: Schema — `qtd_projetado` adicionado; migration aplicada; acumulados calculados no front (não persistidos) *(2026-05-27)*
+- [x] Designer: UI tabela com scroll horizontal; colunas fixas (Recurso, T.Prev, T.Real, T.Proj, %Real, %Proj); chips de toggle Prev/Real/Proj; header duplo por mês *(2026-05-27)*
+- [x] Builder: Regra de bloqueio — Real bloqueado para meses futuros; ao salvar Real, Projetado daquele mês é limpo e zerado *(2026-05-27)*
+- [x] Builder: Fórmulas `%Real = Real Acum / Prev Acum` e `%Proj = Proj Acum / Prev Acum` por recurso e no rodapé TOTAL *(2026-05-27)*
+- [x] Builder: Linhas acumuladas no gráfico — Acum. Prev + Acum. Real como linhas sobre barras mensais (eixo Y direito) *(2026-05-27)*
+- [x] Builder: Import/Export com mapeamento de colunas; upsert por (recurso × mês × tipo) *(2026-05-27)*
+- [x] Tester: `/audit` — score ≥ 9 — Visual 9 · Functional 9 · Trust 9 *(2026-05-27)*
+- [x] Tester: `docs/modulos/06-Histograma.md` revisado e alinhado com implementação real *(2026-05-27)*
 
 ---
 
 ### Módulo 8 — AVANÇO
 
-- [ ] Architect: `/brainstorming` — mudar de mensal para semanal tem impacto nos dados existentes. Decidir: migrar registros históricos ou manter mensal para histórico e semanal apenas para novos lançamentos?
-- [ ] Builder: Schema — adicionar `avanco_projetado`; mudar granularidade para semanal (`semana_iso`) com agrupamento por mês
-- [ ] Designer: Tabela transposta (linhas: Previsto, Real, Projetado; colunas por semana agrupadas por mês)
-- [ ] Builder: Bloqueio Real ≤ semana atual; ao salvar Real, limpar Projetado da mesma semana
-- [ ] Builder: Substituir Aderência por `%Total Real` e `%Total Projetado`
-- [ ] Builder: Corrigir bug visual no botão Editar (`Avancos.jsx:258-260`)
-- [ ] Builder: Gráfico com barras mensais + eixo X toggle Semana/Mês
-- [ ] Builder: Import/Export com escala -3m/+1ano e mapeamento
+> **Decisão do PO (2026-05-27):** Migrar completamente para semanal — dados históricos mensais convertidos para a 1ª semana ISO do mês correspondente. Schema unificado, sem lógica dupla.
+
+- [x] Architect: `/brainstorming` — Opção A aprovada: migração completa para `semana_iso`, dados históricos convertidos *(2026-05-27)*
+- [x] Builder: Schema migration — `semana_iso TEXT NOT NULL` + `avanco_projetado NUMERIC DEFAULT 0`; dados históricos migrados; `mes_referencia` tornado nullable; constraint unique `(projeto_id, semana_iso)` *(2026-05-27)*
+- [x] Designer: Tabela transposta — linhas: Previsto / Real / Projetado; colunas: semanas agrupadas por mês no header duplo; sticky left + sticky top; escala -3m/+1ano *(2026-05-27)*
+- [x] Builder: Bloqueio Real ≤ semana atual (`isCurrentOrPastWeek`); ao salvar Real, `avanco_projetado` da mesma semana zerado *(2026-05-27)*
+- [x] Builder: KPI cards com `%Total Real = Real Acum / Prev Acum` e `%Total Projetado = Proj Acum / Prev Acum`; linhas acumuladas no gráfico *(2026-05-27)*
+- [x] Builder: Botão Editar removido — substituído por edição inline por célula (Enter/Escape/blur) *(2026-05-27)*
+- [x] Builder: Gráfico — barras (Prev/Real/Proj) + linhas acumuladas (Prev Acum + Real Acum) + toggle Semana/Mês com agrupamento mensal *(2026-05-27)*
+- [x] Builder: Import/Export integrado com `ImportExportDialog` e mapeamento de colunas; escala -3m/+1ano herdada de `getProjectWeeks` *(2026-05-27)*
+- [ ] Tester: `/audit` — score ≥ 9
+- [ ] Tester: Criar/atualizar `docs/modulos/07-AvancoFisico.md`
 
 ---
 
@@ -230,10 +242,12 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 12 — MAPA DE IMPACTO
 
-- [ ] Designer: Gradiente Verde Claro → Vermelho (`MapaRegistroImpacto.jsx:21-28` + legenda `:139-144`)
-- [ ] Designer: Corrigir corte de texto no gráfico radar Contratada/Contratante
-- [ ] Builder: Remover botão "Export" (`:145-148`)
-- [ ] Builder: Remover textos descritivos ("Distribuição por Categoria", "Clique em uma célula…")
+> ✅ **Concluído — Audit score pendente** *(2026-05-27)*
+
+- [x] Designer: Gradiente Verde Claro → Vermelho (`MapaRegistroImpacto.jsx:21-28` + legenda `:139-144`)
+- [x] Designer: Corrigir corte de texto no gráfico radar Contratada/Contratante
+- [x] Builder: Remover botão "Export" (`:145-148`)
+- [x] Builder: Remover textos descritivos ("Distribuição por Categoria", "Clique em uma célula…")
 
 ---
 

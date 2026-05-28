@@ -325,8 +325,6 @@ function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPi
     }));
   }, [heatmapData]);
 
-  const totalPie = pieData.reduce((s, d) => s + d.value, 0) || 1;
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-5 border-t border-border">
       {/* Pie chart */}
