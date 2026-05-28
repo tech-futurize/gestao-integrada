@@ -81,7 +81,11 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
       data: rdo.data || new Date().toISOString().split("T")[0],
       area: rdo.area || "",
       disciplinas: rdo.disciplinas || [],
-      clima: rdo.clima ?? { manha: { ...EMPTY_TURNO }, tarde: { ...EMPTY_TURNO }, noite: { ...EMPTY_TURNO } },
+      clima: {
+        manha: { ...EMPTY_TURNO, ...(rdo.clima?.manha ?? {}) },
+        tarde: { ...EMPTY_TURNO, ...(rdo.clima?.tarde ?? {}) },
+        noite: { ...EMPTY_TURNO, ...(rdo.clima?.noite ?? {}) },
+      },
       mao_de_obra: rdo.mao_de_obra || [],
       equipamentos: rdo.equipamentos || [],
       atividades_vinculadas: rdo.atividades_vinculadas || [],

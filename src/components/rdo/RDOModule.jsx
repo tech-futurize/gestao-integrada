@@ -54,6 +54,7 @@ export default function RDOModule({ selectedProjectId }) {
 
   const handleImport = async row => {
     await entities.Rdo.create({ ...row, projeto_id: selectedProjectId });
+    queryClient.invalidateQueries({ queryKey: ["rdos"] });
   };
 
   const onSaved = () => {
@@ -141,7 +142,7 @@ export default function RDOModule({ selectedProjectId }) {
                 <td colSpan={10} className="py-16 text-center">
                   <FileText className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
                   <p className="text-muted-foreground font-medium">Nenhum RDO registrado</p>
-                  <p className="text-muted-foreground/60 text-xs mt-1">Clique em "Novo RDO" para começar</p>
+                  <p className="text-muted-foreground/60 text-xs mt-1">Clique em &quot;Novo RDO&quot; para começar</p>
                 </td>
               </tr>
             )}
