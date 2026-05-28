@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { getWeekBadgeStyle } from "@/utils/sixWLAUtils";
 import { useDarkMode } from "@/hooks/useDarkMode";
+
+const fmtDate = (val) => {
+  if (!val) return "—";
+  const d = new Date(val + "T00:00:00");
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+};
 
 /**
  * @param {{
@@ -38,7 +44,8 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
     }
   };
 
-  const totalCols = 5 + restricoes.length + 2; // Atividade, Área, Sem., %Prev, %Real + N restrições + Obs + Remover
+  // Atividade(sticky), Área, Disciplina, Sem., %Prev, %Real, BL×2, Real×2, Proj×2 = 12 + restricoes + Obs + Remove
+  const totalCols = 12 + restricoes.length + 2;
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -46,11 +53,18 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Atividade</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Área / Disc.</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground sticky left-0 bg-muted z-10 min-w-[200px]">Atividade</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Área</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Disciplina</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Sem.</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">%Prev</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">%Real</th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">BL Ini</th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">BL Fim</th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Real Ini</th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Real Fim</th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Proj Ini</th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Proj Fim</th>
               {restricoes.map(r => (
                 <th
                   key={r.key}
@@ -86,14 +100,24 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                   key={item.id}
                   className={`border-b border-border hover:bg-muted/40 transition-colors ${i % 2 !== 0 ? "bg-muted/10" : ""}`}
                 >
-                  <td className="px-4 py-3 font-medium text-foreground max-w-xs">
-                    <span className="line-clamp-2">{item.tarefa?.nome || "—"}</span>
-                    {item.tarefa?.status && (
-                      <span className="text-xs text-muted-foreground block">{item.tarefa.status}</span>
-                    )}
+                  <td className="px-4 py-3 font-medium text-foreground max-w-xs sticky left-0 bg-card z-10">
+                    <div className="flex items-start gap-1.5">
+                      {item.adicionado_manualmente && (
+                        <Info className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" title="Adicionado manualmente" />
+                      )}
+                      <div>
+                        <span className="line-clamp-2">{item.tarefa?.nome || "—"}</span>
+                        {item.tarefa?.status && (
+                          <span className="text-xs text-muted-foreground block">{item.tarefa.status}</span>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                    {[item.tarefa?.area, item.tarefa?.disciplina].filter(Boolean).join(" / ") || "—"}
+                    {item.tarefa?.area || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                    {item.tarefa?.disciplina || "—"}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex flex-wrap gap-1 justify-center">
@@ -123,6 +147,24 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                     )}>
                       {avReal != null ? `${avReal}%` : "—"}
                     </span>
+                  </td>
+                  <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDate(item.tarefa?.data_inicio_baseline)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDate(item.tarefa?.data_fim_baseline)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDate(item.tarefa?.data_inicio_real)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDate(item.tarefa?.data_fim_real)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDate(item.tarefa?.inicio_previsto)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    {fmtDate(item.tarefa?.termino_previsto)}
                   </td>
                   {restricoes.map(r => (
                     <td key={r.key} className="px-2 py-2 text-center">
