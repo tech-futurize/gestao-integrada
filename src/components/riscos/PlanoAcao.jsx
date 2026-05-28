@@ -33,9 +33,15 @@ const emptyForm = {
   registro_mudanca_id: null,
 };
 
-function getVinculoLabel(acao) {
-  if (acao.registro_risco_id) return "Risco";
-  if (acao.registro_mudanca_id) return "Mudança";
+function getVinculoLabel(acao, riscos, mudancas) {
+  if (acao.registro_risco_id) {
+    const r = riscos.find(x => x.id === acao.registro_risco_id);
+    return r ? (r.codigo || r.descricao || "Risco") : "Risco";
+  }
+  if (acao.registro_mudanca_id) {
+    const m = mudancas.find(x => x.id === acao.registro_mudanca_id);
+    return m ? (m.titulo || m.descricao || "Mudança") : "Mudança";
+  }
   return "—";
 }
 
@@ -44,10 +50,23 @@ export default function PlanoAcao({ projectId }) {
   const [editingAcao, setEditingAcao] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
   const queryClient = useQueryClient();
+  const [vinculoTipo, setVinculoTipo] = useState("risco");
 
   const { data: acoes = [] } = useQuery({
     queryKey: ["acoes", projectId],
     queryFn: () => entities.Acao.filter({ projeto_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: riscos = [] } = useQuery({
+    queryKey: ["riscos", projectId],
+    queryFn: () => entities.Risco.filter({ projeto_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: mudancas = [] } = useQuery({
+    queryKey: ["mudancas_contratuais", projectId],
+    queryFn: () => entities.MudancaContratual.filter({ projeto_id: projectId }),
     enabled: !!projectId,
   });
 
@@ -77,10 +96,16 @@ export default function PlanoAcao({ projectId }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const payload = {
+      ...formData,
+      projeto_id: projectId,
+      registro_risco_id:   vinculoTipo === "risco"   ? formData.registro_risco_id   : null,
+      registro_mudanca_id: vinculoTipo === "mudanca" ? formData.registro_mudanca_id : null,
+    };
     if (editingAcao) {
-      updateAcaoMutation.mutate({ id: editingAcao.id, data: formData });
+      updateAcaoMutation.mutate({ id: editingAcao.id, data: payload });
     } else {
-      createAcaoMutation.mutate(formData);
+      createAcaoMutation.mutate(payload);
     }
   };
 
@@ -88,6 +113,7 @@ export default function PlanoAcao({ projectId }) {
     setShowForm(false);
     setEditingAcao(null);
     setFormData(emptyForm);
+    setVinculoTipo("risco");
   };
 
   const acoesCompletas = acoes.filter((a) => a.status === "Concluída").length;
@@ -133,7 +159,7 @@ export default function PlanoAcao({ projectId }) {
             Plano de Ação
           </CardTitle>
           <Button
-            onClick={() => { setEditingAcao(null); setFormData(emptyForm); setShowForm(!showForm); }}
+            onClick={() => { setEditingAcao(null); setFormData(emptyForm); setVinculoTipo("risco"); setShowForm(!showForm); }}
             size="sm"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -207,6 +233,52 @@ export default function PlanoAcao({ projectId }) {
                     onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
                     placeholder="Observações adicionais..." rows={2} />
                 </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Vincular a</Label>
+                  <div className="flex gap-4">
+                    {[["risco", "Risco"], ["mudanca", "Mudança"]].map(([tipo, label]) => (
+                      <label key={tipo} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="vinculo-tipo"
+                          value={tipo}
+                          checked={vinculoTipo === tipo}
+                          onChange={() => {
+                            setVinculoTipo(tipo);
+                            setFormData(f => ({ ...f, registro_risco_id: null, registro_mudanca_id: null }));
+                          }}
+                        />
+                        <span className="text-sm">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <Select
+                    value={
+                      vinculoTipo === "risco"
+                        ? (formData.registro_risco_id || "__none__")
+                        : (formData.registro_mudanca_id || "__none__")
+                    }
+                    onValueChange={(v) => {
+                      const id = v === "__none__" ? null : v;
+                      setFormData(f =>
+                        vinculoTipo === "risco"
+                          ? { ...f, registro_risco_id: id, registro_mudanca_id: null }
+                          : { ...f, registro_risco_id: null, registro_mudanca_id: id }
+                      );
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Nenhum</SelectItem>
+                      {(vinculoTipo === "risco" ? riscos : mudancas).map(item => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.codigo || item.titulo || item.descricao || item.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2">
@@ -244,7 +316,7 @@ export default function PlanoAcao({ projectId }) {
                         <p className="font-medium text-foreground line-clamp-2">{acao.descricao}</p>
                         <p className="text-xs text-muted-foreground mt-1">{acao.formato_tratativa}</p>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{getVinculoLabel(acao)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{getVinculoLabel(acao, riscos, mudancas)}</TableCell>
                       <TableCell className="text-sm">{acao.responsavel || "-"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {acao.data_fim_prevista ? format(new Date(acao.data_fim_prevista), "dd/MM/yyyy", { locale: ptBR }) : "-"}
@@ -268,6 +340,7 @@ export default function PlanoAcao({ projectId }) {
                                 registro_risco_id: acao.registro_risco_id || null,
                                 registro_mudanca_id: acao.registro_mudanca_id || null,
                               });
+                              setVinculoTipo(acao.registro_mudanca_id ? "mudanca" : "risco");
                               setShowForm(true);
                             }}>
                             <Edit className="w-4 h-4" />
