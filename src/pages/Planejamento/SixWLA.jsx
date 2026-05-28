@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Plus, Info, X, AlertCircle, FileSpreadsheet } from "lucide-react";
+import { CalendarRange, Plus, AlertCircle, FileSpreadsheet } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { cn } from "@/lib/utils";
 import { entities } from "@/api/supabaseEntities";
@@ -43,9 +43,7 @@ export default function SixWLAPage() {
   const [semanasAtivas, setSemanasAtivas] = useState(() => semanas.map(s => s.label));
   const [showImportExport, setShowImportExport] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
-  const [novasAtividades, setNovasAtividades] = useState([]);
-  const bannerChecked = useRef(false);
+  const autoImported = useRef(false);
 
   // Q1 — registros 6WLA do projeto
   const {
@@ -92,15 +90,15 @@ export default function SixWLAPage() {
     });
   }, [itens, tarefas, semanas]);
 
-  // Auto-sync: detectar atividades da janela sem registro em itens_6wla
+  // Auto-import silencioso: importar atividades da janela sem registro em itens_6wla
   useEffect(() => {
-    if (pendingItens || pendingTarefas || bannerChecked.current) return;
-    bannerChecked.current = true;
+    if (pendingItens || pendingTarefas || autoImported.current) return;
+    autoImported.current = true;
     const novas = tarefasNaJanela.filter(t => !existingTarefaIds.has(t.id));
     if (novas.length > 0) {
-      setNovasAtividades(novas);
-      setShowBanner(true);
+      bulkCreateMut.mutate({ tarefaIds: novas.map(t => t.id), manualmente: false });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingItens, pendingTarefas, tarefasNaJanela, existingTarefaIds]);
 
   // Filtrar tabela pelas semanas ativas (pills S1–S6)
@@ -130,12 +128,13 @@ export default function SixWLAPage() {
   });
 
   const bulkCreateMut = useMutation({
-    mutationFn: (tarefaIds) =>
+    mutationFn: ({ tarefaIds, manualmente = false }) =>
       Promise.all(
         tarefaIds.map(tarefa_cronograma_id =>
           entities.Item6WLA.create({
             projeto_id: selectedProjectId,
             tarefa_cronograma_id,
+            adicionado_manualmente: manualmente,
             restricao_projeto_eng:  false,
             restricao_material:     false,
             restricao_mao_obra:     false,
@@ -145,11 +144,11 @@ export default function SixWLAPage() {
           })
         )
       ),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["itens_6wla"] });
-      setShowBanner(false);
-      setNovasAtividades([]);
-      toast({ variant: "success", description: "Atividades adicionadas ao 6WLA." });
+      if (variables.manualmente) {
+        toast({ variant: "success", description: "Atividades adicionadas ao 6WLA." });
+      }
     },
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -214,31 +213,6 @@ export default function SixWLAPage() {
 
       <div className="flex-1 overflow-auto p-6 space-y-4">
 
-        {/* Banner auto-sync */}
-        {showBanner && novasAtividades.length > 0 && (
-          <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg text-sm">
-            <Info className="w-4 h-4 text-primary flex-shrink-0" />
-            <span className="text-primary flex-1">
-              {novasAtividades.length} atividade{novasAtividades.length > 1 ? "s novas" : " nova"} encontrada{novasAtividades.length > 1 ? "s" : ""} no cronograma.
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-primary/30 text-primary hover:bg-primary/10"
-              onClick={() => bulkCreateMut.mutate(novasAtividades.map(t => t.id))}
-              disabled={bulkCreateMut.isPending}
-            >
-              Importar automaticamente
-            </Button>
-            <button
-              onClick={() => setShowBanner(false)}
-              className="text-muted-foreground hover:text-foreground p-1 rounded"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
         {/* KPIs — Total + 6 categorias de restrição */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           <div className="rounded-xl border p-3 bg-[#102A44] border-[#1e4a6e]">
@@ -295,7 +269,7 @@ export default function SixWLAPage() {
         open={showModal}
         onClose={() => setShowModal(false)}
         tarefas={tarefasDisponiveis}
-        onConfirm={(ids) => { bulkCreateMut.mutate(ids); setShowModal(false); }}
+        onConfirm={(ids) => { bulkCreateMut.mutate({ tarefaIds: ids, manualmente: true }); setShowModal(false); }}
       />
       <ImportExportDialog
         open={showImportExport}
