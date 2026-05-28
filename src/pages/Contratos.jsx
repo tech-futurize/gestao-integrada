@@ -69,19 +69,19 @@ export default function Contratos() {
 
   const createAditivo = useMutation({
     mutationFn: (data) => entities.Aditivo.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["aditivos"] }); setShowAditivoForm(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["aditivos", selectedContrato?.id] }); setShowAditivoForm(false); },
     onError: onErr,
   });
 
   const updateAditivo = useMutation({
     mutationFn: ({ id, data }) => entities.Aditivo.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["aditivos"] }); setShowAditivoForm(false); setEditAditivo(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["aditivos", selectedContrato?.id] }); setShowAditivoForm(false); setEditAditivo(null); },
     onError: onErr,
   });
 
   const deleteAditivo = useMutation({
     mutationFn: (id) => entities.Aditivo.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["aditivos"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["aditivos", selectedContrato?.id] }),
     onError: onErr,
   });
 
