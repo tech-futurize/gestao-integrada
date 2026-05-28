@@ -21,6 +21,7 @@ const TABLE_MAP = {
   Item6WLA: 'itens_6wla',
   Risco: 'riscos',
   Usuario: 'usuarios',
+  Rdo: 'rdo',
 };
 
 function createEntityClient(tableName) {
