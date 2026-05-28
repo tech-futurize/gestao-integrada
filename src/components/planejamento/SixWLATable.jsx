@@ -4,14 +4,9 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { getWeekBadgeStyle } from "@/utils/sixWLAUtils";
+import { getWeekBadgeStyle, fmtDateStr } from "@/utils/sixWLAUtils";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
-const fmtDate = (val) => {
-  if (!val) return "—";
-  const d = new Date(val + "T00:00:00");
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
-};
 
 /**
  * @param {{
@@ -100,7 +95,7 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                   key={item.id}
                   className={`border-b border-border hover:bg-muted/40 transition-colors ${i % 2 !== 0 ? "bg-muted/10" : ""}`}
                 >
-                  <td className="px-4 py-3 font-medium text-foreground max-w-xs sticky left-0 bg-card z-10">
+                  <td className={cn("px-4 py-3 font-medium text-foreground max-w-xs sticky left-0 z-10", i % 2 !== 0 ? "bg-muted/10" : "bg-card")}>
                     <div className="flex items-start gap-1.5">
                       {item.adicionado_manualmente && (
                         <Info className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" title="Adicionado manualmente" />
@@ -149,22 +144,22 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                     </span>
                   </td>
                   <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                    {fmtDate(item.tarefa?.data_inicio_baseline)}
+                    {fmtDateStr(item.tarefa?.data_inicio_baseline)}
                   </td>
                   <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                    {fmtDate(item.tarefa?.data_fim_baseline)}
+                    {fmtDateStr(item.tarefa?.data_fim_baseline)}
                   </td>
                   <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                    {fmtDate(item.tarefa?.data_inicio_real)}
+                    {fmtDateStr(item.tarefa?.data_inicio_real)}
                   </td>
                   <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                    {fmtDate(item.tarefa?.data_fim_real)}
+                    {fmtDateStr(item.tarefa?.data_fim_real)}
                   </td>
                   <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                    {fmtDate(item.tarefa?.inicio_previsto)}
+                    {fmtDateStr(item.tarefa?.inicio_previsto)}
                   </td>
                   <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                    {fmtDate(item.tarefa?.termino_previsto)}
+                    {fmtDateStr(item.tarefa?.termino_previsto)}
                   </td>
                   {restricoes.map(r => (
                     <td key={r.key} className="px-2 py-2 text-center">

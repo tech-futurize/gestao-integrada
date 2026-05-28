@@ -74,6 +74,18 @@ export function getWeekBadgeStyle(weekIndex, isDark) {
   };
 }
 
+/**
+ * Formata uma string de data ISO (YYYY-MM-DD) como "23 jun" em pt-BR.
+ * Retorna "—" para valores null/undefined/vazios.
+ * @param {string|null} val
+ * @returns {string}
+ */
+export function fmtDateStr(val) {
+  if (!val) return "—";
+  const d = new Date(val + "T00:00:00");
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
 // ── helpers internos ──────────────────────────────────────────────
 
 function _startOfWeek(date) {
