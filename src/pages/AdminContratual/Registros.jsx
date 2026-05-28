@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, AlertTriangle, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, AlertTriangle, Search, Edit, Trash2, CalendarRange } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,8 @@ export default function Registros() {
   const [editingRegistro, setEditingRegistro] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filtros, setFiltros] = useState({});
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const { data: incidentes = [], isLoading } = useQuery({
     queryKey: ["registros", selectedProjectId],
@@ -84,9 +86,13 @@ export default function Registros() {
   const filtered = useMemo(() => {
     const tp = filtros.tipo || [];
     const st = filtros.status || [];
+    const resp = filtros.responsabilidade || [];
     return baseList.filter((inc) => {
       if (tp.length > 0 && !tp.includes(inc.tipo_registro)) return false;
       if (st.length > 0 && !st.includes(inc.status)) return false;
+      if (resp.length > 0 && !resp.includes(inc.responsabilidade)) return false;
+      if (dateFrom && inc.data_hora && new Date(inc.data_hora) < new Date(dateFrom)) return false;
+      if (dateTo && inc.data_hora && new Date(inc.data_hora) > new Date(dateTo + "T23:59:59")) return false;
       const needle = searchText.toLowerCase();
       if (needle) {
         const matchText =
@@ -97,7 +103,7 @@ export default function Registros() {
       }
       return true;
     });
-  }, [baseList, filtros, searchText]);
+  }, [baseList, filtros, searchText, dateFrom, dateTo]);
 
   const kpis = useMemo(() => ({
     total: baseList.length,
@@ -174,14 +180,37 @@ export default function Registros() {
               onChange={(e) => setSearchText(e.target.value)}
             />
           </div>
-          <FilterBar
-            storageKey="registros-filtros"
-            filters={[
-              { key: "tipo", label: "Tipo", options: ["Ata de Reunião", "E-mail", "Notificação"] },
-              { key: "status", label: "Status", options: ["Registrado", "Em Análise", "Resolvido"] },
-            ]}
-            onChange={setFiltros}
-          />
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-0">
+              <FilterBar
+                storageKey="registros-filtros"
+                filters={[
+                  { key: "tipo", label: "Tipo", options: ["Ata de Reunião", "E-mail", "Notificação"] },
+                  { key: "status", label: "Status", options: ["Registrado", "Em Análise", "Resolvido"] },
+                  { key: "responsabilidade", label: "Responsabilidade", options: ["Contratada", "Contratante"] },
+                ]}
+                onChange={setFiltros}
+              />
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <CalendarRange className="w-4 h-4 text-muted-foreground" />
+              <Input
+                type="date"
+                className="w-36 text-sm"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                title="Data inicial"
+              />
+              <span className="text-muted-foreground text-sm">até</span>
+              <Input
+                type="date"
+                className="w-36 text-sm"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                title="Data final"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Cards Grid */}
@@ -220,7 +249,7 @@ export default function Registros() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {filtered.map((inc) => {
               const dataFormatada = inc.data_hora
-                ? format(new Date(inc.data_hora), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                ? format(new Date(inc.data_hora), "dd/MM/yyyy", { locale: ptBR })
                 : "—";
               const tipoClass = TIPO_COLORS[inc.tipo_registro] || "bg-muted text-muted-foreground";
               const statusClass = STATUS_COLORS[inc.status] || "bg-muted text-muted-foreground";
