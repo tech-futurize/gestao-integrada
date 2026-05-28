@@ -28,6 +28,7 @@ const RISCO_COLUMNS = [
   { key: "status",         label: "Status",           type: "string" },
   { key: "responsavel",    label: "Responsável",      type: "string" },
   { key: "plano_resposta", label: "Plano de Resposta", type: "string" },
+  { key: "impactos",       label: "Impactos",          type: "string" },
 ];
 const STATUS_OPTIONS = ["Ativo", "Mitigado", "Encerrado"];
 
@@ -117,12 +118,15 @@ export default function GestaoRiscos() {
   });
 
   const toggleImpacto = (dim) =>
-    setForm(f => ({
-      ...f,
-      impactos: f.impactos.includes(dim)
-        ? f.impactos.filter(d => d !== dim)
-        : [...f.impactos, dim],
-    }));
+    setForm(f => {
+      const current = Array.isArray(f.impactos) ? f.impactos : [];
+      return {
+        ...f,
+        impactos: current.includes(dim)
+          ? current.filter(d => d !== dim)
+          : [...current, dim],
+      };
+    });
 
   const filtered = useMemo(() => {
     const st = filtros.status || [];
@@ -161,7 +165,7 @@ export default function GestaoRiscos() {
       status: risco.status || "Ativo",
       responsavel: risco.responsavel || "",
       plano_resposta: risco.plano_resposta || "",
-      impactos: risco.impactos || [],
+      impactos: Array.isArray(risco.impactos) ? risco.impactos : [],
     });
     setShowForm(true);
   };
@@ -409,7 +413,7 @@ export default function GestaoRiscos() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); }}>Excluir</Button>}
+            {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); setEditing(null); setForm(EMPTY_FORM); }}>Excluir</Button>}
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
             <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
               {editing ? "Salvar" : "Criar"}
