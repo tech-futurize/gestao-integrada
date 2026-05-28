@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   X, Plus, ChevronDown, ChevronUp, Sun, Cloud, CloudRain,
   CheckCircle, XCircle, Upload, Link2,
+  Users, Truck, ClipboardList, AlertTriangle, Camera,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { VincularAtividadesDialog } from "./VincularAtividadesDialog";
@@ -172,10 +173,13 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
     }
   };
 
-  const PanelHeader = ({ label, panelKey }) => (
+  const PanelHeader = ({ label, panelKey, icon: Icon }) => (
     <button type="button" onClick={() => togglePanel(panelKey)}
       className="w-full flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
-      <span className="text-sm font-semibold text-foreground">{label}</span>
+      <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        {Icon && <Icon className="w-4 h-4 text-muted-foreground" />}
+        {label}
+      </span>
       {openPanels[panelKey] ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
     </button>
   );
@@ -265,7 +269,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
 
           {/* Mão de Obra */}
           <div className="space-y-2">
-            <PanelHeader label="👥 Mão de Obra" panelKey="mdo" />
+            <PanelHeader label="Mão de Obra" panelKey="mdo" icon={Users} />
             {openPanels.mdo && (
               <div className="border border-border rounded-xl p-4 space-y-2">
                 {form.mao_de_obra.map((m, i) => (
@@ -293,7 +297,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
 
           {/* Equipamentos */}
           <div className="space-y-2">
-            <PanelHeader label="🚜 Equipamentos" panelKey="equip" />
+            <PanelHeader label="Equipamentos" panelKey="equip" icon={Truck} />
             {openPanels.equip && (
               <div className="border border-border rounded-xl p-4 space-y-2">
                 {form.equipamentos.map((eq, i) => (
@@ -321,7 +325,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
 
           {/* Atividades Produzidas */}
           <div className="space-y-2">
-            <PanelHeader label="📋 Atividades Produzidas" panelKey="ativ" />
+            <PanelHeader label="Atividades Produzidas" panelKey="ativ" icon={ClipboardList} />
             {openPanels.ativ && (
               <div className="border border-border rounded-xl p-4 space-y-3">
                 <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => openVincular("root")}>
@@ -347,7 +351,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
 
           {/* Ocorrências e Impactos */}
           <div className="space-y-2">
-            <PanelHeader label="⚠️ Ocorrências e Impactos" panelKey="ocorr" />
+            <PanelHeader label="Ocorrências e Impactos" panelKey="ocorr" icon={AlertTriangle} />
             {openPanels.ocorr && (
               <div className="border border-border rounded-xl p-4 space-y-4">
                 {form.ocorrencias.map((oc, i) => (
@@ -425,7 +429,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
 
           {/* Evidências */}
           <div className="space-y-2">
-            <PanelHeader label="📷 Evidências" panelKey="evid" />
+            <PanelHeader label="Evidências" panelKey="evid" icon={Camera} />
             {openPanels.evid && (
               <div className="border border-border rounded-xl p-4 space-y-3">
                 <div
