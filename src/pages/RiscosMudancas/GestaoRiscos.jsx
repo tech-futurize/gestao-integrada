@@ -64,6 +64,7 @@ const EMPTY_FORM = {
   codigo: "", descricao: "", categoria: "", probabilidade: 3, impacto: 3,
   status: "Ativo", responsavel: "", plano_resposta: "",
   impactos: [],
+  escopo_texto: "", prazo_dias: "", valor_impacto: "",
 };
 
 // 5×5 matrix cell colors
@@ -166,6 +167,9 @@ export default function GestaoRiscos() {
       responsavel: risco.responsavel || "",
       plano_resposta: risco.plano_resposta || "",
       impactos: Array.isArray(risco.impactos) ? risco.impactos : [],
+      escopo_texto:  risco.escopo_texto  || "",
+      prazo_dias:    risco.prazo_dias    ?? "",
+      valor_impacto: risco.valor_impacto ?? "",
     });
     setShowForm(true);
   };
@@ -178,6 +182,8 @@ export default function GestaoRiscos() {
       probabilidade: Number(form.probabilidade) || 3,
       impacto: Number(form.impacto) || 3,
       score,
+      prazo_dias:    form.prazo_dias    !== "" ? Number(form.prazo_dias)    : null,
+      valor_impacto: form.valor_impacto !== "" ? Number(form.valor_impacto) : null,
     };
     if (editing) updateMut.mutate({ id: editing.id, data: payload });
     else createMut.mutate(payload);
@@ -411,6 +417,39 @@ export default function GestaoRiscos() {
                 ))}
               </div>
             </div>
+            {form.impactos.includes("Escopo") && (
+              <div className="space-y-1 col-span-2">
+                <Label>Descrição do Impacto no Escopo</Label>
+                <Textarea
+                  value={form.escopo_texto}
+                  onChange={e => setForm(f => ({ ...f, escopo_texto: e.target.value }))}
+                  rows={2}
+                  placeholder="Descreva o que entra ou sai do escopo..."
+                />
+              </div>
+            )}
+            {form.impactos.includes("Prazo") && (
+              <div className="space-y-1">
+                <Label>Impacto em Prazo (dias)</Label>
+                <Input
+                  type="number"
+                  value={form.prazo_dias}
+                  onChange={e => setForm(f => ({ ...f, prazo_dias: e.target.value }))}
+                  placeholder="+15 ou -5"
+                />
+              </div>
+            )}
+            {form.impactos.includes("Valor") && (
+              <div className="space-y-1">
+                <Label>Impacto Financeiro (R$)</Label>
+                <Input
+                  type="number"
+                  value={form.valor_impacto}
+                  onChange={e => setForm(f => ({ ...f, valor_impacto: e.target.value }))}
+                  placeholder="+150000 ou -50000"
+                />
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2">
             {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); setEditing(null); setForm(EMPTY_FORM); }}>Excluir</Button>}
