@@ -42,6 +42,7 @@ export function formatData(date) {
  * @returns {string}
  */
 export function formatDataDDMM(date) {
+  if (!(date instanceof Date) || isNaN(date)) return "";
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 }
 
@@ -61,7 +62,7 @@ const WEEK_ALPHAS = [
  * @returns {React.CSSProperties}
  */
 export function getWeekBadgeStyle(weekIndex, isDark) {
-  const a = WEEK_ALPHAS[Math.min(weekIndex, 5)];
+  const a = WEEK_ALPHAS[Math.max(0, Math.min(weekIndex, 5))];
   const [r, g, b] = isDark ? [38, 255, 255] : [16, 42, 68];
   return {
     background:  `rgba(${r},${g},${b},${a.bg})`,
