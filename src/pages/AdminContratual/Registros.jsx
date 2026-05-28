@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, AlertTriangle, Search, Edit, Trash2, CalendarRange } from "lucide-react";
+import { Plus, AlertTriangle, Search, Edit, Trash2, CalendarRange, Paperclip, Link2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -371,13 +371,13 @@ export default function Registros() {
                         </span>
                       )}
                       {inc.anexos?.length > 0 && (
-                        <span className="text-xs text-muted-foreground shrink-0" title={`${inc.anexos.length} anexo(s)`}>
-                          📎 {inc.anexos.length}
+                        <span className="flex items-center gap-0.5 text-xs text-muted-foreground shrink-0" title={`${inc.anexos.length} anexo(s)`}>
+                          <Paperclip className="w-3 h-3" />{inc.anexos.length}
                         </span>
                       )}
                       {inc.atividades_vinculadas?.length > 0 && (
-                        <span className="text-xs text-muted-foreground shrink-0" title={`${inc.atividades_vinculadas.length} atividade(s) vinculada(s)`}>
-                          🔗 {inc.atividades_vinculadas.length}
+                        <span className="flex items-center gap-0.5 text-xs text-muted-foreground shrink-0" title={`${inc.atividades_vinculadas.length} atividade(s) vinculada(s)`}>
+                          <Link2 className="w-3 h-3" />{inc.atividades_vinculadas.length}
                         </span>
                       )}
                     </div>
