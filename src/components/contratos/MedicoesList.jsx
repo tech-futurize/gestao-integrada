@@ -47,8 +47,7 @@ export default function MedicoesList({ medicoes, contratos, isLoading, onEdit, o
                   <p className="text-xs text-muted-foreground mt-1">Período: {m.periodo_inicio || "—"} → {m.periodo_fim || "—"}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-ocre">{fmt(m.valor_liquido || m.valor_bruto)}</p>
-                  {m.valor_retencao > 0 && <p className="text-xs text-muted-foreground">Retenção: {fmt(m.valor_retencao)}</p>}
+                  <p className="font-bold text-ocre">{fmt(m.valor)}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
