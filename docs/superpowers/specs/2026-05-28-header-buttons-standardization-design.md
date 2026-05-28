@@ -81,7 +81,7 @@ Sem wrapper — passar o `<Button>` diretamente na prop `actions`.
 | `src/pages/Suprimentos/MapaSuprimentos.jsx` | Adicionar `className` esmeralda no "Novo Item"; já tem `size="sm"` |
 | `src/pages/Planejamento/SixWLA.jsx` | Adicionar `size="sm"` e `className` esmeralda no "Adicionar do Cronograma" |
 | `src/pages/Planejamento/Avancos.jsx` | Corrigir label `"Import/Export"` → `"Importar / Exportar"`; adicionar ícone `Upload` |
-| `src/pages/Planejamento/TakeOff.jsx` | Já está correto — apenas confirmar `size="sm"` presente |
+| `src/pages/Planejamento/TakeOff.jsx` | Trocar ícone `FileSpreadsheet` → `Upload`; adicionar import `Upload`; `size="sm"` já presente |
 | `src/pages/Planejamento/Cronograma.jsx` | Adicionar `size="sm"` no botão "Importar / Exportar"; toggles 6WLA/Baseline não mudam |
 | `src/pages/Contratos.jsx` | Adicionar `size="sm"` e `className` esmeralda no "Novo Contrato" |
 | `src/pages/AdminContratual/Medicoes.jsx` | Adicionar `className` esmeralda no "Nova Medição"; já tem `size="sm"` no Importar |
