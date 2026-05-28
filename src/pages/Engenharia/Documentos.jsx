@@ -303,14 +303,14 @@ export default function Documentos() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <>
-            <Button variant="outline" onClick={() => setShowImportExport(true)} disabled={importing}>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => setShowImportExport(true)} disabled={importing}>
               <Upload className="w-4 h-4 mr-2" />{importing ? "Importando..." : "Importar / Exportar"}
             </Button>
-            <Button onClick={handleOpenNew}>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleOpenNew}>
               <Plus className="w-4 h-4 mr-2" />Novo Documento
             </Button>
-          </>
+          </div>
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
