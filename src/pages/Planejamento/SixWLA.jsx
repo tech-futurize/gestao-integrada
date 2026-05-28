@@ -129,8 +129,8 @@ export default function SixWLAPage() {
       });
     }
 
-    if (searchText.trim()) {
-      const q = searchText.trim().toLowerCase();
+    const q = searchText.trim().toLowerCase();
+    if (q) {
       items = items.filter(i =>
         (i.tarefa?.nome || "").toLowerCase().includes(q) ||
         (i.tarefa?.codigo_wbs || "").toLowerCase().includes(q)
@@ -146,7 +146,7 @@ export default function SixWLAPage() {
     }
 
     if (filtroRestricao) {
-      items = items.filter(i => i[filtroRestricao] === true);
+      items = items.filter(i => Boolean(i[filtroRestricao]));
     }
 
     return items;
@@ -268,7 +268,10 @@ export default function SixWLAPage() {
             return (
               <div
                 key={r.key}
+                role="button"
+                tabIndex={0}
                 onClick={() => setFiltroRestricao(isActive ? null : r.key)}
+                onKeyDown={e => (e.key === "Enter" || e.key === " ") && setFiltroRestricao(isActive ? null : r.key)}
                 className={cn(
                   "rounded-xl border p-3 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/40 cursor-pointer transition-all select-none",
                   isActive && "ring-2 ring-amber-500"
