@@ -172,7 +172,18 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Impacto no Escopo (o que entra ou sai)</Label>
+              <div className="flex items-center justify-between">
+                <Label>Impacto no Escopo (o que entra ou sai)</Label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.impacto_escopo_tipo === "Adição"}
+                    onChange={(e) => set("impacto_escopo_tipo", e.target.checked ? "Adição" : null)}
+                    className="w-4 h-4 rounded border-gray-300 accent-blue-600"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Adição</span>
+                </label>
+              </div>
               <Textarea value={formData.impacto_escopo} onChange={(e) => set("impacto_escopo", e.target.value)}
                 placeholder="Descreva o que é adicionado ou removido do escopo..." rows={2} />
             </div>

@@ -523,9 +523,10 @@ Gestão de mudanças de escopo, prazo e valor do contrato.
 | impacto_custo | NUMERIC | |
 | impacto_prazo_dias | NUMERIC | |
 | impacto_escopo | TEXT | |
-| impacto_escopo_tipo | TEXT | **Adição** ou **Redução** (radio único na UI) |
+| impacto_escopo_tipo | TEXT | `"Adição"` ou `null` — checkbox na UI |
 | data_registro | DATE | Ex-`data_ocorrencia` |
 | pleito_texto | TEXT | |
+| pleito_id | UUID FK → pleitos | SET NULL (opcional) |
 | responsavel | TEXT | |
 | categorias | JSONB | Sincronizado com categorias do Mapa de Impacto |
 
