@@ -19,7 +19,7 @@ const IMPACTO_CATEGORIES = [
 export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting }) {
   const [formData, setFormData] = useState({
     tipo_registro: incidente?.tipo_registro || "Ata de Reunião",
-    data_hora: toDateInput(incidente?.data_hora) || new Date().toISOString().slice(0, 10),
+    data_hora: toDateInput(incidente?.data_hora) || toDateInput(new Date()),
     responsavel_registro: incidente?.responsavel_registro || "",
     descricao: incidente?.descricao || "",
     impacto_preliminar: incidente?.impacto_preliminar || "",
