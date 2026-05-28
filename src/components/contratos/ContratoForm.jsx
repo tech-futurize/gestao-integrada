@@ -5,20 +5,35 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CloseButton from "@/components/ui/CloseButton";
 
+const TIPOS = ["Serviços", "Fornecimento", "Fornecimento + Serviço"];
+const STATUS = ["A iniciar", "Em andamento", "Concluído", "Paralisado"];
+
+const formatBR = (v) => {
+  if (v === "" || v == null) return "";
+  const n = typeof v === "number" ? v : parseFloat(String(v).replace(/\./g, "").replace(",", "."));
+  if (isNaN(n)) return "";
+  return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+};
+
+const parseBRFloat = (s) => {
+  if (!s) return 0;
+  return parseFloat(String(s).replace(/\./g, "").replace(",", ".")) || 0;
+};
+
 export default function ContratoForm({ contrato, onSave, onClose }) {
   const [form, setForm] = useState({
     numero: "", objeto: "", fornecedor: "", cnpj: "",
-    data_inicio: "", data_fim: "", status: "Ativo", tipo: "Serviços",
+    data_inicio: "", data_fim: "", status: "A iniciar", tipo: "Serviços",
     centro_custo: "", gestor: "", observacoes: "",
     ...contrato,
-    valor_total: contrato?.valor_total ?? "",
+    valor_total: contrato?.valor_total != null ? formatBR(contrato.valor_total) : "",
   });
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ ...form, valor_total: parseFloat(form.valor_total) || 0 });
+    onSave({ ...form, valor_total: parseBRFloat(form.valor_total) });
   };
 
   return (
@@ -41,9 +56,7 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
               <Select value={form.status} onValueChange={v => set("status", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["Ativo", "Em Revisão", "Suspenso", "Encerrado", "Cancelado"].map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
+                  {STATUS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -71,13 +84,21 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
               <Select value={form.tipo} onValueChange={v => set("tipo", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["Serviços", "Fornecimento", "Misto"].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  {TIPOS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Valor Total (R$)</Label>
-              <Input type="number" step="0.01" value={form.valor_total} onChange={e => set("valor_total", e.target.value)} placeholder="0,00" />
+              <Input
+                value={form.valor_total}
+                onChange={e => set("valor_total", e.target.value)}
+                onBlur={e => {
+                  const f = formatBR(e.target.value);
+                  if (f) set("valor_total", f);
+                }}
+                placeholder="0,00"
+              />
             </div>
           </div>
 
@@ -110,7 +131,6 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
               onChange={e => set("observacoes", e.target.value)}
               rows={3}
               className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2"
-              style={{ focusRingColor: "#c35e1e" }}
               placeholder="Observações gerais..."
             />
           </div>
