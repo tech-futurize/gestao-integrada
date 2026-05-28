@@ -44,8 +44,8 @@ export default function SixWLAPage() {
   const [showImportExport, setShowImportExport] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [filterHoje, setFilterHoje] = useState(false);
-  const [filterDisciplina, setFilterDisciplina] = useState("");
+  const [filtroHoje, setFiltroHoje] = useState(false);
+  const [filtroDisciplina, setFiltroDisciplina] = useState("");
   const [filtroRestricao, setFiltroRestricao] = useState(null);
   const autoImported = useRef(false);
 
@@ -115,11 +115,12 @@ export default function SixWLAPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- bulkCreateMut is stable (useMutation)
   }, [pendingItens, pendingTarefas, tarefasNaJanela, existingTarefaIds]);
 
+  const hojeDateStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+
   const filtered = useMemo(() => {
-    const hojeDateStr = new Date().toISOString().split("T")[0];
     let items = merged;
 
-    if (filterHoje) {
+    if (filtroHoje) {
       items = items.filter(i => {
         const ini = i.tarefa?.inicio_previsto;
         const fim = i.tarefa?.termino_previsto;
@@ -136,8 +137,8 @@ export default function SixWLAPage() {
       );
     }
 
-    if (filterDisciplina) {
-      items = items.filter(i => i.tarefa?.disciplina === filterDisciplina);
+    if (filtroDisciplina) {
+      items = items.filter(i => i.tarefa?.disciplina === filtroDisciplina);
     }
 
     if (semanasAtivas.length < semanas.length) {
@@ -149,7 +150,7 @@ export default function SixWLAPage() {
     }
 
     return items;
-  }, [merged, filterHoje, searchText, filterDisciplina, semanasAtivas, semanas.length, filtroRestricao]);
+  }, [merged, filtroHoje, searchText, filtroDisciplina, semanasAtivas, semanas.length, filtroRestricao, hojeDateStr]);
 
   // KPIs — 7 cards: Total + 1 por categoria de restrição
   const kpis = useMemo(() => ({
