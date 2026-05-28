@@ -9,7 +9,8 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
-import { getSemanas, getSemanasBadge, formatData } from "@/utils/sixWLAUtils";
+import { getSemanas, getSemanasBadge, formatData, formatDataDDMM, getWeekBadgeStyle } from "@/utils/sixWLAUtils";
+import { useDarkMode } from "@/hooks/useDarkMode";
 import SixWLATable from "@/components/planejamento/SixWLATable";
 import AdicionarCronogramaModal from "@/components/planejamento/AdicionarCronogramaModal";
 
@@ -34,6 +35,7 @@ const RESTRICOES = [
 
 export default function SixWLAPage() {
   const { selectedProjectId } = useProject();
+  const isDark = useDarkMode();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -258,21 +260,22 @@ export default function SixWLAPage() {
 
         {/* Pills S1–S6 — filtro multi-select da tabela */}
         <div className="flex flex-wrap gap-2">
-          {semanas.map(s => {
+          {semanas.map((s, i) => {
             const ativa = semanasAtivas.includes(s.label);
             return (
               <button
                 key={s.label}
                 onClick={() => toggleSemana(s.label)}
                 title={`${formatData(s.start)} – ${formatData(s.end)}`}
+                style={ativa ? getWeekBadgeStyle(i, isDark) : undefined}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
                   ativa
-                    ? "bg-[#102A44] text-[#26FFFF] border-[#102A44]"
+                    ? ""
                     : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
                 )}
               >
-                {s.label} · {formatData(s.start)}
+                {s.label}-{formatDataDDMM(s.start)}
               </button>
             );
           })}
