@@ -6,6 +6,7 @@ import {
   eachWeekOfInterval,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Upload } from "lucide-react";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
@@ -229,7 +230,7 @@ export default function Avancos() {
       <PageHeader
         actions={
           <Button size="sm" variant="outline" onClick={() => setShowImportExport(true)}>
-            Import/Export
+            <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
           </Button>
         }
       />
