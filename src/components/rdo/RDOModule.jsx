@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Plus, Search, Eye, Trash2, Edit, Sun, CloudRain, Upload } from "lucide-react";
+import { FileText, Search, Eye, Trash2, Edit, Sun, CloudRain } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
@@ -17,13 +17,15 @@ const RDO_COLUMNS = [
   { key: "area",   label: "Área",    type: "string", required: false },
 ];
 
-export default function RDOModule({ selectedProjectId }) {
+export default function RDOModule({
+  selectedProjectId,
+  showForm, setShowForm,
+  editRDO, setEditRDO,
+  showImport, setShowImport,
+}) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [showForm, setShowForm]     = useState(false);
-  const [editRDO, setEditRDO]       = useState(null);
   const [viewRDO, setViewRDO]       = useState(null);
-  const [showImport, setShowImport] = useState(false);
   const [search, setSearch]         = useState("");
   const [dateFrom, setDateFrom]     = useState("");
   const [dateTo, setDateTo]         = useState("");
@@ -113,12 +115,6 @@ export default function RDOModule({ selectedProjectId }) {
               <input type="date" className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
                 value={dateTo} onChange={e => setDateTo(e.target.value)} />
             </div>
-            <Button variant="outline" onClick={() => setShowImport(true)} className="gap-1.5">
-              <Upload className="w-4 h-4" />Importar
-            </Button>
-            <Button onClick={() => { setEditRDO(null); setShowForm(true); }}>
-              <Plus className="w-4 h-4 mr-1" />Novo RDO
-            </Button>
           </div>
         </CardContent>
       </Card>
