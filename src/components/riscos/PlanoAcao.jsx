@@ -76,6 +76,7 @@ export default function PlanoAcao({ projectId }) {
       queryClient.invalidateQueries({ queryKey: ["acoes"] });
       setShowForm(false);
       setFormData(emptyForm);
+      setVinculoTipo("risco");
     },
   });
 
@@ -86,6 +87,7 @@ export default function PlanoAcao({ projectId }) {
       setEditingAcao(null);
       setShowForm(false);
       setFormData(emptyForm);
+      setVinculoTipo("risco");
     },
   });
 
