@@ -101,7 +101,7 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                         ? item.semanasBadge.map(s => (
                             <span
                               key={s}
-                              style={getWeekBadgeStyle(parseInt(s.slice(1), 10) - 1, isDark)}
+                              style={getWeekBadgeStyle(Math.max(0, (parseInt(s.slice(1), 10) || 1) - 1), isDark)}
                               className="text-xs font-semibold px-1.5 py-0.5 rounded border"
                             >
                               {s}
