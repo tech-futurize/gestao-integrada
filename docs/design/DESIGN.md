@@ -52,7 +52,9 @@
 
 | Contexto | Cor | Classe Tailwind | Hex |
 |----------|-----|-----------------|-----|
-| **Botão Salvar** (padrão em todos os módulos) | Verde Esmeralda | `bg-emerald-600 hover:bg-emerald-700` | `#059669` |
+| **Botão "Novo X"** (CTA de criação no PageHeader) | Verde Esmeralda | `bg-emerald-600 hover:bg-emerald-700 text-white` + `size="sm"` | `#059669` |
+| **Botão Salvar** (em formulários) | Verde Esmeralda | `bg-emerald-600 hover:bg-emerald-700` | `#059669` |
+| **Botão "Importar / Exportar"** (no PageHeader) | Outline | `variant="outline"` + `size="sm"` + ícone `Upload` | — |
 | Botão Cancelar / Secundário | Cinza | `bg-slate-200 hover:bg-slate-300 text-slate-700` | — |
 | Botão Destrutivo (Excluir) | Vermelho | `bg-red-600 hover:bg-red-700` | `#dc2626` |
 
