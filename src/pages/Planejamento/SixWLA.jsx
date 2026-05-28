@@ -90,6 +90,11 @@ export default function SixWLAPage() {
     });
   }, [itens, tarefas, semanas]);
 
+  // Resetar guard ao trocar projeto para permitir re-execução do auto-import
+  useEffect(() => {
+    autoImported.current = false;
+  }, [selectedProjectId]);
+
   // Auto-import silencioso: importar atividades da janela sem registro em itens_6wla
   useEffect(() => {
     if (pendingItens || pendingTarefas || autoImported.current) return;
@@ -98,7 +103,7 @@ export default function SixWLAPage() {
     if (novas.length > 0) {
       bulkCreateMut.mutate({ tarefaIds: novas.map(t => t.id), manualmente: false });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- bulkCreateMut is stable (useMutation)
   }, [pendingItens, pendingTarefas, tarefasNaJanela, existingTarefaIds]);
 
   // Filtrar tabela pelas semanas ativas (pills S1–S6)
