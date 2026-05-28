@@ -185,7 +185,7 @@ export default function SixWLAPage() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button onClick={() => setShowModal(true)}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowModal(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Adicionar do Cronograma
           </Button>
