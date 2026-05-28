@@ -43,6 +43,10 @@ export default function SixWLAPage() {
   const [semanasAtivas, setSemanasAtivas] = useState(() => semanas.map(s => s.label));
   const [showImportExport, setShowImportExport] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [filterHoje, setFilterHoje] = useState(false);
+  const [filterDisciplina, setFilterDisciplina] = useState("");
+  const [filtroRestricao, setFiltroRestricao] = useState(null);
   const autoImported = useRef(false);
 
   // Q1 — registros 6WLA do projeto
@@ -90,6 +94,11 @@ export default function SixWLAPage() {
     });
   }, [itens, tarefas, semanas]);
 
+  const disciplinas = useMemo(
+    () => [...new Set(merged.map(i => i.tarefa?.disciplina).filter(Boolean))].sort(),
+    [merged]
+  );
+
   // Resetar guard ao trocar projeto para permitir re-execução do auto-import
   useEffect(() => {
     autoImported.current = false;
@@ -106,13 +115,41 @@ export default function SixWLAPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- bulkCreateMut is stable (useMutation)
   }, [pendingItens, pendingTarefas, tarefasNaJanela, existingTarefaIds]);
 
-  // Filtrar tabela pelas semanas ativas (pills S1–S6)
   const filtered = useMemo(() => {
-    if (semanasAtivas.length === semanas.length) return merged;
-    return merged.filter(item =>
-      item.semanasBadge.some(s => semanasAtivas.includes(s))
-    );
-  }, [merged, semanasAtivas, semanas.length]);
+    const hojeDateStr = new Date().toISOString().split("T")[0];
+    let items = merged;
+
+    if (filterHoje) {
+      items = items.filter(i => {
+        const ini = i.tarefa?.inicio_previsto;
+        const fim = i.tarefa?.termino_previsto;
+        if (!ini || !fim) return false;
+        return ini <= hojeDateStr && fim >= hojeDateStr;
+      });
+    }
+
+    if (searchText.trim()) {
+      const q = searchText.trim().toLowerCase();
+      items = items.filter(i =>
+        (i.tarefa?.nome || "").toLowerCase().includes(q) ||
+        (i.tarefa?.codigo_wbs || "").toLowerCase().includes(q)
+      );
+    }
+
+    if (filterDisciplina) {
+      items = items.filter(i => i.tarefa?.disciplina === filterDisciplina);
+    }
+
+    if (semanasAtivas.length < semanas.length) {
+      items = items.filter(i => i.semanasBadge.some(s => semanasAtivas.includes(s)));
+    }
+
+    if (filtroRestricao) {
+      items = items.filter(i => i[filtroRestricao] === true);
+    }
+
+    return items;
+  }, [merged, filterHoje, searchText, filterDisciplina, semanasAtivas, semanas.length, filtroRestricao]);
 
   // KPIs — 7 cards: Total + 1 por categoria de restrição
   const kpis = useMemo(() => ({
