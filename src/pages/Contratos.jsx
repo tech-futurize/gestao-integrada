@@ -32,7 +32,7 @@ export default function Contratos() {
   const [showMedicaoForm, setShowMedicaoForm] = useState(false);
 
   // ── Contratos ──────────────────────────────────────────────────
-  const { data: contratos = [], isLoading: loadingContratos } = useQuery({
+  const { data: contratos = [], isLoading: loadingContratos, isError: errorContratos } = useQuery({
     queryKey: ["contratos", selectedProjectId],
     queryFn: () => entities.Contrato.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -104,6 +104,17 @@ export default function Contratos() {
         <PageHeader />
         <div className="flex-1">
           <PageEmptyState icon={FileText} description="Selecione um projeto no menu lateral para acessar os contratos." />
+        </div>
+      </div>
+    );
+  }
+
+  if (errorContratos) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={FileText} description="Erro ao carregar os contratos. Verifique sua conexão e tente novamente." />
         </div>
       </div>
     );

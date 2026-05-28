@@ -5,6 +5,7 @@ import {
   subMonths, addYears, parseISO, format,
   eachWeekOfInterval,
 } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
@@ -53,6 +54,7 @@ export default function Avancos() {
   const [showPrev, setShowPrev] = React.useState(true);
   const [showReal, setShowReal] = React.useState(true);
   const [showProj, setShowProj] = React.useState(true);
+  const [granularidade, setGranularidade] = React.useState("semana");
 
   // ── Queries ──
 
@@ -74,15 +76,20 @@ export default function Avancos() {
   const onErr = (e) =>
     toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
 
+  const onSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ["avanco_fisico", selectedProjectId] });
+    toast({ title: "Salvo", description: "Avanço atualizado.", duration: 2000 });
+  };
+
   const updateMut = useMutation({
     mutationFn: ({ id, updates }) => entities.AvancoFisico.update(id, updates),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["avanco_fisico", selectedProjectId] }),
+    onSuccess: onSaved,
     onError: onErr,
   });
 
   const createMut = useMutation({
     mutationFn: (data) => entities.AvancoFisico.create(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["avanco_fisico", selectedProjectId] }),
+    onSuccess: onSaved,
     onError: onErr,
   });
 
@@ -126,18 +133,43 @@ export default function Avancos() {
     });
   }, [projectWeeks, weekMap]);
 
+  // Agrupamento mensal: soma barras semanais e usa último acumulado do mês
+  const chartDataMensal = useMemo(() => {
+    const monthMap = new Map();
+    projectWeeks.forEach((w, i) => {
+      const mLabel = format(w, "MMM/yy", { locale: ptBR });
+      const wd = chartData[i];
+      if (!wd) return;
+      if (!monthMap.has(mLabel)) {
+        monthMap.set(mLabel, { month: mLabel, prev: 0, real: 0, proj: 0, prevAcum: 0, realAcum: 0 });
+      }
+      const m = monthMap.get(mLabel);
+      m.prev += wd.prev;
+      m.real += wd.real;
+      m.proj += wd.proj;
+      m.prevAcum = wd.prevAcum;
+      m.realAcum = wd.realAcum;
+    });
+    return [...monthMap.values()];
+  }, [projectWeeks, chartData]);
+
   // ── Save handler ──
 
   const handleSave = (semanaIso, campo, valor) => {
     const existing = weekMap.get(semanaIso);
     if (existing) {
-      updateMut.mutate({ id: existing.id, updates: { [campo]: valor } });
+      const updates = { [campo]: valor };
+      // Ao salvar Real, limpar Projetado da mesma semana (regra de negócio)
+      if (campo === "avanco_realizado_mensal") updates.avanco_projetado = 0;
+      updateMut.mutate({ id: existing.id, updates });
     } else {
-      createMut.mutate({
+      const data = {
         projeto_id: selectedProjectId,
         semana_iso: semanaIso,
         [campo]: valor,
-      });
+      };
+      if (campo === "avanco_realizado_mensal") data.avanco_projetado = 0;
+      createMut.mutate(data);
     }
   };
 
@@ -162,7 +194,7 @@ export default function Avancos() {
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex gap-3 px-4 py-3 border-b border-border last:border-0">
               <Skeleton className="h-4 w-32" />
-              {[...Array(8)].map((_, j) => <Skeleton key={j} className="h-4 w-10" />)}
+              {[...Array(8)].map((_, j) => <Skeleton key={j} className="h-4 w-14" />)}
             </div>
           ))}
         </div>
@@ -189,6 +221,8 @@ export default function Avancos() {
   // ── Render ──
 
   const desvioPositive = desvio >= 0;
+  const activeChartData = granularidade === "semana" ? chartData : chartDataMensal;
+  const chartXKey = granularidade === "semana" ? "week" : "month";
 
   return (
     <div className="space-y-6">
@@ -260,12 +294,32 @@ export default function Avancos() {
       />
 
       {/* Gráfico Curva S */}
-      {chartData.length > 0 && (
+      {activeChartData.length > 0 && (
         <div className="bg-card rounded-xl border border-border shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-foreground text-sm">
-              Evolução Semanal de Avanço Físico
-            </h3>
+            <div className="flex items-center gap-3">
+              <h3 className="font-semibold text-foreground text-sm">
+                Evolução de Avanço Físico
+              </h3>
+              <div className="flex rounded overflow-hidden border border-border">
+                {[
+                  { key: "semana", label: "Semana" },
+                  { key: "mes", label: "Mês" },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setGranularidade(key)}
+                    className={`px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      granularidade === key
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-transparent text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex gap-1.5">
               {[
                 { key: "prev", label: "Previsto", show: showPrev, setShow: setShowPrev, color: "#3b82f6" },
@@ -285,16 +339,20 @@ export default function Avancos() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={chartData}>
+            <ComposedChart data={activeChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="week" tick={{ fontSize: 10 }} interval={3} />
+              <XAxis
+                dataKey={chartXKey}
+                tick={{ fontSize: 10 }}
+                interval={granularidade === "semana" ? 3 : 0}
+              />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} unit="%" />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip formatter={(v) => `${v.toFixed(1)}%`} />
+              <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
               <Legend />
-              <Bar yAxisId="left" dataKey="prev" name="Previsto sem." fill="#3b82f6" opacity={0.7} hide={!showPrev} />
-              <Bar yAxisId="left" dataKey="real" name="Real sem." fill="#16a34a" opacity={0.7} hide={!showReal} />
-              <Bar yAxisId="left" dataKey="proj" name="Projetado sem." fill="#f59e0b" opacity={0.7} hide={!showProj} />
+              <Bar yAxisId="left" dataKey="prev" name="Previsto" fill="#3b82f6" opacity={0.7} hide={!showPrev} />
+              <Bar yAxisId="left" dataKey="real" name="Real"     fill="#16a34a" opacity={0.7} hide={!showReal} />
+              <Bar yAxisId="left" dataKey="proj" name="Projetado" fill="#f59e0b" opacity={0.7} hide={!showProj} />
               <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Acum. Prev"
                 stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} hide={!showPrev} />
               <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Acum. Real"

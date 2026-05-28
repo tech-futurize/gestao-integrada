@@ -48,7 +48,7 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave }) {
   if (blocked) {
     return (
       <td
-        className="px-2 py-1 text-center bg-muted text-muted-foreground text-xs w-10 cursor-not-allowed"
+        className="px-2 py-1 text-center bg-muted text-muted-foreground text-xs w-14 cursor-not-allowed"
         title="Semana futura — edição de Real bloqueada"
       >
         —
@@ -63,7 +63,7 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave }) {
       setEditing(true);
     };
     return editing ? (
-      <td className="px-1 py-1 text-center w-10">
+      <td className="px-1 py-1 text-center w-14">
         <input
           autoFocus
           type="number"
@@ -81,12 +81,12 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave }) {
             if (e.key === "Enter") { cancelRef.current = false; e.target.blur(); }
             if (e.key === "Escape") { cancelRef.current = true; setEditing(false); }
           }}
-          className="w-10 text-center border rounded text-xs p-0"
+          className="w-full text-center border rounded text-xs p-0"
         />
       </td>
     ) : (
       <td
-        className="px-2 py-1 text-center cursor-pointer hover:bg-accent text-muted-foreground text-xs w-10"
+        className="px-2 py-1 text-center cursor-pointer hover:bg-accent text-muted-foreground text-xs w-14"
         onClick={handleClick}
       >
         0
@@ -104,7 +104,7 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave }) {
 
   return (
     <td
-      className="px-2 py-1 text-center cursor-pointer hover:bg-accent w-10"
+      className="px-2 py-1 text-center cursor-pointer hover:bg-accent w-14"
       onClick={() => { if (!editing) { setInputVal(String(valor)); setEditing(true); } }}
     >
       {editing ? (
@@ -121,7 +121,7 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave }) {
             if (e.key === "Enter") { cancelRef.current = false; e.target.blur(); }
             if (e.key === "Escape") { cancelRef.current = true; setEditing(false); }
           }}
-          className="w-10 text-center border rounded text-xs p-0"
+          className="w-full text-center border rounded text-xs p-0"
         />
       ) : (
         <span className="text-xs">{valor ? Number(valor).toFixed(1) : "0"}</span>

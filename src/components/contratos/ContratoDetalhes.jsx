@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Trash2, DollarSign, Calendar, User, Building } from "lucide-react";
+import { ArrowLeft, Edit, DollarSign, Calendar, User, Building } from "lucide-react";
 import AditivosList from "@/components/contratos/AditivosList";
+import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
@@ -55,7 +56,7 @@ export default function ContratoDetalhes({
         <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft className="w-4 h-4 mr-1" /> Voltar</Button>
         <h2 className="text-lg font-bold flex-1 text-foreground">Detalhes do Contrato</h2>
         <Button size="sm" variant="outline" onClick={() => onEdit(contrato)}><Edit className="w-4 h-4 mr-1" /> Editar</Button>
-        <Button size="sm" variant="outline" className="text-status-critical border-status-critical/30" onClick={() => onDelete(contrato.id)}><Trash2 className="w-4 h-4" /></Button>
+        <ConfirmDeleteButton size="sm" onConfirm={() => onDelete(contrato.id)} description="O contrato e todos os seus dados associados serão excluídos permanentemente." />
       </div>
 
       <Card className="bg-card shadow-sm">

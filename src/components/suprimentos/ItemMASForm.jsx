@@ -45,7 +45,6 @@ function SectionDivider({ color, label }) {
 export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved }) {
   const [form, setForm] = useState({
     descricao: item?.descricao || "",
-    unidade: item?.unidade || "",
     unidade_id: item?.unidade_id || "",
     quantidade: item?.quantidade || "",
     numero_sc: item?.numero_sc || "",

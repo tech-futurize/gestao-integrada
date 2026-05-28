@@ -31,7 +31,7 @@ export default function Medicoes() {
   const [editMedicao, setEditMedicao] = useState(null);
   const [showImportExport, setShowImportExport] = useState(false);
 
-  const { data: medicoes = [], isLoading } = useQuery({
+  const { data: medicoes = [], isLoading, isError } = useQuery({
     queryKey: ["medicoes", selectedProjectId],
     queryFn: () => entities.Medicao.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -95,6 +95,17 @@ export default function Medicoes() {
         <PageHeader />
         <div className="flex-1">
           <PageEmptyState icon={ClipboardList} description="Selecione um projeto no menu lateral para acessar as medições." />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1">
+          <PageEmptyState icon={ClipboardList} description="Erro ao carregar as medições. Verifique sua conexão e tente novamente." />
         </div>
       </div>
     );

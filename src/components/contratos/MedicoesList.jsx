@@ -2,8 +2,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, Trash2, ClipboardList } from "lucide-react";
+import { Edit, ClipboardList } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 
@@ -61,7 +62,7 @@ export default function MedicoesList({ medicoes, contratos, isLoading, onEdit, o
                 </div>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => onEdit(m)}><Edit className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="ghost" className="text-status-critical" onClick={() => onDelete(m.id)}><Trash2 className="w-4 h-4" /></Button>
+                  <ConfirmDeleteButton size="sm" onConfirm={() => onDelete(m.id)} description="A medição será excluída permanentemente." />
                 </div>
               </div>
             </CardContent>

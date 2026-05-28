@@ -25,10 +25,10 @@ function fmtDate(str) {
 function calcStatus(t) {
   const real = t.avanco_realizado ?? 0;
   const prev = t.avanco_previsto ?? 0;
-  if (real >= 100) return { label: "Concluído",    color: "#16a34a" };
-  if (real === 0)  return { label: "A Iniciar",    color: "#6b7280" };
-  if (real < prev) return { label: "Atrasada",     color: "#ef4444" };
-  return                  { label: "Em Andamento", color: "#2563eb" };
+  if (real >= 100)              return { label: "Concluído",    color: "#16a34a" };
+  if (prev === 0 && real === 0) return { label: "A Iniciar",    color: "#6b7280" };
+  if (prev > real)              return { label: "Atrasada",     color: "#ef4444" };
+  return                               { label: "Em Andamento", color: "#2563eb" };
 }
 
 // ── WBS sort ──────────────────────────────────────────────────────────────────
@@ -53,9 +53,9 @@ function compareWbs(a, b) {
 const INDENT = { 1: 0, 2: 12, 3: 24, 4: 36, 5: 48, 6: 60, 7: 72, 8: 84, 9: 96 };
 const TIPO_COLORS = { Resumo: "#26405d", Atividade: "#3b82f6", Marco: "#c35e1e" };
 
-const W_ID   = 96;
+const W_ID   = 64;
 const W_NIV  = 40;
-const W_NOME = 320;
+const W_NOME = 220;
 const W_ACT  = 43;
 
 const LEVEL_BG = {

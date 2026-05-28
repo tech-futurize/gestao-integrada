@@ -43,9 +43,9 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-bold" style={{ color: "#26405d" }}>{medicao ? "Editar Medição" : "Nova Medição"}</h2>
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border">
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-lg font-bold text-foreground">{medicao ? "Editar Medição" : "Nova Medição"}</h2>
           <CloseButton onClick={onClose} />
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -95,7 +95,7 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
             </div>
             <div className="space-y-2">
               {(form.itens || []).map((item, i) => (
-                <div key={i} className="grid grid-cols-5 gap-2 items-center p-2 bg-gray-50 rounded-lg">
+                <div key={i} className="grid grid-cols-5 gap-2 items-center p-2 bg-muted/50 rounded-lg">
                   <Input className="col-span-2 text-xs" placeholder="Descrição" value={item.descricao} onChange={e => updateItem(i, "descricao", e.target.value)} />
                   <Input className="text-xs" placeholder="Un." value={item.unidade} onChange={e => updateItem(i, "unidade", e.target.value)} />
                   <Input className="text-xs" type="number" placeholder="Qtd" value={item.quantidade} onChange={e => updateItem(i, "quantidade", e.target.value)} />
@@ -110,7 +110,7 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
 
           <div>
             <Label>Observações</Label>
-            <textarea rows={2} className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none" value={form.observacoes} onChange={e => set("observacoes", e.target.value)} placeholder="Observações..." />
+            <textarea rows={2} className="w-full border border-border rounded-lg p-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" value={form.observacoes} onChange={e => set("observacoes", e.target.value)} placeholder="Observações..." />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

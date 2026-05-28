@@ -8,7 +8,6 @@ import ViewTarefaModal from "@/components/cronograma/ViewTarefaModal";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import FilterBar from "@/components/ui/FilterBar";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { CalendarDays, Upload, Eye, GitBranch, Search } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 
@@ -35,7 +34,6 @@ const EXPORT_COLUMNS = [
 export default function Cronograma() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
-  const { toast: _toast } = useToast();
 
   const [showImportExport, setShowImportExport] = useState(false);
   const [viewingTarefa, setViewingTarefa] = useState(null);
@@ -47,7 +45,7 @@ export default function Cronograma() {
   const [filtros, setFiltros] = useState({});
   const [show6WLA, setShow6WLA] = useState(false);
 
-  const { data: tarefas = [], isLoading, isError } = useQuery({
+  const { data: tarefas = [], isPending, isError } = useQuery({
     queryKey: ["tarefas_cronograma", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -59,9 +57,9 @@ export default function Cronograma() {
   const calcStatusLabel = (t) => {
     const real = t.avanco_realizado ?? 0;
     const prev = t.avanco_previsto ?? 0;
-    if (real >= 100) return "Concluído";
-    if (real === 0)  return "A Iniciar";
-    if (real < prev) return "Atrasada";
+    if (real >= 100)             return "Concluído";
+    if (prev === 0 && real === 0) return "A Iniciar";
+    if (prev > real)             return "Atrasada";
     return "Em Andamento";
   };
 
@@ -152,9 +150,14 @@ export default function Cronograma() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button variant="outline" onClick={() => setShowImportExport(true)}>
-            <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant={show6WLA ? "default" : "outline"} size="sm" onClick={() => setShow6WLA(v => !v)}>
+              <CalendarDays className="w-4 h-4 mr-2" /> 6WLA
+            </Button>
+            <Button variant="outline" onClick={() => setShowImportExport(true)}>
+              <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+            </Button>
+          </div>
         }
       />
       <div className="flex-1 overflow-hidden p-6 flex flex-col gap-4">
@@ -218,16 +221,13 @@ export default function Cronograma() {
         <Button variant={showCritical ? "default" : "outline"} size="sm" onClick={() => setShowCritical(c => !c)}>
           <GitBranch className="w-3.5 h-3.5 mr-1" /> Caminho Crítico
         </Button>
-        <Button variant={show6WLA ? "default" : "outline"} size="sm" onClick={() => setShow6WLA(v => !v)}>
-          <CalendarDays className="w-3.5 h-3.5 mr-1" /> 6WLA
-        </Button>
       </div>
 
       {/* Gantt — flex-1 min-h-0 para ocupar o restante da altura disponível */}
       <div className="flex-1 min-h-0">
         <GanttChart
           tarefas={filteredTarefas}
-          isLoading={isLoading}
+          isLoading={isPending}
           zoom={zoom}
           showBaseline={showBaseline}
           showCritical={showCritical}

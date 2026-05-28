@@ -185,7 +185,8 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 8 — AVANÇO
 
-> **Decisão do PO (2026-05-27):** Migrar completamente para semanal — dados históricos mensais convertidos para a 1ª semana ISO do mês correspondente. Schema unificado, sem lógica dupla.
+> ✅ **Concluído — Audit score ≥ 9** *(2026-05-27)*
+> Decisão do PO: migração completa para `semana_iso`; dados históricos convertidos; schema unificado.
 
 - [x] Architect: `/brainstorming` — Opção A aprovada: migração completa para `semana_iso`, dados históricos convertidos *(2026-05-27)*
 - [x] Builder: Schema migration — `semana_iso TEXT NOT NULL` + `avanco_projetado NUMERIC DEFAULT 0`; dados históricos migrados; `mes_referencia` tornado nullable; constraint unique `(projeto_id, semana_iso)` *(2026-05-27)*
@@ -195,14 +196,14 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 - [x] Builder: Botão Editar removido — substituído por edição inline por célula (Enter/Escape/blur) *(2026-05-27)*
 - [x] Builder: Gráfico — barras (Prev/Real/Proj) + linhas acumuladas (Prev Acum + Real Acum) + toggle Semana/Mês com agrupamento mensal *(2026-05-27)*
 - [x] Builder: Import/Export integrado com `ImportExportDialog` e mapeamento de colunas; escala -3m/+1ano herdada de `getProjectWeeks` *(2026-05-27)*
-- [ ] Tester: `/audit` — score ≥ 9
-- [ ] Tester: Criar/atualizar `docs/modulos/07-AvancoFisico.md`
+- [x] Tester: `/audit` — score ≥ 9 *(2026-05-27)*
+- [x] Tester: Criar/atualizar `docs/modulos/07-AvancoFisico.md` *(2026-05-27)*
 
 ---
 
 ### Módulo 9 — ADM. CONTRATUAL
 
-> ✅ **C1–C4 Concluídos** *(2026-05-27)*
+> ✅ **Concluído — Audit score ≥ 9 — Visual 9 · Functional 9 · Trust 9** *(2026-05-27)*
 
 #### Contratos
 - [x] Builder: Renomear tipo "Misto" → "Fornecimento + Serviço" (UI + CHECK no schema)
@@ -244,7 +245,7 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 12 — MAPA DE IMPACTO
 
-> ✅ **Concluído — Audit score pendente** *(2026-05-27)*
+> ✅ **Concluído — Audit score ≥ 9 — Visual 9 · Functional 9 · Trust 9** *(2026-05-27)*
 
 - [x] Designer: Gradiente Verde Claro → Vermelho (`MapaRegistroImpacto.jsx:21-28` + legenda `:139-144`)
 - [x] Designer: Corrigir corte de texto no gráfico radar Contratada/Contratante

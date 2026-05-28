@@ -48,9 +48,9 @@ export default function AditivoForm({ aditivo, contratoId, projetoId, onSave, on
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: "#e5e7eb" }}>
-          <h2 className="text-lg font-bold" style={{ color: "#26405d" }}>
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto border border-border">
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-lg font-bold text-foreground">
             {aditivo ? "Editar Aditivo" : "Novo Aditivo"}
           </h2>
           <CloseButton onClick={onClose} />
@@ -78,7 +78,7 @@ export default function AditivoForm({ aditivo, contratoId, projetoId, onSave, on
               value={form.escopo_texto}
               onChange={e => set("escopo_texto", e.target.value)}
               rows={3}
-              className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2"
+              className="w-full border border-border rounded-lg p-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Descreva o escopo alterado..."
             />
           </div>
@@ -113,7 +113,7 @@ export default function AditivoForm({ aditivo, contratoId, projetoId, onSave, on
               value={form.justificativa}
               onChange={e => set("justificativa", e.target.value)}
               rows={2}
-              className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2"
+              className="w-full border border-border rounded-lg p-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Justificativa do aditivo..."
             />
           </div>

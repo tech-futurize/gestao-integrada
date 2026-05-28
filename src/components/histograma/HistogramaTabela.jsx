@@ -17,6 +17,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,10 @@ function CelulaEditavel({ registro, campo, onSave }) {
 
   if (disabled)
     return (
-      <td className="px-2 py-1 text-center bg-muted text-muted-foreground text-xs w-12">
+      <td
+        className="px-2 py-1 text-center bg-muted text-muted-foreground text-xs w-12 cursor-not-allowed"
+        title="Mês futuro — edição de Real bloqueada"
+      >
         —
       </td>
     );
@@ -242,7 +246,25 @@ export default function HistogramaTabela({ tipo }) {
     );
   }
   if (isPending) {
-    return <div className="py-20 text-center text-muted-foreground text-sm">Carregando...</div>;
+    return (
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-20 rounded-full" />
+        </div>
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex gap-3 px-4 py-3 border-b border-border last:border-0">
+              <Skeleton className="h-4 w-32" />
+              {[...Array(6)].map((_, j) => (
+                <Skeleton key={j} className="h-4 w-10" />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
   if (isError) {
     return (

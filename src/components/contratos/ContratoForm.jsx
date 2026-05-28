@@ -42,9 +42,9 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: "#e5e7eb" }}>
-          <h2 className="text-lg font-bold" style={{ color: "#26405d" }}>
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-border">
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-lg font-bold text-foreground">
             {contrato ? "Editar Contrato" : "Novo Contrato"}
           </h2>
           <CloseButton onClick={onClose} />
@@ -134,7 +134,7 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
               value={form.observacoes}
               onChange={e => set("observacoes", e.target.value)}
               rows={3}
-              className="w-full border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2"
+              className="w-full border border-border rounded-lg p-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Observações gerais..."
             />
           </div>

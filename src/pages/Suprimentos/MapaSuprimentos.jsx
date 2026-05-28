@@ -36,19 +36,27 @@ export default function MapaSuprimentos() {
     enabled: !!selectedProjectId,
   });
 
+  const { data: unidades = [] } = useQuery({
+    queryKey: ["unidades_medida"],
+    queryFn: () => entities.UnidadeMedida.list(),
+    staleTime: 1000 * 60 * 10,
+  });
+
   const handleImport = async (row) => {
     setImporting(true);
     try {
+      const unidadeMatch = unidades.find(u =>
+        u.sigla?.toLowerCase() === (row.unidade || "").toLowerCase()
+      );
       const payload = {
         projeto_id:       selectedProjectId,
         numero_sc:        row.numero_sc        || "",
         descricao:        row.descricao        || "",
         fornecedor:       row.fornecedor       || "",
-        unidade:          row.unidade          || "",
+        unidade_id:       unidadeMatch?.id     || null,
         quantidade:       row.quantidade       ?? 0,
         responsavel:      row.responsavel      || "",
-        status:           row.status           || "Pendente",
-        data_prevista:    row.data_prevista    || null,
+        status:           row.status           || "A iniciar",
         data_cronograma:  row.data_cronograma  || null,
       };
       const existing = await entities.ItemMAS.filter({ projeto_id: selectedProjectId, numero_sc: payload.numero_sc });
@@ -100,7 +108,10 @@ export default function MapaSuprimentos() {
         title="Mapa de Suprimentos"
         exportFileName="mapa_suprimentos"
         columns={EXPORT_COLUMNS}
-        onExport={() => itens}
+        onExport={() => itens.map(item => ({
+          ...item,
+          unidade: unidades.find(u => u.id === item.unidade_id)?.sigla || item.unidade || "",
+        }))}
         onImport={handleImport}
       />
     </div>
