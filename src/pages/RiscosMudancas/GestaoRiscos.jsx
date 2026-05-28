@@ -203,7 +203,7 @@ export default function GestaoRiscos() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        actions={
+        actions={tab === "riscos" ? (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
               <FileSpreadsheet className="w-4 h-4 mr-2" />
@@ -213,7 +213,7 @@ export default function GestaoRiscos() {
               <Plus className="w-4 h-4 mr-2" /> Novo Risco
             </Button>
           </div>
-        }
+        ) : null}
       />
       {/* Tab bar */}
       <div className="flex gap-1 border-b border-border px-6">
@@ -234,7 +234,8 @@ export default function GestaoRiscos() {
 
       {tab === "plano-acao" && <PlanoAcao projectId={selectedProjectId} />}
 
-      {tab === "riscos" && <div className="flex-1 overflow-auto p-6 space-y-6">
+      {tab === "riscos" && (
+      <div className="flex-1 overflow-auto p-6 space-y-6">
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -481,7 +482,8 @@ export default function GestaoRiscos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </div>}
+      </div>
+      )}
       <ImportExportDialog
         open={showImportExport}
         onOpenChange={setShowImportExport}
