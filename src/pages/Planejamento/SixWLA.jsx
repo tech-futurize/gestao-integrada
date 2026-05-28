@@ -25,12 +25,12 @@ const SIXWLA_EXPORT_COLUMNS = [
 ];
 
 const RESTRICOES = [
-  { key: "restricao_projeto_eng",  label: "Proj/Eng", full: "Projeto/Engenharia" },
-  { key: "restricao_material",     label: "Mat",      full: "Material/Suprimentos" },
-  { key: "restricao_mao_obra",     label: "MO",       full: "Mão de Obra" },
-  { key: "restricao_equipamentos", label: "Eq",       full: "Equipamentos" },
-  { key: "restricao_externas",     label: "Ext",      full: "Externas/Regulatórias" },
-  { key: "restricao_informacoes",  label: "Info",     full: "Informações/Decisões" },
+  { key: "restricao_projeto_eng",  cardLabel: "Engenharia",  tableLabel: "Eng",  full: "Projeto/Engenharia" },
+  { key: "restricao_material",     cardLabel: "Materiais",   tableLabel: "Mat",  full: "Material/Suprimentos" },
+  { key: "restricao_mao_obra",     cardLabel: "Mão de Obra", tableLabel: "MO",   full: "Mão de Obra" },
+  { key: "restricao_equipamentos", cardLabel: "Equipamento", tableLabel: "Eq",   full: "Equipamentos" },
+  { key: "restricao_externas",     cardLabel: "Externo",     tableLabel: "Ext",  full: "Externas/Regulatórias" },
+  { key: "restricao_informacoes",  cardLabel: "SSMA",        tableLabel: "SSMA", full: "Informações/Decisões" },
 ];
 
 export default function SixWLAPage() {
