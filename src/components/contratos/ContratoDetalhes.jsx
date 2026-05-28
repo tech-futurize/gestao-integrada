@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Trash2, DollarSign, Calendar, User, Building } from "lucide-react";
+import AditivosList from "@/components/contratos/AditivosList";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
@@ -14,18 +15,39 @@ const STATUS_COLORS = {
 };
 
 const MEDICAO_STATUS_COLORS = {
-  Elaboração: "bg-muted text-muted-foreground",
-  "Em Revisão": "bg-status-attention/15 text-status-attention",
-  "Em Aprovação": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  Aprovada: "bg-status-positive/15 text-status-positive",
-  Paga: "bg-status-positive/20 text-status-positive",
-  Rejeitada: "bg-status-critical/15 text-status-critical",
+  Elaboração:      "bg-muted text-muted-foreground",
+  "Em Revisão":    "bg-status-attention/15 text-status-attention",
+  "Em Aprovação":  "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  Aprovada:        "bg-status-positive/15 text-status-positive",
+  Paga:            "bg-status-positive/20 text-status-positive",
+  Rejeitada:       "bg-status-critical/15 text-status-critical",
 };
 
-export default function ContratoDetalhes({ contrato, medicoes, onBack, onEdit, onDelete, onNovaMedicao }) {
-  const totalMedido = medicoes.filter(m => ["Aprovada", "Paga"].includes(m.status)).reduce((s, m) => s + (m.valor_liquido || 0), 0);
+function addDaysToDate(dateStr, days) {
+  if (!dateStr || !days) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+export default function ContratoDetalhes({
+  contrato, medicoes, aditivos,
+  onBack, onEdit, onDelete, onNovaMedicao,
+  onAddAditivo, onEditAditivo, onDeleteAditivo,
+}) {
+  const totalMedido = (medicoes || [])
+    .filter(m => ["Aprovada", "Paga"].includes(m.status))
+    .reduce((s, m) => s + (m.valor || 0), 0);
   const saldo = (contrato.valor_total || 0) - totalMedido;
   const percentMedido = contrato.valor_total ? (totalMedido / contrato.valor_total) * 100 : 0;
+
+  const totalPrazoDias = (aditivos || [])
+    .filter(a => a.status === "Assinado" && a.prazo_dias)
+    .reduce((s, a) => s + (a.prazo_dias || 0), 0);
+
+  const terminoAtual = totalPrazoDias > 0
+    ? addDaysToDate(contrato.data_fim, totalPrazoDias)
+    : contrato.data_fim;
 
   return (
     <div className="space-y-5">
@@ -42,7 +64,7 @@ export default function ContratoDetalhes({ contrato, medicoes, onBack, onEdit, o
             <div>
               <div className="flex items-center gap-2 mb-1">
                 {contrato.numero && <span className="text-xs font-mono text-muted-foreground">{contrato.numero}</span>}
-                <Badge className={STATUS_COLORS[contrato.status]}>{contrato.status}</Badge>
+                <Badge className={STATUS_COLORS[contrato.status] || "bg-muted text-muted-foreground"}>{contrato.status}</Badge>
               </div>
               <h3 className="text-xl font-bold text-foreground">{contrato.objeto}</h3>
             </div>
@@ -70,8 +92,11 @@ export default function ContratoDetalhes({ contrato, medicoes, onBack, onEdit, o
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">Vigência</p>
+                <p className="text-xs text-muted-foreground">Início → Término Original</p>
                 <p className="text-sm font-semibold text-foreground">{fmtDate(contrato.data_inicio)} → {fmtDate(contrato.data_fim)}</p>
+                {terminoAtual !== contrato.data_fim && (
+                  <p className="text-xs text-status-attention font-semibold">Término Atual: {fmtDate(terminoAtual)}</p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -99,6 +124,19 @@ export default function ContratoDetalhes({ contrato, medicoes, onBack, onEdit, o
         </CardContent>
       </Card>
 
+      {/* ── Aditivos ─────────────────────────────────── */}
+      <Card className="bg-card shadow-sm">
+        <CardContent className="p-6">
+          <AditivosList
+            aditivos={aditivos || []}
+            onAdd={onAddAditivo}
+            onEdit={onEditAditivo}
+            onDelete={onDeleteAditivo}
+          />
+        </CardContent>
+      </Card>
+
+      {/* ── Medições ─────────────────────────────────── */}
       <Card className="bg-card shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
@@ -107,7 +145,7 @@ export default function ContratoDetalhes({ contrato, medicoes, onBack, onEdit, o
           </div>
         </CardHeader>
         <CardContent>
-          {medicoes.length === 0 ? (
+          {(medicoes || []).length === 0 ? (
             <p className="text-center text-muted-foreground py-8 text-sm">Nenhuma medição registrada.</p>
           ) : (
             <div className="divide-y divide-border">
@@ -118,7 +156,7 @@ export default function ContratoDetalhes({ contrato, medicoes, onBack, onEdit, o
                     <span className="text-xs text-muted-foreground ml-2">{m.periodo_inicio} → {m.periodo_fim}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold text-sm text-foreground">{fmt(m.valor_liquido || m.valor_bruto)}</span>
+                    <span className="font-semibold text-sm text-foreground">{fmt(m.valor)}</span>
                     <Badge className={MEDICAO_STATUS_COLORS[m.status] || "bg-muted text-muted-foreground"}>{m.status}</Badge>
                   </div>
                 </div>
