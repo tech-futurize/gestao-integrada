@@ -202,7 +202,7 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" variant="save" disabled={isSubmitting}>
+            <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar Mudança"}
             </Button>
           </div>
