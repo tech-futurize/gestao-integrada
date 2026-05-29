@@ -1,12 +1,14 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldAlert, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
+import { ShieldAlert, Plus, Edit, Trash2, Upload } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { KPICard } from "@/components/ui/KPICard";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,29 +19,7 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
 import PlanoAcao from "@/components/riscos/PlanoAcao";
-
-const CATEGORIAS = ["Técnico", "Financeiro", "Prazo", "Segurança", "Regulatório", "Ambiental", "Outros"];
-const CAT_COLORS = {
-  "Técnico": "#3b82f6",
-  "Financeiro": "#f59e0b",
-  "Prazo": "#c35e1e",
-  "Segurança": "#ef4444",
-  "Regulatório": "#8b5cf6",
-  "Ambiental": "#10b981",
-  "Outros": "#6b7280",
-};
-const SCORE_COLORS = {
-  high: { color: "#ef4444", bg: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
-  medium: { color: "#f59e0b", bg: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  low: { color: "#16a34a", bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
-};
-const IMPACTO_DIMS = ["Escopo", "Prazo", "Valor"];
-
-const getScoreLevel = (score) => {
-  if (score >= 12) return "high";
-  if (score >= 6) return "medium";
-  return "low";
-};
+import { CATEGORIAS_RISCO as CATEGORIAS, CAT_COLORS, SCORE_COLORS, IMPACTO_DIMS, getScoreLevel } from "@/utils/riscosUtils";
 
 const RISCO_COLUMNS = [
   { key: "codigo",         label: "Código",                    type: "string" },
@@ -93,6 +73,7 @@ export default function GestaoRiscos() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [filtros, setFiltros] = useState({});
   const [tab, setTab] = useState("riscos");
+  const [deleteId, setDeleteId] = useState(null);
 
   const { data: riscos = [], isLoading } = useQuery({
     queryKey: ["riscos", selectedProjectId],
@@ -212,7 +193,7 @@ export default function GestaoRiscos() {
         actions={tab === "riscos" ? (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              <Upload className="w-4 h-4 mr-2" />
               Importar / Exportar
             </Button>
             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
@@ -245,17 +226,10 @@ export default function GestaoRiscos() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "Total de Riscos", value: kpi.total, color: "#26405d" },
-          { label: "Críticos (≥12)", value: kpi.criticos, color: "#ef4444" },
-          { label: "Ativos", value: kpi.ativos, color: "#d97706" },
-          { label: "Mitigados", value: kpi.mitigados, color: "#16a34a" },
-        ].map(k => (
-          <div key={k.label} className="bg-card rounded-xl border border-border p-4">
-            <p className="text-xs text-muted-foreground">{k.label}</p>
-            <p className="text-2xl font-bold" style={{ color: k.color }}>{k.value}</p>
-          </div>
-        ))}
+        <KPICard label="Total de Riscos" value={kpi.total} />
+        <KPICard label="Críticos (≥12)" value={kpi.criticos} accent="text-status-critical" />
+        <KPICard label="Ativos" value={kpi.ativos} accent="text-status-attention" />
+        <KPICard label="Mitigados" value={kpi.mitigados} accent="text-status-positive" />
       </div>
 
       {/* Cards por Categoria */}
@@ -272,7 +246,7 @@ export default function GestaoRiscos() {
                 style={{ borderLeftColor: color }}
               >
                 <p className="text-xs text-muted-foreground">{cat}</p>
-                <p className="text-2xl font-bold" style={{ color }}>{count}</p>
+                <p className="text-2xl font-bold text-foreground">{count}</p>
               </div>
             );
           })}
@@ -390,8 +364,8 @@ export default function GestaoRiscos() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1 justify-end">
-                        <button onClick={() => handleEdit(r)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => deleteMut.mutate(r.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleEdit(r)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Edit className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteId(r.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -512,7 +486,7 @@ export default function GestaoRiscos() {
           <DialogFooter className="gap-2">
             {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); setEditing(null); setForm(EMPTY_FORM); }}>Excluir</Button>}
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
+            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
               {editing ? "Salvar" : "Criar"}
             </Button>
           </DialogFooter>
@@ -529,6 +503,20 @@ export default function GestaoRiscos() {
         onExport={() => filtered}
         onImport={(row) => createMut.mutateAsync({ ...row, projeto_id: selectedProjectId })}
       />
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir risco?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { deleteMut.mutate(deleteId); setDeleteId(null); }}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,24 +1,19 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightLeft, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
+import { ArrowRightLeft, Plus, Edit, Trash2, Upload } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import DashboardExecutivo from "@/components/mudancas/DashboardExecutivo";
 import MudancaForm from "@/components/mudancas/MudancaForm";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import FilterBar from "@/components/ui/FilterBar";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
 
-const STATUS_COLORS = {
-  "Identificada": "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  "Em Análise": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Em Negociação": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  "Aprovada": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  "Rejeitada": "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const ORIGEM_COLORS = {
   "Contratada": "bg-blue-50 text-blue-700 border border-blue-200",
@@ -54,6 +49,7 @@ export default function GestaoMudancas() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [filtros, setFiltros] = useState({});
+  const [deleteId, setDeleteId] = useState(null);
 
   const { data: mudancas = [], isLoading } = useQuery({
     queryKey: ["mudancas_contratuais", selectedProjectId],
@@ -128,7 +124,7 @@ export default function GestaoMudancas() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              <Upload className="w-4 h-4 mr-2" />
               Importar / Exportar
             </Button>
             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setShowForm(true); }}>
@@ -211,15 +207,13 @@ export default function GestaoMudancas() {
                     {m.impacto_prazo_dias != null && m.impacto_prazo_dias !== "" ? `${m.impacto_prazo_dias > 0 ? "+" : ""}${m.impacto_prazo_dias}d` : "—"}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[m.status] || "bg-muted text-muted-foreground"}`}>
-                      {m.status}
-                    </span>
+                    <StatusBadge status={m.status} />
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{m.responsavel || "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
-                      <button onClick={() => handleEdit(m)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => deleteMut.mutate(m.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleEdit(m)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Edit className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setDeleteId(m.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
                   </td>
                 </tr>
@@ -238,6 +232,20 @@ export default function GestaoMudancas() {
         onExport={() => filtered}
         onImport={(row) => createMut.mutateAsync({ ...row, projeto_id: selectedProjectId })}
       />
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir mudança?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { deleteMut.mutate(deleteId); setDeleteId(null); }}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { labelRisco, labelMudanca } from "@/utils/riscosUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,18 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, CheckCircle2, Clock, X, Trash2, Save } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const statusColors = {
-  Pendente: "bg-muted text-foreground",
-  "Em Andamento": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  Concluída: "bg-status-positive/15 text-status-positive",
-  Atrasada: "bg-status-critical/15 text-status-critical",
-  Cancelada: "bg-muted text-foreground",
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const emptyForm = {
   descricao: "",
@@ -36,11 +33,11 @@ const emptyForm = {
 function getVinculoLabel(acao, riscos, mudancas) {
   if (acao.registro_risco_id) {
     const r = riscos.find(x => x.id === acao.registro_risco_id);
-    return r ? (r.codigo || r.descricao || "Risco") : "Risco";
+    return r ? labelRisco(r) : "Risco";
   }
   if (acao.registro_mudanca_id) {
     const m = mudancas.find(x => x.id === acao.registro_mudanca_id);
-    return m ? (m.titulo || m.descricao || "Mudança") : "Mudança";
+    return m ? labelMudanca(m) : "Mudança";
   }
   return "—";
 }
@@ -49,10 +46,12 @@ export default function PlanoAcao({ projectId }) {
   const [showForm, setShowForm] = useState(false);
   const [editingAcao, setEditingAcao] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
+  const [deleteId, setDeleteId] = useState(null);
   const queryClient = useQueryClient();
   const [vinculoTipo, setVinculoTipo] = useState("risco");
+  const { toast } = useToast();
 
-  const { data: acoes = [] } = useQuery({
+  const { data: acoes = [], isLoading: isLoadingAcoes } = useQuery({
     queryKey: ["acoes", projectId],
     queryFn: () => entities.Acao.filter({ projeto_id: projectId }),
     enabled: !!projectId,
@@ -77,7 +76,9 @@ export default function PlanoAcao({ projectId }) {
       setShowForm(false);
       setFormData(emptyForm);
       setVinculoTipo("risco");
+      toast({ variant: "success", description: "Ação criada." });
     },
+    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
   const updateAcaoMutation = useMutation({
@@ -88,12 +89,18 @@ export default function PlanoAcao({ projectId }) {
       setShowForm(false);
       setFormData(emptyForm);
       setVinculoTipo("risco");
+      toast({ variant: "success", description: "Ação atualizada." });
     },
+    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
   const deleteAcaoMutation = useMutation({
     mutationFn: (id) => entities.Acao.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["acoes"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["acoes"] });
+      toast({ variant: "success", description: "Ação excluída." });
+    },
+    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
   const handleSubmit = (e) => {
@@ -125,31 +132,31 @@ export default function PlanoAcao({ projectId }) {
   return (
     <div className="space-y-6 p-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+        <Card className="border-status-info/30 bg-status-info/15">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Pendentes</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-300">{acoesPendentes}</p>
+              <p className="text-2xl font-bold text-status-info">{acoesPendentes}</p>
             </div>
-            <Clock className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <Clock className="w-8 h-8 text-status-info" />
           </CardContent>
         </Card>
-        <Card className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
+        <Card className="border-status-positive/30 bg-status-positive/15">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Concluídas</p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-300">{acoesCompletas}</p>
+              <p className="text-2xl font-bold text-status-positive">{acoesCompletas}</p>
             </div>
-            <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <CheckCircle2 className="w-8 h-8 text-status-positive" />
           </CardContent>
         </Card>
-        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20">
+        <Card className="border-status-critical/30 bg-status-critical/15">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Atrasadas</p>
-              <p className="text-2xl font-bold text-red-900 dark:text-red-300">{acoesAtrasadas}</p>
+              <p className="text-2xl font-bold text-status-critical">{acoesAtrasadas}</p>
             </div>
-            <X className="w-8 h-8 text-red-600 dark:text-red-400" />
+            <X className="w-8 h-8 text-status-critical" />
           </CardContent>
         </Card>
       </div>
@@ -273,11 +280,14 @@ export default function PlanoAcao({ projectId }) {
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">Nenhum</SelectItem>
-                      {(vinculoTipo === "risco" ? riscos : mudancas).map(item => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.codigo || item.titulo || item.descricao || item.id}
-                        </SelectItem>
-                      ))}
+                      {vinculoTipo === "risco"
+                        ? riscos.map(r => (
+                            <SelectItem key={r.id} value={r.id}>{labelRisco(r)}</SelectItem>
+                          ))
+                        : mudancas.map(m => (
+                            <SelectItem key={m.id} value={m.id}>{labelMudanca(m)}</SelectItem>
+                          ))
+                      }
                     </SelectContent>
                   </Select>
                 </div>
@@ -296,7 +306,8 @@ export default function PlanoAcao({ projectId }) {
             </form>
           )}
 
-          {acoes.length === 0 ? (
+          {isLoadingAcoes && <div className="text-center py-12 text-muted-foreground">Carregando...</div>}
+          {!isLoadingAcoes && acoes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">Nenhuma ação registrada. Clique em &quot;Nova Ação&quot; para começar.</div>
           ) : (
             <div className="overflow-x-auto">
@@ -324,7 +335,7 @@ export default function PlanoAcao({ projectId }) {
                         {acao.data_fim_prevista ? format(new Date(acao.data_fim_prevista), "dd/MM/yyyy", { locale: ptBR }) : "-"}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={statusColors[acao.status]}>{acao.status}</Badge>
+                        <StatusBadge status={acao.status} />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -347,8 +358,8 @@ export default function PlanoAcao({ projectId }) {
                             }}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="outline" className="text-status-critical border-status-critical/30 hover:bg-status-critical/10"
-                            onClick={() => deleteAcaoMutation.mutate(acao.id)}>
+                                          <Button size="sm" variant="outline" className="text-status-critical border-status-critical/30 hover:bg-status-critical/10"
+                            onClick={() => setDeleteId(acao.id)}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -361,6 +372,20 @@ export default function PlanoAcao({ projectId }) {
           )}
         </CardContent>
       </Card>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir ação?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { deleteAcaoMutation.mutate(deleteId); setDeleteId(null); }}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

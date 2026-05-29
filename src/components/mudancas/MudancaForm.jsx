@@ -45,10 +45,10 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
 
   return (
     <Card className="border-0 shadow-lg">
-      <CardHeader className="border-b" style={{ background: "linear-gradient(to right, #eff6ff, #dbeafe)" }}>
+      <CardHeader className="border-b bg-muted/40">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
-            <ArrowRightLeft className="w-5 h-5" style={{ color: "#26405d" }} />
+          <CardTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
+            <ArrowRightLeft className="w-5 h-5 text-muted-foreground" />
             {mudanca ? "Editar Mudança" : "Registrar Nova Mudança"}
           </CardTitle>
           <CloseButton onClick={onCancel} />
@@ -102,9 +102,9 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
                   className={`flex-1 py-2 px-4 rounded-lg border-2 text-sm font-semibold transition-all ${
                     formData.origem === op
                       ? op === "Contratada"
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : "border-orange-600 bg-orange-600 text-white"
-                      : "border-gray-200 bg-white text-gray-600 hover:border-gray-400"
+                        ? "border-status-info bg-status-info text-white"
+                        : "border-ocre bg-ocre text-white"
+                      : "border-border bg-background text-muted-foreground hover:border-foreground/40"
                   }`}>
                   {op}
                 </button>
@@ -120,10 +120,10 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
                 <button key={cat} type="button" onClick={() => toggleCategoria(cat)}>
                   <Badge variant="outline" className={`cursor-pointer text-sm px-3 py-1 transition-all ${
                     categorias.includes(cat)
-                      ? cat === "Custo" ? "bg-green-600 text-white border-green-600"
-                        : cat === "Prazo" ? "bg-orange-500 text-white border-orange-500"
-                        : "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-gray-500 border-gray-300 hover:border-gray-500"
+                      ? cat === "Custo" ? "bg-status-positive text-white border-status-positive"
+                        : cat === "Prazo" ? "bg-status-attention text-white border-status-attention"
+                        : "bg-status-info text-white border-status-info"
+                      : "bg-background text-muted-foreground border-border hover:border-foreground/40"
                   }`}>
                     {categorias.includes(cat) ? "✓ " : ""}{cat}
                   </Badge>
@@ -140,22 +140,22 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
           </div>
 
           {/* Impactos - Antes vs Depois */}
-          <div className="p-4 bg-gray-50 rounded-lg border space-y-4">
-            <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Métricas de Impacto</p>
+          <div className="p-4 bg-muted rounded-lg border space-y-4">
+            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Métricas de Impacto</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Impacto Financeiro (R$)</Label>
                 <Input type="number" step="0.01" value={formData.impacto_custo}
                   onChange={(e) => set("impacto_custo", e.target.value)}
                   placeholder="+150000 ou -50000" />
-                <p className="text-xs text-gray-400">Positivo = acréscimo | Negativo = redução</p>
+                <p className="text-xs text-muted-foreground">Positivo = acréscimo | Negativo = redução</p>
               </div>
               <div className="space-y-2">
                 <Label>Impacto em Prazo (dias)</Label>
                 <Input type="number" value={formData.impacto_prazo_dias}
                   onChange={(e) => set("impacto_prazo_dias", e.target.value)}
                   placeholder="+15 ou -5" />
-                <p className="text-xs text-gray-400">Positivo = atraso | Negativo = antecipação</p>
+                <p className="text-xs text-muted-foreground">Positivo = atraso | Negativo = antecipação</p>
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
@@ -179,9 +179,9 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
                     type="checkbox"
                     checked={formData.impacto_escopo_tipo === "Adição"}
                     onChange={(e) => set("impacto_escopo_tipo", e.target.checked ? "Adição" : null)}
-                    className="w-4 h-4 rounded border-gray-300 accent-blue-600"
+                    className="w-4 h-4 rounded border-border accent-primary"
                   />
-                  <span className="text-sm font-medium text-gray-700">Adição</span>
+                  <span className="text-sm font-medium text-foreground">Adição</span>
                 </label>
               </div>
               <Textarea value={formData.impacto_escopo} onChange={(e) => set("impacto_escopo", e.target.value)}
@@ -201,9 +201,9 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Salvar Mudança"}
+            <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
+            <Button type="submit" variant="save" disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : mudanca ? "Salvar" : "Criar Mudança"}
             </Button>
           </div>
         </form>
