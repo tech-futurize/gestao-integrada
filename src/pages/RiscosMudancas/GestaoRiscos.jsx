@@ -409,6 +409,9 @@ export default function GestaoRiscos() {
             <DialogTitle>{editing ? "Editar Risco" : "Novo Risco"}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="col-span-2 pb-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Identificação</p>
+            </div>
             <div className="space-y-1">
               <Label>Código</Label>
               <Input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="RSC-001" />
@@ -423,6 +426,9 @@ export default function GestaoRiscos() {
             <div className="space-y-1 col-span-2">
               <Label>Descrição *</Label>
               <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={3} placeholder="Descrição do risco" />
+            </div>
+            <div className="col-span-2 border-t border-border pt-3 mt-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Avaliação</p>
             </div>
             <div className="space-y-1">
               <Label>Probabilidade (1-5)</Label>
@@ -451,6 +457,9 @@ export default function GestaoRiscos() {
             <div className="space-y-1 col-span-2">
               <Label>Plano de Resposta</Label>
               <Textarea value={form.plano_resposta} onChange={e => setForm(f => ({ ...f, plano_resposta: e.target.value }))} rows={2} placeholder="Ações de mitigação..." />
+            </div>
+            <div className="col-span-2 border-t border-border pt-3 mt-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Impactos no Projeto</p>
             </div>
             <div className="space-y-2 col-span-2">
               <Label>Dimensões de Impacto</Label>
@@ -503,7 +512,7 @@ export default function GestaoRiscos() {
           <DialogFooter className="gap-2">
             {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); setEditing(null); setForm(EMPTY_FORM); }}>Excluir</Button>}
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
               {editing ? "Salvar" : "Criar"}
             </Button>
           </DialogFooter>
