@@ -17,8 +17,13 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
 import PlanoAcao from "@/components/riscos/PlanoAcao";
-
-const CATEGORIAS = ["Técnico", "Financeiro", "Prazo", "Segurança", "Regulatório", "Ambiental", "Outros"];
+import {
+  CATEGORIAS_RISCO as CATEGORIAS,
+  CAT_COLORS,
+  SCORE_COLORS,
+  IMPACTO_DIMS,
+  getScoreLevel,
+} from "@/utils/riscosUtils";
 
 const RISCO_COLUMNS = [
   { key: "codigo",         label: "Código",                    type: "string" },
@@ -35,18 +40,6 @@ const RISCO_COLUMNS = [
 ];
 const STATUS_OPTIONS = ["Ativo", "Mitigado", "Encerrado"];
 
-const SCORE_COLORS = {
-  high: { color: "#ef4444", bg: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
-  medium: { color: "#f59e0b", bg: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  low: { color: "#16a34a", bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
-};
-
-function getScoreLevel(score) {
-  if (score >= 12) return "high";
-  if (score >= 6) return "medium";
-  return "low";
-}
-
 function ScoreBadge({ score }) {
   const level = getScoreLevel(score || 0);
   const cfg = SCORE_COLORS[level];
@@ -57,11 +50,6 @@ function ScoreBadge({ score }) {
     </span>
   );
 }
-
-const CAT_COLORS = {
-  "Técnico": "#3b82f6", "Financeiro": "#f59e0b", "Prazo": "#c35e1e",
-  "Segurança": "#ef4444", "Regulatório": "#8b5cf6", "Ambiental": "#10b981", "Outros": "#6b7280",
-};
 
 const EMPTY_FORM = {
   codigo: "", descricao: "", categoria: "", probabilidade: 3, impacto: 3,
@@ -254,6 +242,27 @@ export default function GestaoRiscos() {
         ))}
       </div>
 
+      {/* Cards por Categoria */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Por Categoria</p>
+        <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
+          {CATEGORIAS.map(cat => {
+            const count = riscos.filter(r => r.categoria === cat).length;
+            const color = CAT_COLORS[cat];
+            return (
+              <div
+                key={cat}
+                className="bg-card rounded-xl border border-border border-l-4 p-3"
+                style={{ borderLeftColor: color }}
+              >
+                <p className="text-xs text-muted-foreground">{cat}</p>
+                <p className="text-2xl font-bold" style={{ color }}>{count}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Matriz 5×5 */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
@@ -430,7 +439,7 @@ export default function GestaoRiscos() {
             <div className="space-y-2 col-span-2">
               <Label>Dimensões de Impacto</Label>
               <div className="flex gap-4 flex-wrap">
-                {["Escopo", "Prazo", "Valor"].map(dim => (
+                {IMPACTO_DIMS.map(dim => (
                   <label key={dim} className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={form.impactos.includes(dim)}
