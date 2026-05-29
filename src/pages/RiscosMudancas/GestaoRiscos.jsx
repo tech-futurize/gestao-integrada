@@ -17,13 +17,29 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
 import PlanoAcao from "@/components/riscos/PlanoAcao";
-import {
-  CATEGORIAS_RISCO as CATEGORIAS,
-  CAT_COLORS,
-  SCORE_COLORS,
-  IMPACTO_DIMS,
-  getScoreLevel,
-} from "@/utils/riscosUtils";
+
+const CATEGORIAS = ["Técnico", "Financeiro", "Prazo", "Segurança", "Regulatório", "Ambiental", "Outros"];
+const CAT_COLORS = {
+  "Técnico": "#3b82f6",
+  "Financeiro": "#f59e0b",
+  "Prazo": "#c35e1e",
+  "Segurança": "#ef4444",
+  "Regulatório": "#8b5cf6",
+  "Ambiental": "#10b981",
+  "Outros": "#6b7280",
+};
+const SCORE_COLORS = {
+  high: { bg: "bg-red-500/10", color: "#ef4444" },
+  medium: { bg: "bg-amber-500/10", color: "#f59e0b" },
+  low: { bg: "bg-green-500/10", color: "#10b981" },
+};
+const IMPACTO_DIMS = ["Escopo", "Prazo", "Valor"];
+
+const getScoreLevel = (score) => {
+  if (score >= 12) return "high";
+  if (score >= 6) return "medium";
+  return "low";
+};
 
 const RISCO_COLUMNS = [
   { key: "codigo",         label: "Código",                    type: "string" },
