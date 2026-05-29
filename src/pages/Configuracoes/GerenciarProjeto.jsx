@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Plus, Pencil, Trash2, CheckCircle, Clock, PauseCircle } from "lucide-react";
+import { Settings, Plus, Edit, Trash2, CheckCircle, Clock, PauseCircle } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
+import PageEmptyState from "@/components/ui/PageEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -98,8 +100,8 @@ export default function GerenciarProjeto() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" /> Novo Projeto
+          <Button size="sm" onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Plus className="w-4 h-4 mr-2" />Novo Projeto
           </Button>
         }
       />
@@ -107,12 +109,11 @@ export default function GerenciarProjeto() {
 
       {/* Cards de Projetos */}
       {isLoading ? (
-        <div className="text-center py-10 text-muted-foreground">Carregando projetos...</div>
-      ) : projetos.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <Settings className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>Nenhum projeto cadastrado. Crie o primeiro projeto.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
         </div>
+      ) : projetos.length === 0 ? (
+        <PageEmptyState icon={Settings} description="Nenhum projeto cadastrado. Crie o primeiro projeto." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {projetos.map(p => {
@@ -141,7 +142,7 @@ export default function GerenciarProjeto() {
                     Selecionar
                   </Button>
                   <button onClick={() => handleEdit(p)} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground">
-                    <Pencil className="w-4 h-4" />
+                    <Edit className="w-4 h-4" />
                   </button>
                   <button onClick={() => deleteMut.mutate(p.id)} className="p-2 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500">
                     <Trash2 className="w-4 h-4" />

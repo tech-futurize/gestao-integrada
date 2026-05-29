@@ -114,9 +114,9 @@ export default function MedicaoForm({ medicao, contratos, defaultContratoId, onS
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white">
-              {medicao ? "Atualizar" : "Criar Medição"}
+            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" variant="save">
+              {medicao ? "Salvar" : "Criar Medição"}
             </Button>
           </div>
         </form>

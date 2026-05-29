@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,11 +26,6 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast } from "@/components/ui/use-toast";
 
-const STATUS_COLORS = {
-  Registrado: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Em Análise": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  Resolvido: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-};
 
 const TIPO_COLORS = {
   "Ata de Reunião": "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
@@ -183,9 +179,8 @@ export default function Registros() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button onClick={() => { setEditingRegistro(null); setShowForm(true); }}>
-            <Plus className="w-5 h-5 mr-2" />
-            Novo Registro
+          <Button size="sm" onClick={() => { setEditingRegistro(null); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Plus className="w-4 h-4 mr-2" />Novo Registro
           </Button>
         }
       />
@@ -362,7 +357,6 @@ export default function Registros() {
                 ? format(new Date(inc.data_hora), "dd/MM/yyyy", { locale: ptBR })
                 : "—";
               const tipoClass = TIPO_COLORS[inc.tipo_registro] || "bg-muted text-muted-foreground";
-              const statusClass = STATUS_COLORS[inc.status] || "bg-muted text-muted-foreground";
 
               return (
                 <div
@@ -387,9 +381,7 @@ export default function Registros() {
                   {/* Card Footer */}
                   <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30 gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                      <Badge variant="outline" className={`text-xs ${statusClass} shrink-0`}>
-                        {inc.status || "—"}
-                      </Badge>
+                      <StatusBadge status={inc.status || "—"} className="shrink-0" />
                       {inc.responsavel_registro && (
                         <span className="text-xs text-muted-foreground truncate">
                           {inc.responsavel_registro}

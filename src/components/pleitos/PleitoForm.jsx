@@ -165,7 +165,7 @@ export default function PleitoForm({ pleito, onSubmit, onCancel, isSubmitting })
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="ghost" onClick={onCancel}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
             <Button type="submit" variant="save" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar Pleito"}
             </Button>

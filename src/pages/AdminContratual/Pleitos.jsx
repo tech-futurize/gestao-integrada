@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, FileSpreadsheet } from "lucide-react";
+import { Plus, FileText, Upload } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
 import { entities } from "@/api/supabaseEntities";
@@ -91,7 +91,7 @@ export default function Pleitos() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              <Upload className="w-4 h-4 mr-2" />
               Importar / Exportar
             </Button>
             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditingPleito(null); setShowForm(true); }}>

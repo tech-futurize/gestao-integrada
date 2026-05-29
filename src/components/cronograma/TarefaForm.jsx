@@ -202,7 +202,7 @@ export default function TarefaForm({ tarefa, tarefas, onSave, onClose }) {
 
         {/* Footer */}
         <div className="flex justify-end gap-2 px-6 py-4 bg-muted/30 border-t border-border">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
           <Button type="submit" variant="save" onClick={handleSubmit}>
             <Save className="w-3.5 h-3.5 mr-1" />
             {tarefa ? "Atualizar" : "Criar Tarefa"}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Pencil, Info, ChevronRight, ChevronLeft } from "lucide-react";
+import { Trash2, Edit, Info, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -207,7 +207,7 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                           className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
                           title={item.observacao || "Adicionar observação"}
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <Edit className="w-3.5 h-3.5" />
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-64 p-3" side="left">

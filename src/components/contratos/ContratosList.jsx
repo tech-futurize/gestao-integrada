@@ -4,13 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Edit, Eye, FileText } from "lucide-react";
 import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
-
-const STATUS_COLORS = {
-  "A iniciar":    "bg-muted text-muted-foreground",
-  "Em andamento": "bg-status-positive/15 text-status-positive",
-  "Concluído":    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Paralisado":   "bg-status-critical/15 text-status-critical",
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
@@ -39,7 +33,7 @@ export default function ContratosList({ contratos, isLoading, onSelect, onEdit, 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   {c.numero && <span className="text-xs font-mono text-muted-foreground">{c.numero}</span>}
-                  <Badge className={STATUS_COLORS[c.status] || "bg-muted text-muted-foreground"}>{c.status}</Badge>
+                  <StatusBadge status={c.status} />
                   {c.tipo && <Badge variant="outline" className="text-xs">{c.tipo}</Badge>}
                 </div>
                 <p className="font-semibold text-sm text-foreground">{c.objeto}</p>

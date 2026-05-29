@@ -2,16 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Plus } from "lucide-react";
 import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const fmt = (v) => v != null && v !== 0
   ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
   : "—";
-
-const STATUS_COLORS = {
-  Pendente:   "bg-status-attention/15 text-status-attention",
-  Assinado:   "bg-status-positive/15 text-status-positive",
-  Cancelado:  "bg-status-critical/15 text-status-critical",
-};
 
 const TIPO_COLORS = {
   Prazo:          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -39,7 +34,7 @@ export default function AditivosList({ aditivos, onAdd, onEdit, onDelete }) {
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   {a.numero && <span className="text-xs font-mono text-muted-foreground">{a.numero}</span>}
                   <Badge className={TIPO_COLORS[a.tipo] || "bg-muted text-muted-foreground"}>{a.tipo}</Badge>
-                  <Badge className={STATUS_COLORS[a.status] || "bg-muted text-muted-foreground"}>{a.status}</Badge>
+                  <StatusBadge status={a.status} />
                 </div>
                 {a.escopo_texto && (
                   <p className="text-xs text-muted-foreground truncate">{a.escopo_texto}</p>

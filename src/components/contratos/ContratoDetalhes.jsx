@@ -4,25 +4,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, DollarSign, Calendar, User, Building } from "lucide-react";
 import AditivosList from "@/components/contratos/AditivosList";
 import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
-
-const STATUS_COLORS = {
-  "A iniciar":    "bg-muted text-muted-foreground",
-  "Em andamento": "bg-status-positive/15 text-status-positive",
-  "Concluído":    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Paralisado":   "bg-status-critical/15 text-status-critical",
-};
-
-const MEDICAO_STATUS_COLORS = {
-  Elaboração:      "bg-muted text-muted-foreground",
-  "Em Revisão":    "bg-status-attention/15 text-status-attention",
-  "Em Aprovação":  "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  Aprovada:        "bg-status-positive/15 text-status-positive",
-  Paga:            "bg-status-positive/20 text-status-positive",
-  Rejeitada:       "bg-status-critical/15 text-status-critical",
-};
 
 function addDaysToDate(dateStr, days) {
   if (!dateStr || !days) return null;
@@ -65,7 +50,7 @@ export default function ContratoDetalhes({
             <div>
               <div className="flex items-center gap-2 mb-1">
                 {contrato.numero && <span className="text-xs font-mono text-muted-foreground">{contrato.numero}</span>}
-                <Badge className={STATUS_COLORS[contrato.status] || "bg-muted text-muted-foreground"}>{contrato.status}</Badge>
+                <StatusBadge status={contrato.status} />
               </div>
               <h3 className="text-xl font-bold text-foreground">{contrato.objeto}</h3>
             </div>
@@ -158,7 +143,7 @@ export default function ContratoDetalhes({
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-sm text-foreground">{fmt(m.valor)}</span>
-                    <Badge className={MEDICAO_STATUS_COLORS[m.status] || "bg-muted text-muted-foreground"}>{m.status}</Badge>
+                    <StatusBadge status={m.status} />
                   </div>
                 </div>
               ))}

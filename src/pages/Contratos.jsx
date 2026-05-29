@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, FileText, DollarSign, FileSpreadsheet } from "lucide-react";
+import { Plus, FileText, DollarSign, Upload } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import ContratosList from "@/components/contratos/ContratosList";
 import ContratoForm from "@/components/contratos/ContratoForm";
@@ -157,7 +157,7 @@ export default function Contratos() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
+              <Upload className="w-4 h-4 mr-2" />
               Importar / Exportar
             </Button>
             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditContrato(null); setShowContratoForm(true); }}>

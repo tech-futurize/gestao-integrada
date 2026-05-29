@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Plus, AlertCircle, FileSpreadsheet } from "lucide-react";
+import { CalendarRange, Plus, AlertCircle, Upload } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { cn } from "@/lib/utils";
 import { entities } from "@/api/supabaseEntities";
@@ -243,8 +243,8 @@ export default function SixWLAPage() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" />
-              Exportar
+              <Upload className="w-4 h-4 mr-2" />
+              Importar / Exportar
             </Button>
             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowModal(true)}>
               <Plus className="w-4 h-4 mr-2" />
@@ -258,10 +258,10 @@ export default function SixWLAPage() {
 
         {/* KPIs — Total + 6 categorias de restrição */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          <div className="rounded-xl border p-3 bg-[#102A44] border-[#1e4a6e]">
-            <p className="text-xs font-medium text-[#8195A9]">Total Atividades</p>
-            <p className="text-2xl font-bold text-[#26FFFF]">{kpis.total}</p>
-            <p className="text-[10px] text-[#8195A9]/70 mt-0.5">no 6WLA</p>
+          <div className="rounded-xl border p-3 bg-cobalt border-cobalt">
+            <p className="text-xs font-medium text-titanium">Total Atividades</p>
+            <p className="text-2xl font-bold text-cyan-electric">{kpis.total}</p>
+            <p className="text-[10px] text-titanium/70 mt-0.5">no 6WLA</p>
           </div>
           {RESTRICOES.map(r => {
             const isActive = filtroRestricao === r.key;

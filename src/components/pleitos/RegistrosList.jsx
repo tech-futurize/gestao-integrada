@@ -6,12 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Edit, AlertTriangle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-const statusColors = {
-  Registrado: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Em Análise": "bg-status-attention/15 text-status-attention",
-  Resolvido: "bg-status-positive/15 text-status-positive",
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const tipoColors = {
   "Ata de Reunião": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -106,7 +101,7 @@ export default function RegistrosList({ incidentes, casos, isLoading, onEdit, on
                       ) : <span className="text-muted-foreground text-sm">—</span>}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={statusColors[incidente.status]}>{incidente.status}</Badge>
+                      <StatusBadge status={incidente.status} />
                     </TableCell>
                     <TableCell>
                       {casoAssociado ? (

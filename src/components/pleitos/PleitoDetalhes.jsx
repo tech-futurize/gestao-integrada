@@ -7,15 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Edit, FileText, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-const statusColors = {
-  Aberto: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Em Análise": "bg-status-attention/15 text-status-attention",
-  "Em Andamento": "bg-status-attention/15 text-status-attention",
-  Resolvido: "bg-status-positive/15 text-status-positive",
-  Fechado: "bg-muted text-muted-foreground",
-  Cancelado: "bg-status-critical/15 text-status-critical",
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
   const { data: incidentes = [] } = useQuery({
@@ -34,7 +26,7 @@ export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
           <div className="flex-1">
             <h2 className="text-3xl font-bold text-foreground">{pleito.titulo}</h2>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <Badge className={statusColors[pleito.status]}>{pleito.status}</Badge>
+              <StatusBadge status={pleito.status} />
               {(pleito.categorias || []).map((cat) => (
                 <Badge key={cat} variant="outline" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">{cat}</Badge>
               ))}

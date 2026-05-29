@@ -149,7 +149,7 @@ export function ColumnMappingDialog({
           <Button
             onClick={() => onConfirm(mapping)}
             disabled={!canConfirm}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            variant="save"
           >
             Confirmar Mapeamento
           </Button>

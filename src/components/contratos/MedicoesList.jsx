@@ -5,17 +5,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Edit, ClipboardList } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
-
-const STATUS_COLORS = {
-  Elaboração: "bg-muted text-muted-foreground",
-  "Em Revisão": "bg-status-attention/15 text-status-attention",
-  "Em Aprovação": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  Aprovada: "bg-status-positive/15 text-status-positive",
-  Paga: "bg-status-positive/20 text-status-positive",
-  Rejeitada: "bg-status-critical/15 text-status-critical",
-};
 
 const STATUS_LIST = ["Elaboração", "Em Revisão", "Em Aprovação", "Aprovada", "Paga", "Rejeitada"];
 
@@ -42,7 +34,7 @@ export default function MedicoesList({ medicoes, contratos, isLoading, onEdit, o
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className="text-sm font-bold text-foreground">Medição {m.numero}</span>
-                    <Badge className={STATUS_COLORS[m.status] || "bg-muted text-muted-foreground"}>{m.status}</Badge>
+                    <StatusBadge status={m.status} />
                   </div>
                   {contrato && <p className="text-xs text-muted-foreground">{contrato.fornecedor} · {contrato.objeto?.substring(0, 50)}...</p>}
                   <p className="text-xs text-muted-foreground mt-1">Período: {m.periodo_inicio || "—"} → {m.periodo_fim || "—"}</p>

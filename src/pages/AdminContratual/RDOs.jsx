@@ -16,11 +16,11 @@ export default function RDOs() {
 
   const actions = selectedProjectId ? (
     <>
-      <Button variant="outline" size="sm" onClick={() => setShowImport(true)} className="gap-1.5">
-        <Upload className="w-4 h-4" />Importar
+      <Button variant="outline" size="sm" onClick={() => setShowImport(true)}>
+        <Upload className="w-4 h-4 mr-2" />Importar / Exportar
       </Button>
-      <Button size="sm" onClick={handleNew} className="gap-1.5">
-        <Plus className="w-4 h-4" />Novo RDO
+      <Button size="sm" onClick={handleNew} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Plus className="w-4 h-4 mr-2" />Novo RDO
       </Button>
     </>
   ) : null;

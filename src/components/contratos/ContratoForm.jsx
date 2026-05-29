@@ -140,9 +140,9 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="bg-brand-accent hover:opacity-90 text-white">
-              {contrato ? "Atualizar" : "Criar Contrato"}
+            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" variant="save">
+              {contrato ? "Salvar" : "Criar Contrato"}
             </Button>
           </div>
         </form>

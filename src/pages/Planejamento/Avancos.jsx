@@ -14,6 +14,7 @@ import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import PageHeader from "@/components/ui/PageHeader";
+import PageEmptyState from "@/components/ui/PageEmptyState";
 import AvancoTabela from "@/components/planejamento/AvancoTabela";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -176,19 +177,29 @@ export default function Avancos() {
 
   // ── Early returns ──
 
+  const pageWrapper = (content) => (
+    <div className="flex flex-col h-full">
+      <PageHeader
+        actions={
+          <Button size="sm" variant="outline" onClick={() => setShowImportExport(true)}>
+            <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+          </Button>
+        }
+      />
+      <div className="flex-1 overflow-auto p-6 space-y-6">{content}</div>
+    </div>
+  );
+
   if (!selectedProjectId) {
-    return (
-      <div className="py-20 text-center text-muted-foreground text-sm">
-        Selecione um projeto para ver o avanço físico.
-      </div>
+    return pageWrapper(
+      <PageEmptyState icon={Upload} description="Selecione um projeto na barra lateral para ver o avanço físico." />
     );
   }
 
   if (isPending) {
-    return (
-      <div className="space-y-4 p-4">
-        <Skeleton className="h-10 w-full rounded-xl" />
-        <div className="grid grid-cols-4 gap-4">
+    return pageWrapper(
+      <>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
         </div>
         <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -199,23 +210,21 @@ export default function Avancos() {
             </div>
           ))}
         </div>
-      </div>
+      </>
     );
   }
 
   if (isError) {
-    return (
-      <div className="py-20 text-center text-red-500 text-sm">
-        Erro ao carregar dados de avanço físico.
+    return pageWrapper(
+      <div className="rounded-xl border border-status-critical/30 bg-status-critical/10 px-4 py-3 text-sm text-status-critical">
+        Erro ao carregar dados de avanço físico. Tente recarregar a página.
       </div>
     );
   }
 
   if (!projeto?.data_inicio || !projeto?.data_fim_prevista) {
-    return (
-      <div className="py-20 text-center text-muted-foreground text-sm">
-        Configure as datas de início e fim do projeto em Configurações → Gerenciar Projeto.
-      </div>
+    return pageWrapper(
+      <PageEmptyState description="Configure as datas de início e fim do projeto em Configurações → Gerenciar Projeto." />
     );
   }
 
@@ -226,7 +235,7 @@ export default function Avancos() {
   const chartXKey = granularidade === "semana" ? "week" : "month";
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full">
       <PageHeader
         actions={
           <Button size="sm" variant="outline" onClick={() => setShowImportExport(true)}>
@@ -234,6 +243,7 @@ export default function Avancos() {
           </Button>
         }
       />
+      <div className="flex-1 overflow-auto p-6 space-y-6">
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -374,6 +384,7 @@ export default function Avancos() {
           projectId={selectedProjectId}
         />
       )}
+      </div>
     </div>
   );
 }

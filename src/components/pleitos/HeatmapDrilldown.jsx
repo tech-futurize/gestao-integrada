@@ -3,13 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { X, ArrowLeft, FileText, Calendar, User, AlertTriangle, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-const statusColors = {
-  Registrado: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  "Em Análise": "bg-status-attention/15 text-status-attention",
-  Resolvido: "bg-status-positive/15 text-status-positive",
-  Fechado: "bg-muted text-muted-foreground",
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const tipoColors = {
   "Ata de Reunião": "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
@@ -31,11 +25,7 @@ function RegistroDetalhe({ registro, onBack }) {
         <Badge variant="outline" className={tipoColors[registro.tipo_registro] || "bg-muted text-muted-foreground"}>
           {registro.tipo_registro}
         </Badge>
-        {registro.status && (
-          <Badge variant="outline" className={statusColors[registro.status] || "bg-muted text-muted-foreground"}>
-            {registro.status}
-          </Badge>
-        )}
+        {registro.status && <StatusBadge status={registro.status} />}
         {registro.responsabilidade && (
           <Badge variant="outline" className={registro.responsabilidade === "Contratada" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" : "bg-status-attention/15 text-status-attention"}>
             {registro.responsabilidade}
@@ -205,11 +195,7 @@ export default function HeatmapDrilldown({ open, onClose, category, weekLabel, r
                         <Badge variant="outline" className={`text-xs ${tipoColors[r.tipo_registro] || "bg-muted text-muted-foreground"}`}>
                           {r.tipo_registro}
                         </Badge>
-                        {r.status && (
-                          <Badge variant="outline" className={`text-xs ${statusColors[r.status] || ""}`}>
-                            {r.status}
-                          </Badge>
-                        )}
+                        {r.status && <StatusBadge status={r.status} />}
                       </div>
                       <p className="text-sm font-medium text-foreground line-clamp-2">
                         {r.tipo_registro === "RDO"

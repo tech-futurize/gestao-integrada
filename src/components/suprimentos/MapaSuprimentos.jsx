@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, AlertTriangle, X, Pencil, Trash2, FilterX } from "lucide-react";
+import { Search, AlertTriangle, X, Edit, Trash2, FilterX } from "lucide-react";
 import ItemMASForm from "./ItemMASForm";
 import FilterBar from "@/components/ui/FilterBar";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const PER_PAGE = 25;
 const FILTROS_STORAGE_KEY = "suprimentos-filtros";
@@ -21,13 +22,6 @@ const ETAPAS = [
   { key: "transporte",  label: "Transporte",  cor: "#4d7c0f" },
   { key: "fornecimento",label: "Fornecimento",cor: "#15803d" },
 ];
-
-const STATUS_COLORS = {
-  "A iniciar":   "bg-muted text-muted-foreground",
-  "Em andamento":"bg-status-attention/15 text-status-attention",
-  "Concluído":   "bg-status-positive/15 text-status-positive",
-  "Cancelado":   "bg-status-critical/15 text-status-critical",
-};
 
 const DEFAULT_ETAPAS = ETAPAS.map(e => ({ nome: e.label, status: "pendente", data: "" }));
 
@@ -442,13 +436,11 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                       ) : "—"}
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[item.status] || "bg-muted text-muted-foreground"}`}>
-                        {item.status}
-                      </span>
+                      <StatusBadge status={item.status} />
                     </td>
                     <td className="py-3 px-2">
                       <div className="flex gap-1">
-                        <button onClick={() => { setEditItem(item); setShowForm(true); }} className="p-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors" title="Editar"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => { setEditItem(item); setShowForm(true); }} className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
                         <button onClick={() => setDeleteTarget(item)} className="p-1 text-status-critical hover:bg-status-critical/10 rounded transition-colors" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </td>
