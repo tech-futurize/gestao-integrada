@@ -19,17 +19,23 @@ const STATUS_COLORS = {
   "Rejeitada": "#ef4444",
 };
 
-function KpiCard({ icon: Icon, label, value, sub, color }) {
+function KpiCard({ icon: Icon, label, value, sub, color, breakdown }) {
   return (
     <Card className="flex-1">
       <CardContent className="p-5 flex items-start gap-4">
         <div className="p-3 rounded-xl" style={{ backgroundColor: `${color}20` }}>
           <Icon className="w-6 h-6" style={{ color }} />
         </div>
-        <div>
+        <div className="flex-1">
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-0.5">{label}</p>
           <p className="text-2xl font-bold text-foreground">{value}</p>
           {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+          {breakdown && (
+            <div className="flex gap-3 mt-2 pt-2 border-t border-border/50">
+              <span className={`text-xs font-semibold ${breakdown.posColor}`}>{breakdown.posLabel}</span>
+              <span className={`text-xs font-semibold ${breakdown.negColor}`}>{breakdown.negLabel}</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -73,6 +79,30 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
     ? ((totalCusto / projeto.valor_contrato) * 100).toFixed(1)
     : null;
 
+  const totalPrazoPos = useMemo(() =>
+    mudancas.reduce((s, m) => (m.impacto_prazo_dias || 0) > 0 ? s + (m.impacto_prazo_dias || 0) : s, 0),
+  [mudancas]);
+
+  const totalPrazoNeg = useMemo(() =>
+    mudancas.reduce((s, m) => (m.impacto_prazo_dias || 0) < 0 ? s + (m.impacto_prazo_dias || 0) : s, 0),
+  [mudancas]);
+
+  const totalCustoPos = useMemo(() =>
+    mudancas.reduce((s, m) => (m.impacto_custo || 0) > 0 ? s + (m.impacto_custo || 0) : s, 0),
+  [mudancas]);
+
+  const totalCustoNeg = useMemo(() =>
+    mudancas.reduce((s, m) => (m.impacto_custo || 0) < 0 ? s + (m.impacto_custo || 0) : s, 0),
+  [mudancas]);
+
+  const escopoAdicoes = useMemo(() =>
+    mudancas.filter(m => m.impacto_escopo_tipo === "Adição").length,
+  [mudancas]);
+
+  const escopoReducoes = useMemo(() =>
+    mudancas.filter(m => m.impacto_escopo_tipo === "Redução").length,
+  [mudancas]);
+
   const scatterData = useMemo(() => {
     const comEscopo = mudancas.filter(m => m.categorias?.includes("Escopo"));
     const custos = comEscopo.map(m => Math.abs(m.impacto_custo || 0)).sort((a, b) => a - b);
@@ -113,24 +143,42 @@ export default function DashboardExecutivo({ mudancas = [], projeto }) {
       <div className="flex flex-col md:flex-row gap-4">
         <KpiCard
           icon={Clock}
-          label="Impacto de Prazo"
-          value={`${totalPrazo} dias`}
+          label="Desvio de Prazo"
+          value={`${totalPrazo > 0 ? "+" : ""}${totalPrazo} dias`}
           sub={pctPrazo ? `${pctPrazo}% do prazo do projeto` : "Projeto sem datas definidas"}
           color="#c35e1e"
+          breakdown={{
+            posLabel: `+${totalPrazoPos}d atrasos`,
+            posColor: "text-red-500",
+            negLabel: `${totalPrazoNeg}d antecipações`,
+            negColor: "text-green-600",
+          }}
         />
         <KpiCard
           icon={DollarSign}
-          label="Impacto de Custo"
+          label="Adição/Redução de Valor"
           value={`R$ ${totalCusto.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
           sub={pctCusto ? `${pctCusto}% do valor do contrato` : "Projeto sem valor definido"}
           color="#26405d"
+          breakdown={{
+            posLabel: `+R$${totalCustoPos.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} adições`,
+            posColor: "text-red-500",
+            negLabel: `-R$${Math.abs(totalCustoNeg).toLocaleString("pt-BR", { maximumFractionDigits: 0 })} reduções`,
+            negColor: "text-green-600",
+          }}
         />
         <KpiCard
           icon={Layers}
-          label="Alterações de Escopo"
+          label="Adição/Redução de Escopo"
           value={totalEscopo}
           sub={`de ${mudancas.length} mudança(s) total`}
           color="#00a49a"
+          breakdown={{
+            posLabel: `${escopoAdicoes} adições`,
+            posColor: "text-blue-600",
+            negLabel: `${escopoReducoes} reduções`,
+            negColor: "text-amber-600",
+          }}
         />
       </div>
 
