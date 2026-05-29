@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { navigationGroups } from "@/lib/navigationConfig";
+import { usePermissionsMap } from "@/hooks/usePermissions";
 import SidebarUserMenu from "@/components/ui/SidebarUserMenu";
 import {
   ChevronDown,
@@ -27,6 +28,14 @@ export default function Layout({ children }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [openModule, setOpenModule] = useState(null);
   const { selectedProjectId, setSelectedProjectId } = useProject();
+  const { permissoes, isAdmin } = usePermissionsMap();
+
+  const visibleNavigation = useMemo(() => {
+    if (isAdmin) return navigationGroups;
+    return navigationGroups.filter(group =>
+      permissoes[group.title]?.view === true
+    );
+  }, [permissoes, isAdmin]);
 
   const { data: projetosDB = [] } = useQuery({
     queryKey: ["projetos"],
@@ -130,7 +139,7 @@ export default function Layout({ children }) {
                 Navegação
               </p>
             )}
-            {navigationGroups.map((group) => {
+            {visibleNavigation.map((group) => {
               const isParentActive = group.children?.some(c => c.path === location.pathname);
 
               if (!group.children) {

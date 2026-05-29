@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { usePermissions, usePermissionsLoading } from '@/hooks/usePermissions';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -50,6 +51,9 @@ const GerenciarProjeto     = lazy(() => import('./pages/Configuracoes/GerenciarP
 const AgenteConfig         = lazy(() => import('./pages/Configuracoes/AgenteConfig'));
 const Usuarios             = lazy(() => import('./pages/Configuracoes/Usuarios'));
 
+// Acesso restrito
+const SemPermissao         = lazy(() => import('./pages/SemPermissao'));
+
 // ── Setup ──────────────────────────────────────────────────────────────────────
 setupIframeMessaging();
 
@@ -66,22 +70,27 @@ const LayoutWrapper = ({ children }) => {
   return <Layout>{children}</Layout>;
 };
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, modulo, acao = 'view' }) => {
   const { isAuthenticated, isLoadingAuth } = useAuth();
+  const permsLoading = usePermissionsLoading();
+  const canAccess = usePermissions(modulo, acao);
 
-  if (isLoadingAuth) {
+  if (isLoadingAuth || (modulo && permsLoading)) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
       </div>
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (modulo && !canAccess) return <Navigate to="/sem-permissao" replace />;
+
+  return children;
 };
 
-const wrap = (Component) => (
-  <ProtectedRoute>
+const wrap = (Component, modulo) => (
+  <ProtectedRoute modulo={modulo}>
     <LayoutWrapper>
       <Suspense fallback={<PageLoader />}>
         <Component />
@@ -98,42 +107,45 @@ const AuthenticatedApp = () => (
     <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
     {/* Dashboard */}
-    <Route path="/dashboard" element={wrap(Dashboard)} />
+    <Route path="/dashboard" element={wrap(Dashboard, 'Dashboard')} />
 
     {/* Engenharia */}
-    <Route path="/engenharia/documentos" element={wrap(Documentos)} />
+    <Route path="/engenharia/documentos" element={wrap(Documentos, 'Engenharia')} />
 
     {/* Suprimentos */}
-    <Route path="/suprimentos/mapa" element={wrap(MapaSuprimentos)} />
+    <Route path="/suprimentos/mapa" element={wrap(MapaSuprimentos, 'Suprimentos')} />
 
     {/* Planejamento */}
-    <Route path="/planejamento/cronograma" element={wrap(PlanejamentoCronograma)} />
-    <Route path="/planejamento/6wla" element={wrap(SixWLAPage)} />
-    <Route path="/planejamento/take-off" element={wrap(TakeOff)} />
-    <Route path="/planejamento/histograma" element={wrap(PlanejamentoHistograma)} />
-    <Route path="/planejamento/avancos" element={wrap(Avancos)} />
+    <Route path="/planejamento/cronograma" element={wrap(PlanejamentoCronograma, 'Planejamento')} />
+    <Route path="/planejamento/6wla" element={wrap(SixWLAPage, 'Planejamento')} />
+    <Route path="/planejamento/take-off" element={wrap(TakeOff, 'Planejamento')} />
+    <Route path="/planejamento/histograma" element={wrap(PlanejamentoHistograma, 'Planejamento')} />
+    <Route path="/planejamento/avancos" element={wrap(Avancos, 'Planejamento')} />
 
     {/* Adm. Contratual */}
-    <Route path="/admin-contratual/contratos" element={wrap(Contratos)} />
-    <Route path="/admin-contratual/medicoes" element={wrap(Medicoes)} />
-    <Route path="/admin-contratual/rdos" element={wrap(RDOs)} />
-    <Route path="/admin-contratual/registros" element={wrap(Registros)} />
-    <Route path="/admin-contratual/pleitos" element={wrap(AdminPleitos)} />
-    <Route path="/admin-contratual/mapa-impacto" element={wrap(MapaImpacto)} />
+    <Route path="/admin-contratual/contratos" element={wrap(Contratos, 'Adm. Contratual')} />
+    <Route path="/admin-contratual/medicoes" element={wrap(Medicoes, 'Adm. Contratual')} />
+    <Route path="/admin-contratual/rdos" element={wrap(RDOs, 'Adm. Contratual')} />
+    <Route path="/admin-contratual/registros" element={wrap(Registros, 'Adm. Contratual')} />
+    <Route path="/admin-contratual/pleitos" element={wrap(AdminPleitos, 'Adm. Contratual')} />
+    <Route path="/admin-contratual/mapa-impacto" element={wrap(MapaImpacto, 'Adm. Contratual')} />
 
     {/* Riscos e Mudanças */}
-    <Route path="/riscos-mudancas/gestao-riscos" element={wrap(GestaoRiscos)} />
-    <Route path="/riscos-mudancas/gestao-mudancas" element={wrap(GestaoMudancas)} />
+    <Route path="/riscos-mudancas/gestao-riscos" element={wrap(GestaoRiscos, 'Riscos e Mudanças')} />
+    <Route path="/riscos-mudancas/gestao-mudancas" element={wrap(GestaoMudancas, 'Riscos e Mudanças')} />
 
     {/* Agentes de IA */}
-    <Route path="/agentes/executor" element={wrap(ExecutorDados)} />
-    <Route path="/agentes/analista-negocio" element={wrap(AnalistaNegocio)} />
-    <Route path="/agentes/analista-contratual" element={wrap(AnalistaContratual)} />
+    <Route path="/agentes/executor" element={wrap(ExecutorDados, 'Agentes de IA')} />
+    <Route path="/agentes/analista-negocio" element={wrap(AnalistaNegocio, 'Agentes de IA')} />
+    <Route path="/agentes/analista-contratual" element={wrap(AnalistaContratual, 'Agentes de IA')} />
 
     {/* Configurações */}
-    <Route path="/configuracoes/gerenciar-projeto" element={wrap(GerenciarProjeto)} />
-    <Route path="/configuracoes/agente-config" element={wrap(AgenteConfig)} />
-    <Route path="/configuracoes/usuarios" element={wrap(Usuarios)} />
+    <Route path="/configuracoes/gerenciar-projeto" element={wrap(GerenciarProjeto, 'Configurações')} />
+    <Route path="/configuracoes/agente-config" element={wrap(AgenteConfig, 'Configurações')} />
+    <Route path="/configuracoes/usuarios" element={wrap(Usuarios, 'Configurações')} />
+
+    {/* Sem permissão — sem modulo, acessível a qualquer autenticado */}
+    <Route path="/sem-permissao" element={wrap(SemPermissao)} />
 
     {/* Redirects das rotas legadas */}
     <Route path="/Dashboard" element={<Navigate to="/dashboard" replace />} />
