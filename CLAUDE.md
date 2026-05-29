@@ -102,6 +102,10 @@ Ao remover qualquer módulo da UI, verificar obrigatoriamente estes 6 pontos ant
 
 Documentação de módulos será escrita ao final de cada milestone, após `/audit` aprovado — não durante o desenvolvimento ativo (L008).
 
+### Ciclo de Audit (obrigatório)
+
+Quando `/audit` declara "Verified & Polished", o mesmo ciclo **deve** incluir um `git commit` com hash registrado antes de fechar o módulo — nunca deixar trabalho auditado sem commitar para a próxima sessão (L011).
+
 ### Lições Aprendidas (obrigatório)
 
 - Todo agente que encontrar um **erro relevante** registra uma entrada em `/docs/LESSONS.md` antes de fechar a task.

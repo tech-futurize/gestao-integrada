@@ -218,6 +218,22 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L011 — Auto-heal de audit exige commit imediato para não perder trabalho validado
+
+- **Data:** 2026-05-29
+- **Agente:** Tester
+- **Milestone:** M13 — Riscos e Mudanças
+- **Categoria:** Processo / DX
+- **Gravidade:** Baixa
+- **Contexto em 1 frase:** O processo auto-healed corrigiu `isError`, `AlertDialog` e `KPICard` no audit de M13, mas os ~20 arquivos ficaram sem commit por uma sessão inteira.
+- **Erro observado:** Audit declarado "Verified & Polished 9/10" com trabalho não commitado — em caso de reversão acidental ou crash, todas as correções do auto-heal seriam perdidas silenciosamente.
+- **Causa raiz:** O ciclo audit → auto-heal → "Verified" não inclui explicitamente um passo de commit. O agente considerou o trabalho concluído ao atingir o score, sem fechar o loop com git.
+- **Correção aplicada:** Commit postergado para a sessão seguinte no `/milestone-close`.
+- **Como evitar em projetos futuros:** Incluir `git commit` como etapa obrigatória **no mesmo ciclo** em que `/audit` declara "Verified". Regra: não fechar o ciclo de audit sem o hash do commit no registro.
+- **Referências:** `PLAN.md — M13`, `src/components/riscos/PlanoAcao.jsx`, `src/pages/RiscosMudancas/`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:

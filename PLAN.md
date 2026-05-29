@@ -16,6 +16,7 @@
 - **Gantt Virtualização** *(2026-05-18)* — `useVirtualizer`, WBS sort numérico, `LEVEL_BG` hierárquico, scroll-sync 3 painéis, coluna "Nív" com badge colorido; favicon local substituído
 - **Auditoria de Organização** *(2026-05-27)* — Limpeza geral do repositório: 4 SQLs aplicados removidos da raiz, componentes órfãos dropados (rotinas/relacionamentos/ruídos), `Agents Mastra/` renomeado para `agents-mastra/` (sem espaço), `docs/skills/` removido, `.gitignore` corrigido (`.env.example` agora versionado), links quebrados de CONTRIBUTING.md corrigidos, `docs/temp/` removida, artefatos brainstorm ignorados.
 - **Login Page Redesign** *(2026-05-27)* — `Login.jsx` reescrito com split-screen (hero slideshow de obras industriais + painel de formulário); slideshow automático de 6 imagens com transição suave; branding FuturizeNow (logo mark + nome); cards de módulos do sistema; CSS animations em `index.css`; responsivo (hero oculto em `< 980px`).
+- **Backlog 2026-Q2 — Onda 2** *(2026-05-29)* — 15 módulos entregues e auditados (≥ 9/10): M0 Layout, M2 Engenharia, M3–M12 Suprimentos/Planejamento/Adm. Contratual/RDO/Registros/Mapa Impacto, **M13 Riscos & Mudanças** (impactos JSONB, PlanoAção, DashboardExecutivo), **M13-C Design Standardization** (StatusBadge/KPICard/SectionTitle criados; 30 divergências eliminadas), **M14 Permissões** (matriz módulo×ação, 7 perfis, `usePermissions`), **M15 IAs** (remark-gfm, prompts refinados). M1 Dashboard adiado por decisão do PO.
 
 ---
 
@@ -61,10 +62,10 @@ npm run dev
 
 ## Milestone Atual: Backlog 2026-Q2 — Onda 2
 
-**Status:** 🟢 M13 + M13-C Verified & Polished! · M15 pendente
-**Progresso:** ███████████████ 15/15 módulos fechados (M1 adiado · M13/M13-C auditados ✅)
+**Status:** ✅ **CONCLUÍDO** *(2026-05-29)* — M1 Dashboard adiado por decisão do PO; todos os demais módulos entregues e auditados.
+**Progresso:** ███████████████ 15/15 módulos fechados · M1 adiado (revisão futura dedicada)
 
-> **M13 audit:** Visual 9/10 · Funcional 9/10 · Trust 9/10 — [AUTO-HEALED] isError handling, KPICard padronizado, AlertDialog modal delete, KPIs em Pleitos.
+> **Pendente commit:** ~20 arquivos (M13 + M13-C) aguardam `git commit` — funcionalidade validada, build passando.
 
 **Objetivo:** Completar os módulos remanescentes do backlog consolidado pelo PO, fechando um módulo de cada vez com QA ≥ 9 antes de avançar.
 
@@ -268,7 +269,8 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 13 — RISCOS E MUDANÇAS
 
-> ✅ **Implementado — Pendente commit + /audit** *(2026-05-29)*
+> ✅ **Verified & Polished! — Audit score 9/10 — Visual 9 · Functional 9 · Trust 9** *(2026-05-29)*
+> Auto-healed: `isError` handling adicionado, `KPICard` padronizado, `AlertDialog` modal delete, KPIs em Pleitos.
 
 #### Gestão de Riscos
 - [x] Builder: Migrar `impacto` para `impactos JSONB` (seleção múltipla: Escopo, Prazo, Valor)
@@ -287,15 +289,15 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 - [x] Designer: Cards: Total Desvio Prazo (+/-), Adição/Redução Valor, Adição/Redução Escopo — `DashboardExecutivo.jsx`
 - [x] Designer: Padronizar botões Salvar como verdes
 - [x] Tester: Criar `docs/modulos/13-RiscosMudancas.md` *(2026-05-29)*
-- [ ] Tester: `/audit` ≥ 9 — pendente commit
+- [x] Tester: `/audit` ≥ 9 *(2026-05-29)* ✓
 
 ---
 
 ### Módulo 13-C — PADRONIZAÇÃO DE DESIGN (Auditoria Completa)
 
-> ✅ **Implementado — Pendente commit + /audit** *(2026-05-29)* · Lição [L010](/docs/LESSONS.md)
+> ✅ **Verified & Polished! — Audit score 9/10** *(2026-05-29)* · Lição [L010](/docs/LESSONS.md)
 
-> Auditoria identificou 30 divergências visuais em 23 páginas: 8+ mapas `STATUS_COLORS` redeclarados, 3 variantes de botão "Salvar", 4 variações de título de seção. Criados componentes-base compartilhados para eliminar a regressão.
+> Auditoria identificou 30 divergências visuais em 23 páginas: 8+ mapas `STATUS_COLORS` redeclarados, 3 variantes de botão "Salvar", 4 variações de título de seção. Criados componentes-base compartilhados.
 
 - [x] Designer: Criar `src/components/ui/StatusBadge.jsx` — badge de status centralizado com tokens de tema claro/escuro
 - [x] Designer: Criar `src/components/ui/KPICard.jsx` — card de KPI reutilizável
@@ -304,7 +306,7 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 - [x] Designer: Codificar convenção de botões (CTA/Salvar/Cancelar) em `docs/design/DESIGN.md`
 - [x] Builder: Aplicar novos componentes em contratos, pleitos, suprimentos, planejamento, cronograma
 - [x] Builder: Atualizar `tailwind.config.js` — token `status-info` adicionado
-- [ ] Tester: `/audit` — score ≥ 9 nos módulos impactados (contratos, pleitos, planejamento)
+- [x] Tester: `/audit` — score ≥ 9 nos módulos impactados *(2026-05-29)* ✓
 
 ---
 
@@ -340,8 +342,23 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ---
 
-## Ordem de Execução
+## Ordem de Execução (Onda 2 — Concluída)
 
-1. Dashboard → 2. Engenharia → 3. Suprimentos → 4. Cronograma → 5. 6WLA → 6. Take-Off → 7. Histograma → 8. Avanço → 9. Adm. Contratual → 10. RDO → 11. Registros → 12. Mapa de Impacto → 13. Riscos e Mudanças → 13-C. Design Standardization → 14. Config/Permissões → 15. IAs
+~~1. Dashboard → 2. Engenharia → 3. Suprimentos → 4. Cronograma → 5. 6WLA → 6. Take-Off → 7. Histograma → 8. Avanço → 9. Adm. Contratual → 10. RDO → 11. Registros → 12. Mapa de Impacto → 13. Riscos e Mudanças → 13-C. Design Standardization → 14. Config/Permissões → 15. IAs~~
 
 > **Critério de avanço:** `/audit` ≥ 9 + `npm run build` sem erros + doc do módulo atualizada (`docs/modulos/<X>.md`).
+
+---
+
+## Próximo Milestone: Onda 3 — Finalização & Polimento
+
+**Status:** 🔲 Não iniciado · aguarda aprovação do PO
+
+**Escopo preliminar (a confirmar com `/brainstorming`):**
+
+1. **Commit do backlog:** Commitar os ~20 arquivos pendentes de M13 + M13-C (funcionalidade já auditada).
+2. **M1 — Dashboard Review:** Widgets, reorganização e KPIs globais — revisão dedicada após todos os módulos prontos (decisão PO 2026-05-27).
+3. **Camada 3 Permissões — Expansão:** Aplicar `usePermissions` nos módulos restantes (Contratos, Pleitos, RDO, Registros, Planejamento, Riscos, Mudanças, IAs).
+4. **Deploy:** Definir hospedagem (Render / Fly.io / Railway) + pipeline CI/CD + domínio.
+
+> **Gate:** `/brainstorming` com PO antes de iniciar qualquer item desta onda.
