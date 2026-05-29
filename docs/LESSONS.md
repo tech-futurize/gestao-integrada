@@ -202,6 +202,22 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L010 — Criar componentes-base antes de escalar padrão por módulo
+
+- **Data:** 2026-05-29
+- **Agente:** Designer
+- **Milestone:** M13-C — Padronização de Design (Auditoria Completa)
+- **Categoria:** UI/UX
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** Auditoria identificou 30 divergências visuais entre 23 páginas porque cada módulo reimplementou cabeçalhos, badges, KPIs e modais à mão.
+- **Erro observado:** 8+ mapas `STATUS_COLORS` redeclarados por arquivo; 3 variantes de botão "Salvar"; 4 variações de título de seção; 10 overlays de modal manuais — tudo paralelo, tudo divergente.
+- **Causa raiz:** Nenhum componente-base compartilhado foi criado antes de escalar o sistema. Cada módulo foi desenvolvido isoladamente e copiou o padrão do anterior com pequenas variações não documentadas.
+- **Correção aplicada:** Criados `StatusBadge`, `KPICard` e `SectionTitle`; token `status-info` adicionado; todos os mapas de status migrados para o componente central; convenção de botões codificada em DESIGN.md.
+- **Como evitar em projetos futuros:** Antes de criar o segundo módulo, definir e documentar: (1) o componente de badge de status; (2) o card de KPI; (3) o título de seção; (4) a convenção de botões (CTA/Salvar/Cancelar). Esses 4 itens eliminam ~80% das divergências de design. Adicionar checklist no `/milestone-start`.
+- **Referências:** `docs/design/DESIGN.md`, `src/components/ui/StatusBadge.jsx`, `src/components/ui/KPICard.jsx`, `src/components/ui/SectionTitle.jsx`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:

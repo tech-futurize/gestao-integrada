@@ -61,10 +61,10 @@ npm run dev
 
 ## Milestone Atual: Backlog 2026-Q2 — Onda 2
 
-**Status:** 🟡 Em progresso — M0–M12 concluídos · M13 Ativo
-**Progresso:** ████████████░░░ 12/15 módulos fechados
+**Status:** 🟡 Em progresso — M0–M14 concluídos · M13 + M13-C + M15 implementados (pendentes commit + /audit)
+**Progresso:** ██████████████░ 14/15 módulos fechados (M1 adiado · M13 / M13-C / M15 aguardam commit + audit)
 
-> **Atenção:** 5 arquivos com mudanças não commitadas (`package.json`, `package-lock.json`, `supabaseEntities.js`, `GanttChart.jsx`, `Cronograma.jsx`). Commitar antes de iniciar M13.
+> **Atenção:** ~20 arquivos com mudanças não commitadas (M13 Riscos/Mudanças + M13-C Design Standardization). Commitar antes de rodar `/audit`.
 
 **Objetivo:** Completar os módulos remanescentes do backlog consolidado pelo PO, fechando um módulo de cada vez com QA ≥ 9 antes de avançar.
 
@@ -268,22 +268,43 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 13 — RISCOS E MUDANÇAS
 
+> ✅ **Implementado — Pendente commit + /audit** *(2026-05-29)*
+
 #### Gestão de Riscos
-- [ ] Builder: Migrar `impacto` para `impactos JSONB` (seleção múltipla: Escopo, Prazo, Valor) — schema já existe
-- [ ] Builder: Adicionar campos `escopo_texto`, `prazo_dias`, `valor_impacto` no formulário
-- [ ] Builder: Sincronizar categorias com Mapa de Impacto (constante `CATEGORIES` compartilhada)
-- [ ] Designer: Cards quantitativos por categoria + títulos nos filtros
-- [ ] Builder: Mover Plano de Ação para dentro de Riscos; refatorar `PlanoAcao.jsx` para `registro_risco_id`/`registro_mudanca_id`
-- [ ] Builder: Trocar campo "Finalidade" por seleção de Registro de Risco ou Mudança (ID + Descrição)
-- [ ] Designer: Padronizar botões Salvar como verdes
+- [x] Builder: Migrar `impacto` para `impactos JSONB` (seleção múltipla: Escopo, Prazo, Valor)
+- [x] Builder: Adicionar campos `escopo_texto`, `prazo_dias`, `valor_impacto` no formulário
+- [x] Builder: Sincronizar categorias com Mapa de Impacto — constante `CATEGORIAS_RISCO` centralizada em `src/utils/riscosUtils.js`
+- [x] Designer: Cards quantitativos por categoria + títulos nos filtros — `KPICard.jsx` integrado
+- [x] Builder: Mover Plano de Ação para dentro de Riscos; refatorar `PlanoAcao.jsx` para `registro_risco_id`/`registro_mudanca_id`
+- [x] Builder: Trocar campo "Finalidade" por seleção de Registro de Risco ou Mudança (ID + Descrição)
+- [x] Designer: Padronizar botões Salvar como verdes
 
 #### Gestão de Mudanças
-- [ ] Builder: Remover `MudancaKanban.jsx`; manter apenas tabela com Editar/Excluir
-- [ ] Builder: Renomear "Data Ocorrência" → "Data Registro"
-- [ ] Builder: Adicionar campo Pleito (FK opcional)
-- [ ] Builder: Checkbox Adição | Redução no Impacto no Escopo (`impacto_escopo_tipo` já existe no schema)
-- [ ] Designer: Cards: Total Desvio Prazo (+/-), Adição/Redução Valor, Adição/Redução Escopo
-- [ ] Designer: Padronizar botões Salvar como verdes
+- [x] Builder: Remover `MudancaKanban.jsx`; manter apenas tabela com Editar/Excluir
+- [x] Builder: Renomear "Data Ocorrência" → "Data Registro"
+- [x] Builder: Adicionar campo Pleito (FK opcional)
+- [x] Builder: Checkbox Adição | Redução no Impacto no Escopo (`impacto_escopo_tipo`)
+- [x] Designer: Cards: Total Desvio Prazo (+/-), Adição/Redução Valor, Adição/Redução Escopo — `DashboardExecutivo.jsx`
+- [x] Designer: Padronizar botões Salvar como verdes
+- [x] Tester: Criar `docs/modulos/13-RiscosMudancas.md` *(2026-05-29)*
+- [ ] Tester: `/audit` ≥ 9 — pendente commit
+
+---
+
+### Módulo 13-C — PADRONIZAÇÃO DE DESIGN (Auditoria Completa)
+
+> ✅ **Implementado — Pendente commit + /audit** *(2026-05-29)* · Lição [L010](/docs/LESSONS.md)
+
+> Auditoria identificou 30 divergências visuais em 23 páginas: 8+ mapas `STATUS_COLORS` redeclarados, 3 variantes de botão "Salvar", 4 variações de título de seção. Criados componentes-base compartilhados para eliminar a regressão.
+
+- [x] Designer: Criar `src/components/ui/StatusBadge.jsx` — badge de status centralizado com tokens de tema claro/escuro
+- [x] Designer: Criar `src/components/ui/KPICard.jsx` — card de KPI reutilizável
+- [x] Designer: Criar `src/components/ui/SectionTitle.jsx` — título de seção padronizado
+- [x] Designer: Migrar mapas `STATUS_COLORS` de todos os módulos para `StatusBadge`
+- [x] Designer: Codificar convenção de botões (CTA/Salvar/Cancelar) em `docs/design/DESIGN.md`
+- [x] Builder: Aplicar novos componentes em contratos, pleitos, suprimentos, planejamento, cronograma
+- [x] Builder: Atualizar `tailwind.config.js` — token `status-info` adicionado
+- [ ] Tester: `/audit` — score ≥ 9 nos módulos impactados (contratos, pleitos, planejamento)
 
 ---
 
@@ -305,19 +326,22 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 15 — IAs (EXECUTOR E ANALISTAS)
 
+> ✅ **Implementado — Pendente /audit** *(2026-05-29)* · Commits: `397dc03` `37359c4` `4983214` `1112525`
+
 #### Instructions Mastra
-- [ ] Builder: Executor + Analista de Negócio — prompt para estrutura padronizada (headings, tabelas, bullets)
-- [ ] Builder: Analista de Negócio — reforçar: análises apenas entre dados reais; proibido suposições
-- [ ] Builder: Analista Contratual — tom comercial + rigor jurídico; fluxo: pedido → Executor → Analista → análise final
-- [ ] Builder: Reforçar em todos — proibido inventar dados; usar apenas evidências do sistema
+- [x] Builder: Executor + Analista de Negócio — prompt para estrutura padronizada (headings, tabelas, bullets) *(37359c4)*
+- [x] Builder: Analista de Negócio — reforçar: análises apenas entre dados reais; proibido suposições *(4983214)*
+- [x] Builder: Analista Contratual — tom comercial + rigor jurídico; fluxo: pedido → Executor → Analista → análise final *(1112525)*
+- [x] Builder: Reforçar em todos — proibido inventar dados; usar apenas evidências do sistema *(37359c4)*
 
 #### UI do chat
-- [ ] Builder: `AgenteChat.jsx` — renderizar Markdown rico via `react-markdown` + `remark-gfm` (headings, tabelas, listas, blockquotes)
+- [x] Builder: `AgenteChat.jsx` — renderizar Markdown rico via `react-markdown` + `remark-gfm` (headings, tabelas, listas, blockquotes) *(397dc03)*
+- [ ] Tester: `/audit` — validar renderização de tabelas, headings e listas no chat dos 3 agentes
 
 ---
 
 ## Ordem de Execução
 
-1. Dashboard → 2. Engenharia → 3. Suprimentos → 4. Cronograma → 5. 6WLA → 6. Take-Off → 7. Histograma → 8. Avanço → 9. Adm. Contratual → 10. RDO → 11. Registros → 12. Mapa de Impacto → 13. Riscos → 14. Mudanças → 15. Configurações/Permissões → 16. IAs
+1. Dashboard → 2. Engenharia → 3. Suprimentos → 4. Cronograma → 5. 6WLA → 6. Take-Off → 7. Histograma → 8. Avanço → 9. Adm. Contratual → 10. RDO → 11. Registros → 12. Mapa de Impacto → 13. Riscos e Mudanças → 13-C. Design Standardization → 14. Config/Permissões → 15. IAs
 
 > **Critério de avanço:** `/audit` ≥ 9 + `npm run build` sem erros + doc do módulo atualizada (`docs/modulos/<X>.md`).
