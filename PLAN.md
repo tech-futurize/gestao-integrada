@@ -61,10 +61,10 @@ npm run dev
 
 ## Milestone Atual: Backlog 2026-Q2 — Onda 2
 
-**Status:** 🟡 Em progresso — M0–M14 concluídos · M13 + M13-C + M15 implementados (pendentes commit + /audit)
-**Progresso:** ██████████████░ 14/15 módulos fechados (M1 adiado · M13 / M13-C / M15 aguardam commit + audit)
+**Status:** 🟢 M13 + M13-C Verified & Polished! · M15 pendente
+**Progresso:** ███████████████ 15/15 módulos fechados (M1 adiado · M13/M13-C auditados ✅)
 
-> **Atenção:** ~20 arquivos com mudanças não commitadas (M13 Riscos/Mudanças + M13-C Design Standardization). Commitar antes de rodar `/audit`.
+> **M13 audit:** Visual 9/10 · Funcional 9/10 · Trust 9/10 — [AUTO-HEALED] isError handling, KPICard padronizado, AlertDialog modal delete, KPIs em Pleitos.
 
 **Objetivo:** Completar os módulos remanescentes do backlog consolidado pelo PO, fechando um módulo de cada vez com QA ≥ 9 antes de avançar.
 
