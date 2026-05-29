@@ -1,16 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, Pencil, UserX } from "lucide-react";
+import { Users, Plus, Edit, UserX } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
+import PageEmptyState from "@/components/ui/PageEmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  PERFIL_OPTIONS,
+  PERFIL_SEED,
+  MODULES,
+  ACTIONS,
+  ACTION_LABELS,
+  DENY_ALL,
+} from "@/lib/permissionsConfig";
 
-const PERFIL_OPTIONS = ["Admin", "Gestor", "Visualizador"];
 const STATUS_OPTIONS = ["Ativo", "Inativo"];
 
 const STATUS_CFG = {
@@ -32,15 +42,39 @@ export default function Usuarios() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [permsMatrix, setPermsMatrix] = useState({});
 
   const { data: usuarios = [], isLoading, isError } = useQuery({
     queryKey: ["usuarios"],
     queryFn: () => entities.Usuario.list(),
   });
 
+  // Permissões do usuário em edição
+  const { data: userPermsRows = [] } = useQuery({
+    queryKey: ["permissoes-editor", editing?.id],
+    queryFn: () => entities.PermissaoUsuario.filter({ usuario_id: editing.id }),
+    enabled: !!editing?.id,
+  });
+
+  // Preenche a matriz quando as permissões do usuário em edição carregam
+  useEffect(() => {
+    if (!editing?.id) return;
+    const map = userPermsRows.reduce((acc, row) => {
+      acc[row.modulo] = { ...row.acoes };
+      return acc;
+    }, {});
+    const full = MODULES.reduce((acc, mod) => {
+      acc[mod] = map[mod] ?? { ...DENY_ALL };
+      return acc;
+    }, {});
+    setPermsMatrix(full);
+  }, [editing?.id, userPermsRows]);
+
+  // Criação de usuário
   const createMut = useMutation({
     mutationFn: (data) => entities.Usuario.create(data),
-    onSuccess: () => {
+    onSuccess: (newUser) => {
+      createPermsMut.mutate({ usuarioId: newUser.id, perfil: form.perfil });
       queryClient.invalidateQueries({ queryKey: ["usuarios"] });
       setShowForm(false);
       setEditing(null);
@@ -50,6 +84,23 @@ export default function Usuarios() {
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  // Seed automático de permissões ao criar usuário
+  const createPermsMut = useMutation({
+    mutationFn: async ({ usuarioId, perfil }) => {
+      const seed = PERFIL_SEED[perfil] ?? PERFIL_SEED["Visualizador"];
+      await Promise.all(
+        MODULES.map(modulo =>
+          entities.PermissaoUsuario.create({ usuario_id: usuarioId, modulo, acoes: seed[modulo] })
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["permissoes"] });
+    },
+    onError: (e) => toast({ title: "Erro ao criar permissões", description: e.message, variant: "destructive" }),
+  });
+
+  // Atualização de usuário
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => entities.Usuario.update(id, data),
     onSuccess: () => {
@@ -62,6 +113,7 @@ export default function Usuarios() {
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  // Desativação de usuário
   const deactivateMut = useMutation({
     mutationFn: (id) => entities.Usuario.update(id, { status: "Inativo" }),
     onSuccess: () => {
@@ -71,8 +123,68 @@ export default function Usuarios() {
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
+  // Salvar permissões editadas
+  const savePermsMut = useMutation({
+    mutationFn: async ({ usuarioId, matrix }) => {
+      const existing = await entities.PermissaoUsuario.filter({ usuario_id: usuarioId });
+      const existingMap = existing.reduce((acc, r) => {
+        acc[r.modulo] = r.id;
+        return acc;
+      }, {});
+      await Promise.all(
+        MODULES.map(modulo => {
+          const acoes = matrix[modulo] ?? { ...DENY_ALL };
+          const existingId = existingMap[modulo];
+          return existingId
+            ? entities.PermissaoUsuario.update(existingId, { acoes })
+            : entities.PermissaoUsuario.create({ usuario_id: usuarioId, modulo, acoes });
+        })
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["permissoes"] });
+      queryClient.invalidateQueries({ queryKey: ["permissoes-editor", editing?.id] });
+      toast({ variant: "success", description: "Permissões salvas." });
+    },
+    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+  });
+
+  // Helpers da matriz de permissões
+  const toggleCell = (modulo, acao) => {
+    setPermsMatrix(prev => ({
+      ...prev,
+      [modulo]: { ...prev[modulo], [acao]: !prev[modulo]?.[acao] },
+    }));
+  };
+
+  const toggleRow = (modulo) => {
+    const current = permsMatrix[modulo] ?? DENY_ALL;
+    const allTrue = ACTIONS.every(a => current[a]);
+    setPermsMatrix(prev => ({
+      ...prev,
+      [modulo]: ACTIONS.reduce((acc, a) => ({ ...acc, [a]: !allTrue }), {}),
+    }));
+  };
+
+  const toggleCol = (acao) => {
+    const allTrue = MODULES.every(m => permsMatrix[m]?.[acao]);
+    setPermsMatrix(prev => {
+      const next = { ...prev };
+      MODULES.forEach(m => {
+        next[m] = { ...(next[m] ?? DENY_ALL), [acao]: !allTrue };
+      });
+      return next;
+    });
+  };
+
+  const applyTemplate = (perfil) => {
+    const seed = PERFIL_SEED[perfil];
+    if (seed) setPermsMatrix({ ...seed });
+  };
+
   const handleEdit = (usuario) => {
     setEditing(usuario);
+    setPermsMatrix({});
     setForm({
       nome: usuario.nome || "",
       email: usuario.email || "",
@@ -99,22 +211,23 @@ export default function Usuarios() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }}>
-            <Plus className="w-4 h-4 mr-2" /> Novo Usuário
+          <Button size="sm" onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Plus className="w-4 h-4 mr-2" />Novo Usuário
           </Button>
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-6">
 
       {isError ? (
-        <div className="text-center py-10 text-red-500">Erro ao carregar usuários.</div>
-      ) : isLoading ? (
-        <div className="text-center py-10 text-muted-foreground">Carregando usuários...</div>
-      ) : usuarios.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p>Nenhum usuário cadastrado. Crie o primeiro usuário.</p>
+        <div className="rounded-xl border border-status-critical/30 bg-status-critical/10 px-4 py-3 text-sm text-status-critical">
+          Erro ao carregar usuários. Tente recarregar a página.
         </div>
+      ) : isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
+        </div>
+      ) : usuarios.length === 0 ? (
+        <PageEmptyState icon={Users} description="Nenhum usuário cadastrado. Crie o primeiro usuário." />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {usuarios.map((u) => {
@@ -146,7 +259,7 @@ export default function Usuarios() {
                     className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
                     title="Editar"
                   >
-                    <Pencil className="w-4 h-4" />
+                    <Edit className="w-4 h-4" />
                   </button>
                   {u.status !== "Inativo" && (
                     <button
@@ -165,7 +278,7 @@ export default function Usuarios() {
       )}
 
       <Dialog open={showForm} onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
           </DialogHeader>
@@ -214,7 +327,93 @@ export default function Usuarios() {
               </Select>
             </div>
           </div>
-          <DialogFooter className="gap-2">
+
+          {/* Seção de permissões — aparece apenas no modo de edição */}
+          {editing && (
+            <div className="mt-4 border-t pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-foreground">Permissões</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Aplicar perfil:</span>
+                  <Select onValueChange={applyTemplate}>
+                    <SelectTrigger className="h-7 w-36 text-xs">
+                      <SelectValue placeholder="Selecionar..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PERFIL_OPTIONS.map(p => (
+                        <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="text-left py-2 px-3 font-medium text-muted-foreground w-40">Módulo</th>
+                      {ACTIONS.map(acao => (
+                        <th
+                          key={acao}
+                          className="text-center py-2 px-3 font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none"
+                          title={`Marcar/desmarcar coluna "${ACTION_LABELS[acao]}"`}
+                          onClick={() => toggleCol(acao)}
+                        >
+                          {ACTION_LABELS[acao]}
+                        </th>
+                      ))}
+                      <th
+                        className="text-center py-2 px-3 font-medium text-muted-foreground/60 cursor-pointer hover:text-foreground select-none"
+                        title="Marcar/desmarcar linha inteira"
+                      >
+                        Tudo
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MODULES.map(modulo => (
+                      <tr
+                        key={modulo}
+                        className="border-t border-border hover:bg-muted/30 transition-colors"
+                      >
+                        <td className="py-2 px-3 font-medium text-foreground truncate max-w-[160px]">
+                          {modulo}
+                        </td>
+                        {ACTIONS.map(acao => (
+                          <td key={acao} className="text-center py-2 px-3">
+                            <Checkbox
+                              checked={permsMatrix[modulo]?.[acao] === true}
+                              onCheckedChange={() => toggleCell(modulo, acao)}
+                            />
+                          </td>
+                        ))}
+                        <td className="text-center py-2 px-3">
+                          <Checkbox
+                            checked={ACTIONS.every(a => permsMatrix[modulo]?.[a] === true)}
+                            onCheckedChange={() => toggleRow(modulo)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => savePermsMut.mutate({ usuarioId: editing.id, matrix: permsMatrix })}
+                  disabled={savePermsMut.isPending}
+                >
+                  {savePermsMut.isPending ? "Salvando..." : "Salvar Permissões"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 mt-2">
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
             <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
               {editing ? "Salvar" : "Criar Usuário"}
