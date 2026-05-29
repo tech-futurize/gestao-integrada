@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import PageHeader from "@/components/ui/PageHeader";
 import FilterBar from "@/components/ui/FilterBar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import {
   FileText, Plus, Upload, TrendingUp, AlertTriangle, AlertCircle,
-  Pencil, Trash2, History, ChevronUp, ChevronDown, ChevronsUpDown,
+  Edit, Trash2, History, ChevronUp, ChevronDown, ChevronsUpDown,
 } from "lucide-react";
 
 import { ETAPAS, DISCIPLINAS, DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
@@ -75,6 +76,7 @@ function ProgressBar({ pct }) {
 
 export default function Documentos() {
   const { selectedProjectId } = useProject();
+  const { create: canCreate, edit: canEdit, delete: canDelete } = usePermissions('Engenharia');
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -304,12 +306,16 @@ export default function Documentos() {
       <PageHeader
         actions={
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowImportExport(true)} disabled={importing}>
-              <Upload className="w-4 h-4 mr-2" />{importing ? "Importando..." : "Importar / Exportar"}
-            </Button>
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleOpenNew}>
-              <Plus className="w-4 h-4 mr-2" />Novo Documento
-            </Button>
+            {canCreate && (
+              <Button size="sm" variant="outline" onClick={() => setShowImportExport(true)} disabled={importing}>
+                <Upload className="w-4 h-4 mr-2" />{importing ? "Importando..." : "Importar / Exportar"}
+              </Button>
+            )}
+            {canCreate && (
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleOpenNew}>
+                <Plus className="w-4 h-4 mr-2" />Novo Documento
+              </Button>
+            )}
           </div>
         }
       />
@@ -428,20 +434,24 @@ export default function Documentos() {
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleOpenEdit(doc)}
-                            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                            title="Editar"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(doc)}
-                            className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
-                            title="Excluir"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(doc)}
+                              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                              title="Editar"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => setDeleteTarget(doc)}
+                              className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setHistoryDoc(doc)}
                             className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShoppingCart, Upload, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const EXPORT_COLUMNS = [
 export default function MapaSuprimentos() {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
+  const { create: canCreate } = usePermissions('Suprimentos');
   const { toast } = useToast();
   const [showImportExport, setShowImportExport] = useState(false);
   const [_importing, setImporting] = useState(false);
@@ -75,12 +77,16 @@ export default function MapaSuprimentos() {
 
   const headerActions = (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
-        <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
-      </Button>
-      <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setTriggerNew(t => t + 1)}>
-        <Plus className="w-4 h-4 mr-2" /> Novo Item
-      </Button>
+      {canCreate && (
+        <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+          <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+        </Button>
+      )}
+      {canCreate && (
+        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setTriggerNew(t => t + 1)}>
+          <Plus className="w-4 h-4 mr-2" /> Novo Item
+        </Button>
+      )}
     </div>
   );
 
