@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { KPICard } from "@/components/ui/KPICard";
 
 const emptyForm = {
   descricao: "",
@@ -51,7 +52,7 @@ export default function PlanoAcao({ projectId }) {
   const [vinculoTipo, setVinculoTipo] = useState("risco");
   const { toast } = useToast();
 
-  const { data: acoes = [], isLoading: isLoadingAcoes } = useQuery({
+  const { data: acoes = [], isPending: isLoadingAcoes, isError: isErrorAcoes } = useQuery({
     queryKey: ["acoes", projectId],
     queryFn: () => entities.Acao.filter({ projeto_id: projectId }),
     enabled: !!projectId,
@@ -132,33 +133,9 @@ export default function PlanoAcao({ projectId }) {
   return (
     <div className="space-y-6 p-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-status-info/30 bg-status-info/15">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Pendentes</p>
-              <p className="text-2xl font-bold text-status-info">{acoesPendentes}</p>
-            </div>
-            <Clock className="w-8 h-8 text-status-info" />
-          </CardContent>
-        </Card>
-        <Card className="border-status-positive/30 bg-status-positive/15">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Concluídas</p>
-              <p className="text-2xl font-bold text-status-positive">{acoesCompletas}</p>
-            </div>
-            <CheckCircle2 className="w-8 h-8 text-status-positive" />
-          </CardContent>
-        </Card>
-        <Card className="border-status-critical/30 bg-status-critical/15">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Atrasadas</p>
-              <p className="text-2xl font-bold text-status-critical">{acoesAtrasadas}</p>
-            </div>
-            <X className="w-8 h-8 text-status-critical" />
-          </CardContent>
-        </Card>
+        <KPICard label="Pendentes" value={acoesPendentes} icon={<Clock />} accent="text-status-attention" />
+        <KPICard label="Concluídas" value={acoesCompletas} icon={<CheckCircle2 />} accent="text-status-positive" />
+        <KPICard label="Atrasadas" value={acoesAtrasadas} icon={<X />} accent="text-status-critical" />
       </div>
 
       <Card className="border-0 shadow-md">
@@ -306,8 +283,11 @@ export default function PlanoAcao({ projectId }) {
             </form>
           )}
 
-          {isLoadingAcoes && <div className="text-center py-12 text-muted-foreground">Carregando...</div>}
-          {!isLoadingAcoes && acoes.length === 0 ? (
+          {isLoadingAcoes ? (
+            <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+          ) : isErrorAcoes ? (
+            <div className="text-center py-12 text-sm text-status-critical">Erro ao carregar ações. Tente recarregar a página.</div>
+          ) : acoes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">Nenhuma ação registrada. Clique em &quot;Nova Ação&quot; para começar.</div>
           ) : (
             <div className="overflow-x-auto">

@@ -75,7 +75,7 @@ export default function GestaoRiscos() {
   const [tab, setTab] = useState("riscos");
   const [deleteId, setDeleteId] = useState(null);
 
-  const { data: riscos = [], isLoading } = useQuery({
+  const { data: riscos = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["riscos", selectedProjectId],
     queryFn: () => entities.Risco.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -328,7 +328,8 @@ export default function GestaoRiscos() {
             </thead>
             <tbody>
               {isLoading && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
-              {!isLoading && filtered.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
+              {isError && <tr><td colSpan={10} className="py-10 text-center text-status-critical text-sm">Erro ao carregar riscos. Verifique sua conexão e tente novamente.</td></tr>}
+              {!isLoading && !isError && filtered.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
               {filtered.map((r, i) => {
                 const score = r.score || (r.probabilidade * r.impacto) || 0;
                 const statusColor = { Ativo: "text-amber-600", Mitigado: "text-blue-600", Encerrado: "text-green-600" }[r.status] || "";
@@ -484,7 +485,7 @@ export default function GestaoRiscos() {
             )}
           </div>
           <DialogFooter className="gap-2">
-            {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); setEditing(null); setForm(EMPTY_FORM); }}>Excluir</Button>}
+            {editing && <Button variant="destructive" onClick={() => { setDeleteId(editing.id); setShowForm(false); setEditing(null); setForm(EMPTY_FORM); }}>Excluir</Button>}
             <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
             <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
               {editing ? "Salvar" : "Criar"}

@@ -51,7 +51,7 @@ export default function GestaoMudancas() {
   const [filtros, setFiltros] = useState({});
   const [deleteId, setDeleteId] = useState(null);
 
-  const { data: mudancas = [], isLoading } = useQuery({
+  const { data: mudancas = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["mudancas_contratuais", selectedProjectId],
     queryFn: () => entities.MudancaContratual.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -177,7 +177,8 @@ export default function GestaoMudancas() {
             </thead>
             <tbody>
               {isLoading && <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
-              {!isLoading && filtered.length === 0 && (
+              {isError && <tr><td colSpan={8} className="py-10 text-center text-status-critical text-sm">Erro ao carregar mudanças. Verifique sua conexão e tente novamente.</td></tr>}
+              {!isLoading && !isError && filtered.length === 0 && (
                 <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">Nenhuma mudança encontrada</td></tr>
               )}
               {filtered.map((m, i) => (

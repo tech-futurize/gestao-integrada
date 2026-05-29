@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, Upload } from "lucide-react";
+import { Plus, FileText, Upload, AlertTriangle } from "lucide-react";
+import { KPICard } from "@/components/ui/KPICard";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
 import { entities } from "@/api/supabaseEntities";
@@ -32,7 +33,7 @@ export default function Pleitos() {
   const [editingPleito, setEditingPleito] = useState(null);
   const [selectedPleito, setSelectedPleito] = useState(null);
 
-  const { data: casos = [], isLoading } = useQuery({
+  const { data: casos = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["pleitos", selectedProjectId],
     queryFn: () => entities.Pleito.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -103,6 +104,22 @@ export default function Pleitos() {
       />
       <div className="flex-1 overflow-auto p-6 md:p-8">
         <div className="max-w-7xl mx-auto space-y-4">
+
+          {/* KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <KPICard label="Total de Pleitos" value={casos.length} icon={<FileText />} />
+            <KPICard label="Abertos" value={casos.filter(c => c.status === "Aberto").length} accent="text-status-info" />
+            <KPICard label="Em Análise / Neg." value={casos.filter(c => ["Em Análise", "Em Andamento", "Em Negociação"].includes(c.status)).length} accent="text-status-attention" />
+            <KPICard label="Resolvidos" value={casos.filter(c => ["Resolvido", "Fechado"].includes(c.status)).length} accent="text-status-positive" />
+          </div>
+
+          {isError && (
+            <div className="rounded-xl border border-status-critical/30 bg-status-critical/10 px-4 py-3 text-sm text-status-critical flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              Erro ao carregar pleitos. Verifique sua conexão e tente novamente.
+            </div>
+          )}
+
           {showForm && (
             <PleitoForm
               key={editingPleito?.id || "new-pleito"}

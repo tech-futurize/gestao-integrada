@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { KPICard } from "@/components/ui/KPICard";
 import { Plus, FileText, DollarSign, Upload } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import ContratosList from "@/components/contratos/ContratosList";
@@ -169,22 +169,8 @@ export default function Contratos() {
       />
       <div className="flex-1 overflow-auto p-6 space-y-6">
         <div className="grid grid-cols-2 gap-4">
-          {[
-            { label: "Total Contratado", value: fmt(totalContratado), icon: DollarSign, color: "#26405d" },
-            { label: "Em Andamento", value: emAndamento, icon: FileText, color: "#c35e1e" },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label} className="bg-card shadow-sm">
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + "20" }}>
-                  <Icon className="w-5 h-5" style={{ color }} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                  <p className="text-lg font-bold text-foreground">{value}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <KPICard label="Total Contratado" value={fmt(totalContratado)} icon={<DollarSign />} />
+          <KPICard label="Em Andamento" value={emAndamento} icon={<FileText />} />
         </div>
 
         {selectedContrato ? (
