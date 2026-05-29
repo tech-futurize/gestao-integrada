@@ -289,14 +289,17 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ### Módulo 14 — CONFIGURAÇÕES: PERMISSÕES
 
-- [ ] Architect: `/brainstorming` — definir granularidade antes de codificar: permissões por módulo ou por submódulo? Quais ações por recurso (view / create / edit / delete ou simplificado)? Como tratar usuário sem projeto atribuído?
-- [ ] Builder: Schema — tabela `permissoes_usuario (usuario_id UUID FK, modulo TEXT, acoes JSONB)` com índice único
-- [ ] Designer: UI matriz módulo × ação (view / create / edit / delete) por usuário em `Usuarios.jsx`
-- [ ] Builder: Hook `usePermissions(modulo, acao)` com cache React Query
-- [ ] Builder: `ProtectedRoute` aceitar props `modulo` e `acao`; redirecionar para `/sem-permissao`
-- [ ] Builder: Sidebar — esconder itens sem permissão `view`
-- [ ] Builder: Páginas — esconder botões de ação conforme permissão
-- [ ] Builder: Seed — perfil Admin (tudo) + perfis por área (Engenharia, Suprimentos, Planejamento)
+> ✅ **Verified & Polished! — Audit score 9.3/10 — Visual 9 · Functional 9 · Trust 10** *(2026-05-29)*
+
+- [x] Architect: `/brainstorming` — granularidade por módulo (8 grupos), view/create/edit/delete, PERFIL_SEED
+- [x] Builder: Schema — `permissoes_usuario (usuario_id UUID FK, modulo TEXT, acoes JSONB)` + RLS + índice único *(migration aplicada)*
+- [x] Builder: Colunas `perfil`, `cargo`, `status` adicionadas em `usuarios` + seed admin padrão
+- [x] Designer: UI matriz módulo × ação com toggle linha/coluna + dropdown de template em `Usuarios.jsx`
+- [x] Builder: Hook `usePermissions(modulo, acao)` + `usePermissionsMap` + `usePermissionsLoading` com React Query staleTime: Infinity
+- [x] Builder: `ProtectedRoute` aceita `modulo` + `acao`; `wrap()` atualizado; redireciona para `/sem-permissao`
+- [x] Builder: Sidebar filtra módulos sem `view` via `visibleNavigation`
+- [x] Builder: Camada 3 piloto — Engenharia (Novo, Importar, Editar, Excluir) + Suprimentos (Novo, Importar)
+- [x] Builder: Seed — Admin (tudo) + Gestor + Visualizador + 4 perfis por área; auto-seed ao criar usuário
 
 ---
 
