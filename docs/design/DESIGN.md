@@ -35,30 +35,35 @@
 - **Texto secundário/muted:** `hsl(210 19% 58%)` — titânio
 - **Bordas:** `hsl(210 40% 20%)` — borda escura azulada
 
-> **Sidebar:** sempre Cobalt `#102A44` em ambos os modos — definida em `--sidebar-background` fixo no `:root` e `.dark`.
+> **Sidebar:** dark mode usa Cobalt `#102A44`. Light mode usa azul claro `hsl(210 58% 93%)` — visualmente mais suave sobre fundo claro. Apenas o item ativo usa `cobalt` via `bg-sidebar-primary` nos dois temas.
 
 ### Tokens de Status (Semânticos)
 
 | Token | Light HSL | Dark HSL | Uso |
 |-------|-----------|----------|-----|
-| `status-positive` | `142 76% 36%` | `142 76% 46%` | Genérico para sucesso em badges shadcn |
-| `status-attention` | `40 43% 46%` | `40 43% 56%` | Em andamento, desvios aceitáveis |
-| `status-critical` | `342 67% 57%` | `342 67% 67%` | Alertas, atrasos críticos |
-| `status-neutral` | `210 19% 58%` | `210 19% 58%` | Inativo, fechado, neutro |
+| `status-positive` | `142 76% 36%` | `142 76% 46%` | Concluído, resolvido, aprovado |
+| `status-attention` | `40 43% 46%` | `40 43% 56%` | Em andamento, análise, desvios aceitáveis |
+| `status-critical` | `342 67% 57%` | `342 67% 67%` | Cancelado, bloqueado, crítico |
+| `status-neutral` | `210 19% 58%` | `210 19% 58%` | Fechado, encerrado, inativo |
+| `status-info` | `214 89% 52%` | `214 89% 62%` | Aberto, ativo, novo — substitui `bg-blue-100` hardcoded |
 
-> **Nota:** Badges da tela de Pleitos usam os tokens diretos da paleta (`cyan-electric`, `ocre`, `magenta`) para manter o efeito neon do manual de identidade visual.
+> **Uso:** sempre via `bg-status-*/15 text-status-* border-status-*/30`. Use o componente `StatusBadge` — não declare mapas de cor inline por arquivo.
 
 ### Tokens de Ação (Botões — Milestone Refatoração 2026-Q2)
 
-| Contexto | Cor | Classe Tailwind | Hex |
-|----------|-----|-----------------|-----|
-| **Botão "Novo X"** (CTA de criação no PageHeader) | Verde Esmeralda | `bg-emerald-600 hover:bg-emerald-700 text-white` + `size="sm"` | `#059669` |
-| **Botão Salvar** (em formulários) | Verde Esmeralda | `bg-emerald-600 hover:bg-emerald-700` | `#059669` |
-| **Botão "Importar / Exportar"** (no PageHeader) | Outline | `variant="outline"` + `size="sm"` + ícone `Upload` | — |
-| Botão Cancelar / Secundário | Cinza | `bg-slate-200 hover:bg-slate-300 text-slate-700` | — |
-| Botão Destrutivo (Excluir) | Vermelho | `bg-red-600 hover:bg-red-700` | `#dc2626` |
+| Contexto | Variante/Classe | Ícone | Size |
+|----------|----------------|-------|------|
+| **Botão "Novo X"** (CTA de criação no PageHeader) | `className="bg-emerald-600 hover:bg-emerald-700 text-white"` | `<Plus className="w-4 h-4 mr-2" />` | `size="sm"` |
+| **Botão Salvar** (em formulários/modais) | `variant="save"` (token `bg-action-save`) | — | `size="default"` |
+| **Botão "Importar / Exportar"** (no PageHeader) | `variant="outline"` | `<Upload className="w-4 h-4 mr-2" />` | `size="sm"` |
+| **Botão Cancelar** (em modais) | `variant="outline"` | — | `size="default"` |
+| **Botão Destrutivo** (Excluir) | `variant="destructive"` | `<Trash2 />` | `size="sm"` ou `size="icon"` |
 
-> **Regra:** O ciano (`#26FFFF`) NÃO é usado em botões de ação primária; é reservado para items ativos na sidebar e indicadores de presença.
+> **Regras:**
+> - Botão "Salvar" **sempre** usa `variant="save"` — nunca `bg-emerald-600`, `bg-green-600` ou `bg-brand-accent` em formulários.
+> - Ordem no rodapé de modais: `Cancelar` (esquerda) → `Salvar/Criar` (direita).
+> - Rótulo: modo criação → "Criar"; modo edição → "Salvar".
+> - O ciano (`#26FFFF`) NÃO é usado em botões de ação — é reservado para itens ativos da sidebar.
 
 ### Paleta do Mapa de Impacto (Heatmap)
 
@@ -81,11 +86,11 @@ Escala de intensidade (baixa → alta):
 
 | Contexto | Fonte | Pesos | Uso |
 |----------|-------|-------|-----|
-| Títulos, KPIs, interface | `Inter` | 400, 600, 700 | Headings, valores numéricos grandes, labels de KPI |
-| Corpo, menus, formulários | `Montserrat` | 400, 600, 700 | Padrão do sistema (font-sans) |
-| Tabelas, dados técnicos | `Roboto` | 400, 500 | Blocos de informação técnica densa |
+| Corpo, menus, formulários, KPIs | `Montserrat` | 400, 600, 700 | **`font-sans` do Tailwind** — fonte padrão de toda a UI |
+| Títulos de destaque | `Inter` | 600, 700 | Carregada via Google Fonts; não é token Tailwind — aplicar com `style={{ fontFamily: "Inter" }}` quando necessário |
+| Dados técnicos densos | `Roboto` | 400, 500 | Idem Inter — carregada via Google Fonts, não é token Tailwind |
 
-> Fontes carregadas via Google Fonts em `index.html`. Ordem de fallback: Inter → Montserrat → sans-serif.
+> **Fonte de verdade:** `tailwind.config.js` define `fontFamily.sans = ['Montserrat', 'sans-serif']`. Inter e Roboto são carregadas via Google Fonts no `index.html` mas NÃO são tokens Tailwind — usar `font-sans` resolve Montserrat em todo o sistema.
 
 ---
 
@@ -95,10 +100,13 @@ Escala de intensidade (baixa → alta):
 
 | Elemento | Valor | Classe |
 |----------|-------|--------|
-| Cards, painéis, modais grandes | `16px` | `rounded-2xl` |
-| Inputs, selects, dropdowns | `12px` | `rounded-xl` |
-| Botões e tags padrão | `8px` | `rounded-lg` |
-| Tags pill (status/prioridade) | `20px` | `rounded-full` |
+| Cards, painéis | `12px` | `rounded-xl` — padrão do componente `Card` |
+| Modais (`DialogContent`) | `8px` | `rounded-lg` — padrão shadcn |
+| Inputs, selects, dropdowns | `8px` | `rounded-md` |
+| Botões | `6px` | `rounded-md` — padrão do componente `Button` |
+| Tags pill (status/prioridade) | `full` | `rounded-full` |
+
+> **Nota:** O `--radius` base do tema é `0.5rem` (8px). `card.jsx` usa `rounded-xl` (12px) explicitamente. Não usar `rounded-2xl` (16px) — diverge do componente oficial.
 
 ### Sombras
 
@@ -112,26 +120,31 @@ Escala de intensidade (baixa → alta):
 
 ## 4. Componentes
 
-### Badges de Status e Prioridade (Neon Pill)
+### Badges de Status (`StatusBadge`)
 
-Padrão visual: fundo semi-transparente (~10–15% de opacidade) + borda 1px sólida + texto colorido + glow neon nos estados ativos.
+**Localização:** [src/components/ui/StatusBadge.jsx](../../src/components/ui/StatusBadge.jsx)
+
+Use sempre o `StatusBadge` — **não declare mapas de cor de status inline por arquivo**.
 
 ```jsx
-// Status Aberto — exemplo de uso
-<span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold
-                 bg-cyan-electric/10 border border-cyan-electric text-cyan-electric"
-      style={{ boxShadow: "0 0 8px rgba(38,255,255,0.45)" }}>
-  Aberto
-</span>
+import { StatusBadge } from "@/components/ui/StatusBadge";
+
+// Resolução automática pelo label:
+<StatusBadge status="Aberto" />
+<StatusBadge status="Em Andamento" />
+<StatusBadge status="Concluído" />
+
+// Tom forçado (para labels fora do mapa padrão):
+<StatusBadge status="Aguardando Aprovação" tone="attention" />
 ```
 
-| Estado | Classes Tailwind | Glow |
-|--------|-----------------|------|
-| Aberto / Ativo | `bg-cyan-electric/10 border-cyan-electric text-cyan-electric` | `rgba(38,255,255,0.45)` |
-| Em Análise / Em Andamento | `bg-ocre/10 border-ocre text-ocre` | `rgba(169,135,67,0.45)` |
-| Cancelado / Crítico | `bg-magenta/10 border-magenta text-magenta` | `rgba(219,73,116,0.45)` |
-| Resolvido | `bg-cyan-electric/[0.07] border-cyan-electric/40 text-cyan-electric` | — |
-| Fechado / Neutro | `bg-titanium/10 border-titanium/40 text-titanium` | — |
+| Estado | Tom | Classes aplicadas |
+|--------|-----|-------------------|
+| Aberto / Ativo / Novo / Pendente | `info` | `bg-status-info/15 text-status-info border-status-info/30` |
+| Em Análise / Em Andamento / Planejado | `attention` | `bg-status-attention/15 text-status-attention border-status-attention/30` |
+| Cancelado / Crítico / Atrasado / Rejeitado | `critical` | `bg-status-critical/15 text-status-critical border-status-critical/30` |
+| Concluído / Resolvido / Aprovado / Pago | `positive` | `bg-status-positive/15 text-status-positive border-status-positive/30` |
+| Fechado / Encerrado / Inativo / Arquivado | `neutral` | `bg-status-neutral/15 text-status-neutral border-status-neutral/30` |
 
 ### AnimatedThemeToggler
 
@@ -160,25 +173,50 @@ import { AnimatedThemeToggler } from "@/components/ui/AnimatedThemeToggler";
 - **Outline:** `border border-border text-foreground hover:bg-accent`
 - **Ghost:** `text-foreground hover:bg-muted`
 
-### Sidebar (sempre dark)
+### Sidebar
 
-A sidebar usa as variáveis `--sidebar-*` que mantêm Cobalt em ambos os modos:
+A sidebar usa as variáveis `--sidebar-*`. O fundo varia por tema:
 
-- **Fundo:** `bg-sidebar` (`#102A44` Cobalt)
-- **Item ativo:** `bg-sidebar-primary text-sidebar-primary-foreground` + glow ciano
+- **Fundo dark:** `bg-sidebar` → Cobalt `#102A44`
+- **Fundo light:** `bg-sidebar` → azul claro `hsl(210 58% 93%)`
+- **Item ativo (ambos):** `bg-sidebar-primary text-sidebar-primary-foreground` — Cobalt (light) / Ciano (dark)
 - **Item inativo:** `text-sidebar-foreground hover:bg-sidebar-accent`
 - **Bordas internas:** `border-sidebar-border`
 
-### KPI Cards
+### KPI Cards (`KPICard`)
+
+**Localização:** [src/components/ui/KPICard.jsx](../../src/components/ui/KPICard.jsx)
+
+Use sempre o `KPICard` — **não reconstrua divs manuais com sombra e padding ad-hoc**.
 
 ```jsx
-<div className="flex-1 bg-card border border-border rounded-xl p-4">
-  <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Label</span>
-  <span className="text-3xl font-bold text-cyan-electric" style={{ textShadow: "0 0 14px rgba(38,255,255,0.6)" }}>
-    42
-  </span>
-</div>
+import { KPICard } from "@/components/ui/KPICard";
+import { AlertCircle } from "lucide-react";
+
+<KPICard label="Total" value={42} />
+<KPICard label="Críticos" value={7} accent="text-status-critical" icon={<AlertCircle />} />
+<KPICard label="Concluídos" value="R$ 1.2M" accent="text-status-positive" />
 ```
+
+| Prop | Tipo | Descrição |
+|------|------|-----------|
+| `label` | `string` | Rótulo da métrica (texto superior) |
+| `value` | `string \| number` | Valor principal (texto `text-2xl font-bold`) |
+| `icon` | `ReactNode` | Ícone opcional à direita do label |
+| `accent` | `string` | Classe Tailwind de cor para o valor (padrão: `text-foreground`) |
+
+### Título de Seção (`SectionTitle`)
+
+**Localização:** [src/components/ui/SectionTitle.jsx](../../src/components/ui/SectionTitle.jsx)
+
+```jsx
+import { SectionTitle } from "@/components/ui/SectionTitle";
+
+<SectionTitle>Detalhes do Contrato</SectionTitle>
+<SectionTitle as="h2" className="mb-4">Histórico</SectionTitle>
+```
+
+Aplica: `text-xs font-semibold uppercase tracking-wide text-muted-foreground`.
 
 ---
 
@@ -311,12 +349,12 @@ Toda página do sistema deve seguir esta estrutura, nesta ordem:
 
 ### Tokens utilizados
 
-| Token | Valor | Papel |
-|-------|-------|-------|
-| `bg-sidebar` | Cobalt `#102A44` | Fundo da barra — idêntico em light e dark |
-| `border-sidebar-border` | borda azulada | Linha inferior separadora |
-| `text-sidebar-foreground` | branco azulado | Texto do breadcrumb e ícones |
-| `text-sidebar-foreground/50` | 50% opacidade | Separador `›` do breadcrumb |
+| Token | Light | Dark | Papel |
+|-------|-------|------|-------|
+| `bg-sidebar` | azul claro `hsl(210 58% 93%)` | Cobalt `#102A44` | Fundo da barra |
+| `border-sidebar-border` | borda azulada suave | borda escura | Linha inferior separadora |
+| `text-sidebar-foreground` | cobalt escuro | branco azulado | Texto do breadcrumb e ícones |
+| `text-sidebar-foreground/50` | 50% opacidade | 50% opacidade | Separador `›` do breadcrumb |
 
 ### Exemplos de uso
 

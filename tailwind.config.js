@@ -29,6 +29,7 @@ module.exports = {
   				attention: 'hsl(var(--status-attention))',
   				critical: 'hsl(var(--status-critical))',
   				neutral: 'hsl(var(--status-neutral))',
+  				info: 'hsl(var(--status-info))',
   			},
   			heatmap: {
   				'0': 'hsl(var(--heatmap-0))',
@@ -113,7 +114,7 @@ module.exports = {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
   safelist: [
     'text-brand-primary', 'text-brand-accent', 'bg-brand-primary', 'bg-brand-accent',
     'border-brand-primary', 'border-brand-accent', 'bg-brand-bg',
@@ -127,9 +128,11 @@ module.exports = {
     'bg-status-attention', 'text-status-attention', 'border-status-attention',
     'bg-status-critical', 'text-status-critical', 'border-status-critical',
     'bg-status-neutral', 'text-status-neutral', 'border-status-neutral',
-    'bg-status-positive/15', 'bg-status-attention/15', 'bg-status-critical/15', 'bg-status-neutral/15',
-    'bg-status-positive/30', 'bg-status-attention/30', 'bg-status-critical/30', 'bg-status-neutral/30',
-    'text-status-positive', 'text-status-attention', 'text-status-critical', 'text-status-neutral',
+    'bg-status-info', 'text-status-info', 'border-status-info',
+    'bg-status-positive/15', 'bg-status-attention/15', 'bg-status-critical/15', 'bg-status-neutral/15', 'bg-status-info/15',
+    'bg-status-positive/30', 'bg-status-attention/30', 'bg-status-critical/30', 'bg-status-neutral/30', 'bg-status-info/30',
+    'text-status-positive', 'text-status-attention', 'text-status-critical', 'text-status-neutral', 'text-status-info',
+    'border-status-info/30',
     'bg-action-save', 'hover:bg-action-save/90', 'text-action-save-foreground',
     'bg-heatmap-0', 'bg-heatmap-1', 'bg-heatmap-2', 'bg-heatmap-3', 'bg-heatmap-4', 'bg-heatmap-5',
     'text-heatmap-0', 'text-heatmap-1', 'text-heatmap-2', 'text-heatmap-3', 'text-heatmap-4', 'text-heatmap-5',

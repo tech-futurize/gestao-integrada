@@ -51,6 +51,7 @@
     --status-attention: 40 43% 46%;
     --status-critical: 342 67% 57%;
     --status-neutral: 210 19% 58%;
+    --status-info: 214 89% 52%;
 
     /* Action tokens — botões de ação primária */
     --action-save: 160 84% 39%;
@@ -122,6 +123,7 @@
     --status-attention: 40 43% 56%;
     --status-critical: 342 67% 67%;
     --status-neutral: 210 19% 58%;
+    --status-info: 214 89% 62%;
 
     /* Action tokens — dark mode */
     --action-save: 160 84% 44%;
