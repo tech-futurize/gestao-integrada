@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Loader2, User, Layers, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useProject } from "@/lib/ProjectContext";
 import { useQuery } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
@@ -196,7 +197,7 @@ export default function AgenteChat({ agent }) {
               {msg.role === "assistant" ? (
                 msg.content ? (
                   <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                   </div>
                 ) : (
                   <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
