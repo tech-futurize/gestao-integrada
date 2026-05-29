@@ -31,14 +31,23 @@ CREATE POLICY "Autenticados têm acesso total" ON permissoes_usuario
   WITH CHECK (auth.uid() IS NOT NULL);
 
 -- ─────────────────────────────────────────────
--- 3. Garantir usuário Admin padrão na tabela usuarios
---    (ON CONFLICT garante idempotência)
+-- 3. Adicionar colunas que Usuarios.jsx usa (o schema base só tinha 'papel')
 -- ─────────────────────────────────────────────
-INSERT INTO usuarios (nome, email, cargo, perfil, status)
+ALTER TABLE usuarios
+  ADD COLUMN IF NOT EXISTS perfil TEXT DEFAULT 'Visualizador',
+  ADD COLUMN IF NOT EXISTS cargo  TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'Ativo';
+
+-- Copiar papel → perfil para usuários existentes
+UPDATE usuarios SET perfil = papel WHERE papel IS NOT NULL AND perfil = 'Visualizador';
+
+-- ─────────────────────────────────────────────
+-- 4. Garantir usuário Admin padrão
+-- ─────────────────────────────────────────────
+INSERT INTO usuarios (nome, email, perfil, status)
 VALUES (
   'Administrador',
   'vinicius.groth@futurizenow.com.br',
-  'Administrador do Sistema',
   'Admin',
   'Ativo'
 )
@@ -47,7 +56,7 @@ ON CONFLICT (email) DO UPDATE
       status = 'Ativo';
 
 -- ─────────────────────────────────────────────
--- 4. Seed: Admin → acesso total a todos os módulos
+-- 5. Seed: Admin → acesso total a todos os módulos
 -- ─────────────────────────────────────────────
 INSERT INTO permissoes_usuario (usuario_id, modulo, acoes)
 SELECT u.id, m.modulo, '{"view":true,"create":true,"edit":true,"delete":true}'::jsonb
@@ -62,7 +71,7 @@ ON CONFLICT (usuario_id, modulo) DO UPDATE
       updated_at = now();
 
 -- ─────────────────────────────────────────────
--- 5. Seed: Gestor → tudo, exceto Configurações (só view)
+-- 6. Seed: Gestor → tudo, exceto Configurações (só view)
 -- ─────────────────────────────────────────────
 INSERT INTO permissoes_usuario (usuario_id, modulo, acoes)
 SELECT u.id, m.modulo,
@@ -79,7 +88,7 @@ WHERE u.perfil = 'Gestor'
 ON CONFLICT (usuario_id, modulo) DO NOTHING;
 
 -- ─────────────────────────────────────────────
--- 6. Seed: demais perfis → view em tudo, sem Configurações
+-- 7. Seed: demais perfis → view em tudo, sem Configurações
 -- ─────────────────────────────────────────────
 INSERT INTO permissoes_usuario (usuario_id, modulo, acoes)
 SELECT u.id, m.modulo,
