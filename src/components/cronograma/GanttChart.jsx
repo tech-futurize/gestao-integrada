@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronRight, ChevronDown, Eye, AlertTriangle, Calendar } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -166,6 +166,8 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
   const ganttHdrInner = useRef(null);
   const extraInnerRef = useRef(null);
   const extraHdrInner = useRef(null);
+  // Ref da barra de scroll horizontal do Gantt — usada para auto-scroll ao mês atual
+  const ganttScrollRef = useRef(null);
 
   // ── Ordenação WBS hierárquica ──
   const sortedTarefas = useMemo(() => [...tarefas].sort(compareWbs), [tarefas]);
@@ -229,19 +231,23 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
 
     const hdrs = [];
     let cur = new Date(minD);
+    let effectiveMin = minD;
     if (zoom === "meses") {
       cur.setDate(1);
+      effectiveMin = new Date(cur);
       while (cur <= maxD) {
-        hdrs.push({ label: cur.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }), date: new Date(cur) });
+        const mShort = cur.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+        const mLabel = mShort.charAt(0).toUpperCase() + mShort.slice(1) + "/" + String(cur.getFullYear()).slice(-2);
+        hdrs.push({ label: mLabel, date: new Date(cur) });
         cur.setMonth(cur.getMonth() + 1);
       }
     } else {
       while (cur <= maxD) {
-        hdrs.push({ label: cur.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }), date: new Date(cur) });
+        hdrs.push({ label: cur.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }), date: new Date(cur) });
         cur.setDate(cur.getDate() + 7);
       }
     }
-    return { minDate: minD, headers: hdrs };
+    return { minDate: effectiveMin, headers: hdrs };
   }, [sortedTarefas, zoom]);
 
   const CELL_W     = zoom === "meses" ? 120 : 80;
@@ -263,6 +269,16 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
   };
 
   const todayLeft  = diffDays(minDate, today) * scale;
+
+  // Auto-scroll para o mês atual ao carregar dados ou trocar zoom
+  useEffect(() => {
+    if (!ganttScrollRef.current) return;
+    const offset = Math.max(0, todayLeft - CELL_W * 2);
+    ganttScrollRef.current.scrollLeft = offset;
+    if (ganttInnerRef.current) ganttInnerRef.current.style.transform = `translateX(-${offset}px)`;
+    if (ganttHdrInner.current) ganttHdrInner.current.style.transform = `translateX(-${offset}px)`;
+  }, [todayLeft, zoom]); // todayLeft muda quando dados carregam; zoom muda quando usuário alterna visão
+
   const isAtrasada = (t) => {
     if (t.tipo === "Resumo") return false;
     const e = parseDate(t.data_fim_planejada);
@@ -548,6 +564,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
           </div>
         )}
         <div
+          ref={ganttScrollRef}
           className="flex-1"
           style={{ overflowX: "auto" }}
           onScroll={handleGanttScroll}

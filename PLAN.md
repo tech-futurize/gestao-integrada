@@ -64,7 +64,7 @@ npm run dev
 **Status:** 🟡 Em progresso — M0–M12 concluídos · M13 Ativo
 **Progresso:** ████████████░░░ 12/15 módulos fechados
 
-> **Atenção:** 6 arquivos com mudanças não commitadas (GanttChart, ViewTarefaModal, Cronograma, SixWLA, Registros, GestaoRiscos). Commitar antes de iniciar novos módulos.
+> **Atenção:** 5 arquivos com mudanças não commitadas (`package.json`, `package-lock.json`, `supabaseEntities.js`, `GanttChart.jsx`, `Cronograma.jsx`). Commitar antes de iniciar M13.
 
 **Objetivo:** Completar os módulos remanescentes do backlog consolidado pelo PO, fechando um módulo de cada vez com QA ≥ 9 antes de avançar.
 

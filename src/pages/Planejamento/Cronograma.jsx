@@ -37,7 +37,7 @@ export default function Cronograma() {
 
   const [showImportExport, setShowImportExport] = useState(false);
   const [viewingTarefa, setViewingTarefa] = useState(null);
-  const [zoom, setZoom] = useState("semanas");
+  const [zoom, setZoom] = useState("meses");
   const [showBaseline, setShowBaseline] = useState(false);
   const [showCritical, setShowCritical] = useState(false);
   const [selectedLevels, setSelectedLevels] = useState(new Set());
