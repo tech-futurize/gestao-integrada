@@ -2,8 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Search, Link2 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDate } from "@/lib/dateUtils";
 
 const DISCIPLINAS = ["Mecânica", "Elétrica", "Estrutura Metálica", "Tubulação", "Instrumentação", "Civil", "Pintura"];
 
@@ -101,9 +100,9 @@ export function VincularAtividadesDialog({ open, onClose, onConfirm, tarefas = [
                     {t.disciplina && <span className="mr-2">{t.disciplina}</span>}
                     {inicio && fim && (
                       <span>
-                        {format(new Date(inicio + "T00:00:00"), "dd/MM/yy", { locale: ptBR })}
+                        {formatDate(inicio)}
                         {" → "}
-                        {format(new Date(fim + "T00:00:00"), "dd/MM/yy", { locale: ptBR })}
+                        {formatDate(fim)}
                       </span>
                     )}
                   </p>

@@ -8,8 +8,7 @@ import { useSortTable } from "@/hooks/useSortTable";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import FilterBar from "@/components/ui/FilterBar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDate } from "@/lib/dateUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { RDOForm } from "./RDOForm";
 import { RDODetail } from "./RDODetail";
@@ -190,7 +189,7 @@ export default function RDOModule({
               return (
                 <tr key={rdo.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3 text-xs whitespace-nowrap">
-                    {rdo.data ? format(new Date(rdo.data + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR }) : "—"}
+                    {formatDate(rdo.data) || "—"}
                   </td>
                   <td className="px-4 py-3 text-xs font-mono font-bold">{rdo.numero || "—"}</td>
                   <td className="px-4 py-3 text-xs max-w-24 truncate">{rdo.area || "—"}</td>

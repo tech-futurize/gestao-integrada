@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { BookOpen, Printer } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDate } from "@/lib/dateUtils";
 import { FormDialog } from "@/components/ui/FormDialog";
 
 function ClimaDisplay({ turno }) {
@@ -24,7 +23,7 @@ export function RDODetail({ rdo, casos, tarefas, onClose }) {
     return t?.nome || t?.titulo || id;
   };
 
-  const title = `${rdo.numero || "RDO"} — ${rdo.data ? format(new Date(rdo.data + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR }) : ""}`;
+  const title = `${rdo.numero || "RDO"} — ${formatDate(rdo.data)}`;
 
   return (
     <FormDialog
