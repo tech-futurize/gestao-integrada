@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 // Convert a UTC ISO string from DB to YYYY-MM-DDTHH:MM in local (São Paulo) time
 // datetime-local inputs reject values with timezone info — they need plain local time
 export function toDatetimeLocal(val) {
@@ -33,6 +35,34 @@ export function toDateInput(val) {
     if (isNaN(d.getTime())) return "";
     const pad = (n) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  } catch {
+    return "";
+  }
+}
+
+// Display date as "dd/MM/yy" (e.g. "02/06/25")
+export function formatDate(val) {
+  if (!val) return "";
+  try {
+    const d = typeof val === "string"
+      ? new Date(val.includes("T") ? val : val + "T00:00:00")
+      : val;
+    if (isNaN(d.getTime())) return "";
+    return format(d, "dd/MM/yy");
+  } catch {
+    return "";
+  }
+}
+
+// Display date+time as "dd/MM/yy HH:mm" (e.g. "02/06/25 14:30")
+export function formatDateTime(val) {
+  if (!val) return "";
+  try {
+    const d = typeof val === "string"
+      ? new Date(val.includes("T") ? val : val + "T00:00:00")
+      : val;
+    if (isNaN(d.getTime())) return "";
+    return format(d, "dd/MM/yy HH:mm");
   } catch {
     return "";
   }
