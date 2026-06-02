@@ -418,12 +418,11 @@ export default function GestaoRiscos() {
             );
           })}
           {/* Legenda de severidade */}
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-auto pt-3 border-t border-border">
+          <div className="flex flex-row gap-4 mt-auto pt-3 border-t border-border">
             {[
-              { label: "Crítico (≥12)",  bg: "bg-red-500/80"    },
-              { label: "Moderado (4–5)", bg: "bg-yellow-400/80" },
-              { label: "Alto (6–11)",    bg: "bg-amber-500/80"  },
-              { label: "Baixo (1–3)",   bg: "bg-green-500/80"  },
+              { label: "Baixo",  bg: "bg-green-500/80"  },
+              { label: "Médio",  bg: "bg-yellow-400/80" },
+              { label: "Alto",   bg: "bg-red-500/80"    },
             ].map(l => (
               <div key={l.label} className="flex items-center gap-1.5">
                 <div className={`w-3 h-3 rounded shrink-0 ${l.bg}`} />
