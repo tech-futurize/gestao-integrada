@@ -12,6 +12,7 @@ const TABLE_MAP = {
   Contrato: 'contratos',
   Medicao: 'medicoes',
   Aditivo: 'aditivos',
+  Faturamento: 'faturamentos',
   TarefaCronograma: 'atividades_cronograma',
   Commodity: 'commodities',
   LancamentoCommodity: 'lancamentos_commodity',
