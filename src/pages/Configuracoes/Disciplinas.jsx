@@ -4,6 +4,7 @@ import { Layers, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/FormDialog";
 import PageHeader from "@/components/ui/PageHeader";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { entities } from "@/api/supabaseEntities";
 
 const PALETTE = [
@@ -16,6 +17,7 @@ const EMPTY = { codigo: "", nome: "", cor: "#3b82f6" };
 
 export default function Disciplinas() {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [dialog, setDialog] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [form, setForm] = useState(EMPTY);
@@ -33,17 +35,28 @@ export default function Disciplinas() {
       if (dialog?.item?.id) return entities.Disciplina.update(dialog.item.id, values);
       return entities.Disciplina.create(values);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["disciplinas"] }); setDialog(null); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disciplinas"] });
+      setDialog(null);
+      toast({ variant: "success", description: "Disciplina salva." });
+    },
+    onError: (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   const toggleMut = useMutation({
     mutationFn: ({ id, ativo }) => entities.Disciplina.update(id, { ativo }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["disciplinas"] }),
+    onError: (e) => toast({ title: "Erro", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id) => entities.Disciplina.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["disciplinas"] }); setDeleting(null); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["disciplinas"] });
+      setDeleting(null);
+      toast({ variant: "success", description: "Disciplina excluída." });
+    },
+    onError: (e) => toast({ title: "Erro ao excluir", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   const openCreate = () => { setForm(EMPTY); setDialog({ mode: "create" }); };

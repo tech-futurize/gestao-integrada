@@ -4,12 +4,14 @@ import { Ruler, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/FormDialog";
 import PageHeader from "@/components/ui/PageHeader";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { entities } from "@/api/supabaseEntities";
 
 const EMPTY = { sigla: "", nome: "" };
 
 export default function UnidadesMedida() {
   const qc = useQueryClient();
+  const { toast } = useToast();
   const [dialog, setDialog] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [form, setForm] = useState(EMPTY);
@@ -27,17 +29,28 @@ export default function UnidadesMedida() {
       if (dialog?.item?.id) return entities.UnidadeMedida.update(dialog.item.id, values);
       return entities.UnidadeMedida.create(values);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["unidades_medida"] }); setDialog(null); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["unidades_medida"] });
+      setDialog(null);
+      toast({ variant: "success", description: "Unidade salva." });
+    },
+    onError: (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   const toggleMut = useMutation({
     mutationFn: ({ id, ativo }) => entities.UnidadeMedida.update(id, { ativo }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["unidades_medida"] }),
+    onError: (e) => toast({ title: "Erro", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id) => entities.UnidadeMedida.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["unidades_medida"] }); setDeleting(null); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["unidades_medida"] });
+      setDeleting(null);
+      toast({ variant: "success", description: "Unidade excluída." });
+    },
+    onError: (e) => toast({ title: "Erro ao excluir", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   const openCreate = () => { setForm(EMPTY); setDialog({ mode: "create" }); };
