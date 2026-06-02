@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, AlertTriangle, X } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
-import DetailDialog from "@/components/ui/DetailDialog";
 import ItemMASForm from "./ItemMASForm";
 import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
@@ -170,7 +169,6 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
   const [periodoFornecimento, setPeriodoFornecimento] = useState(null);
   const [filterKey, setFilterKey] = useState(0);
   const [page, setPage] = useState(1);
-  const [viewItem, setViewItem] = useState(null);
 
   useEffect(() => {
     if (triggerNew > 0) { setEditItem(null); setShowForm(true); }
@@ -212,6 +210,16 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itemMAS"] }),
     onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
   });
+
+  const { data: pacotes = [] } = useQuery({
+    queryKey: ["pacotes_suprimento"],
+    queryFn: () => entities.PacoteSuprimento.list(),
+  });
+
+  const pacoteMap = useMemo(
+    () => Object.fromEntries(pacotes.map((p) => [p.id, p.nome])),
+    [pacotes]
+  );
 
   const tarefaLabel = (id) => {
     if (!id) return "—";
@@ -370,27 +378,28 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
             <thead>
               <tr className="border-b border-border bg-muted">
                 <th className="text-left py-3 px-3 text-xs font-semibold text-muted-foreground min-w-40">Descrição</th>
+                <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground min-w-24">Pacote</th>
                 <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground min-w-20">Fornecedor</th>
                 <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground whitespace-nowrap">Qtd / Und</th>
                 <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground whitespace-nowrap min-w-24">Nº SC/OC</th>
                 <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground">Linha do Tempo do Processo</th>
                 <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground whitespace-nowrap">Data Crono.</th>
                 <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground min-w-24 whitespace-normal leading-tight">ID Cronograma</th>
-                <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground">Status</th>
+                <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground min-w-16">Status</th>
                 <th className="py-3 px-2"></th>
               </tr>
             </thead>
             <tbody>
               {isLoading && Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} className="border-b border-border">
-                  {Array.from({ length: 9 }).map((__, j) => (
+                  {Array.from({ length: 10 }).map((__, j) => (
                     <td key={j} className="py-3 px-3"><Skeleton className="h-5 w-full" /></td>
                   ))}
                 </tr>
               ))}
               {!isLoading && isError && (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center">
+                  <td colSpan={10} className="py-16 text-center">
                     <p className="text-status-critical font-medium">Erro ao carregar dados</p>
                     <p className="text-muted-foreground/50 text-xs mt-1">Tente recarregar a página</p>
                   </td>
@@ -398,7 +407,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
               )}
               {!isLoading && !isError && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="py-16 text-center">
+                  <td colSpan={10} className="py-16 text-center">
                     <p className="text-muted-foreground font-medium">Nenhum item cadastrado</p>
                     <p className="text-muted-foreground/50 text-xs mt-1">Clique em &quot;Novo Item&quot; para começar</p>
                   </td>
@@ -415,14 +424,16 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                       {item.responsavel && <p className="text-muted-foreground text-xs mt-0.5">{item.responsavel}</p>}
                     </td>
                     <td className="py-3 px-2 text-xs text-muted-foreground">
+                      {item.pacote_id ? pacoteMap[item.pacote_id] || "—" : "—"}
+                    </td>
+                    <td className="py-3 px-2 text-xs text-muted-foreground">
                       {item.fornecedor || "—"}
                     </td>
                     <td className="py-3 px-2 text-center">
                       {item.quantidade ? (
-                        <div className="flex flex-col items-center leading-tight">
-                          <span className="text-xs text-foreground">{item.quantidade}</span>
-                          <span className="text-[10px] text-muted-foreground/70">{item.unidade || "—"}</span>
-                        </div>
+                        <span className="text-xs text-foreground">
+                          {item.quantidade}{item.unidade ? <span className="text-muted-foreground/70 ml-0.5">{item.unidade}</span> : null}
+                        </span>
                       ) : "—"}
                     </td>
                     <td className="py-3 px-2 text-center">
@@ -489,7 +500,6 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                     </td>
                     <td className="py-3 px-2">
                       <RowActions
-                        onView={() => setViewItem(item)}
                         onEdit={() => { setEditItem(item); setShowForm(true); }}
                         onDelete={() => deleteItem.mutate(item.id)}
                         deleteDescription={`${item.descricao || "Este item"} será removido permanentemente.`}
@@ -544,22 +554,6 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
           />
         );
       })()}
-
-      {viewItem && (
-        <DetailDialog
-          open={!!viewItem}
-          onOpenChange={(o) => !o && setViewItem(null)}
-          title={viewItem.descricao || "Item de suprimento"}
-          sections={[
-            { label: "Descrição", value: viewItem.descricao, full: true },
-            { label: "Fornecedor", value: viewItem.fornecedor },
-            { label: "Responsável", value: viewItem.responsavel },
-            { label: "Status", value: viewItem.status },
-            { label: "Nº SC", value: viewItem.numero_sc },
-            { label: "Quantidade", value: viewItem.quantidade },
-          ]}
-        />
-      )}
 
       {showForm && (
         <ItemMASForm
