@@ -203,7 +203,7 @@ export default function HeatmapDrilldown({ open, onClose, category, weekLabel, r
                       </p>
                       {r.data_hora && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(r.data_hora), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          {formatDateTime(r.data_hora)}
                         </p>
                       )}
                     </div>
