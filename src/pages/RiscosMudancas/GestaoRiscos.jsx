@@ -258,7 +258,7 @@ export default function GestaoRiscos() {
         ) : null}
       />
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-border pb-0 px-6">
+      <div className="flex gap-1 border-b border-border pb-0 px-6 pt-4">
         {[
           { key: "riscos", label: "Riscos" },
           { key: "plano-acao", label: "Plano de Ação" },
