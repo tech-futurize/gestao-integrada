@@ -5,7 +5,7 @@ import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, AlertTriangle, X, FilterX } from "lucide-react";
+import { Search, AlertTriangle, X } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
 import ItemMASForm from "./ItemMASForm";
@@ -13,6 +13,8 @@ import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { formatDate } from "@/lib/dateUtils";
+import { useToast } from "@/components/ui/use-toast";
 
 const PER_PAGE = 25;
 const FILTROS_STORAGE_KEY = "suprimentos-filtros";
@@ -28,13 +30,6 @@ const ETAPAS = [
 ];
 
 const DEFAULT_ETAPAS = ETAPAS.map(e => ({ nome: e.label, status: "pendente", data: "" }));
-
-function fmtDate(iso) {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  if (!y || !m || !d) return iso;
-  return `${d}/${m}/${y.slice(2)}`;
-}
 
 function getEtapaStatus(item, idx) {
   return item.etapas?.[idx]?.status || "pendente";
@@ -164,6 +159,7 @@ function Popover({ item, etapaIdx, rect, onClose, onSave }) {
 
 export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [popover, setPopover] = useState(null);
@@ -202,10 +198,11 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err, _vars, ctx) => {
       if (ctx?.prev !== undefined) {
         queryClient.setQueryData(["itemMAS", selectedProjectId], ctx.prev);
       }
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["itemMAS"] }),
   });
@@ -213,6 +210,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
   const deleteItem = useMutation({
     mutationFn: (id) => entities.ItemMAS.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itemMAS"] }),
+    onError: (err) => toast({ title: "Erro", description: err.message, variant: "destructive" }),
   });
 
   const tarefaLabel = (id) => {
@@ -463,7 +461,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                                     style={{ fontSize: 8, whiteSpace: "nowrap" }}
                                   >
                                     {atrasado && isLast && <AlertTriangle className="inline w-2 h-2 mr-0.5" />}
-                                    {fmtDate(dataEtapa)}
+                                    {formatDate(dataEtapa)}
                                   </span>
                                 </div>
                               </div>
@@ -477,7 +475,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                     </td>
 
                     <td className="py-3 px-2 text-center text-xs text-muted-foreground whitespace-nowrap">
-                      {item.data_cronograma ? fmtDate(item.data_cronograma) : "—"}
+                      {item.data_cronograma ? formatDate(item.data_cronograma) : "—"}
                     </td>
                     <td className="py-3 px-2 text-xs text-muted-foreground max-w-24">
                       {item.id_cronograma ? (
