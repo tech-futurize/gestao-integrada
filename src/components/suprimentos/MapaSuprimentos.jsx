@@ -212,8 +212,9 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
   });
 
   const { data: pacotes = [] } = useQuery({
-    queryKey: ["pacotes_suprimento"],
-    queryFn: () => entities.PacoteSuprimento.list(),
+    queryKey: ["pacotes_suprimento", selectedProjectId],
+    queryFn: () => entities.PacoteSuprimento.filter({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId,
   });
 
   const pacoteMap = useMemo(

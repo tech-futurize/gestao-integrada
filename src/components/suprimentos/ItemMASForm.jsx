@@ -56,9 +56,10 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
   });
 
   const { data: pacotes = [], isLoading: isLoadingPacotes } = useQuery({
-    queryKey: ["pacotes_suprimento"],
-    queryFn: () => entities.PacoteSuprimento.list(),
-    staleTime: 1000 * 60 * 10,
+    queryKey: ["pacotes_suprimento", selectedProjectId],
+    queryFn: () => entities.PacoteSuprimento.filter({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId,
+    staleTime: 1000 * 60 * 5,
   });
 
   const pacotesAtivos = pacotes.filter((p) => p.ativo !== false);

@@ -6,20 +6,23 @@ import { FormDialog } from "@/components/ui/FormDialog";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { entities } from "@/api/supabaseEntities";
+import { useProject } from "@/lib/ProjectContext";
 
 const EMPTY = { nome: "" };
 
 export default function Pacotes({ asTab = false }) {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { selectedProjectId } = useProject();
   const [dialog, setDialog] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [showInativos, setShowInativos] = useState(false);
 
   const { data: all = [], isPending, isError } = useQuery({
-    queryKey: ["pacotes_suprimento"],
-    queryFn: () => entities.PacoteSuprimento.list(),
+    queryKey: ["pacotes_suprimento", selectedProjectId],
+    queryFn: () => entities.PacoteSuprimento.filter({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId,
   });
 
   const pacotes = showInativos ? all : all.filter((p) => p.ativo !== false);
@@ -30,7 +33,7 @@ export default function Pacotes({ asTab = false }) {
       return entities.PacoteSuprimento.create(values);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pacotes_suprimento"] });
+      qc.invalidateQueries({ queryKey: ["pacotes_suprimento", selectedProjectId] });
       setDialog(null);
       toast({ variant: "success", description: "Pacote salvo." });
     },
@@ -39,14 +42,14 @@ export default function Pacotes({ asTab = false }) {
 
   const toggleMut = useMutation({
     mutationFn: ({ id, ativo }) => entities.PacoteSuprimento.update(id, { ativo }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["pacotes_suprimento"] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pacotes_suprimento", selectedProjectId] }),
     onError: (e) => toast({ title: "Erro", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id) => entities.PacoteSuprimento.delete(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["pacotes_suprimento"] });
+      qc.invalidateQueries({ queryKey: ["pacotes_suprimento", selectedProjectId] });
       setDeleting(null);
       toast({ variant: "success", description: "Pacote excluído." });
     },
@@ -57,7 +60,7 @@ export default function Pacotes({ asTab = false }) {
   const openEdit = (item) => { setForm({ nome: item.nome }); setDialog({ mode: "edit", item }); };
   const handleSave = () => {
     if (!form.nome.trim()) return;
-    saveMut.mutate({ nome: form.nome.trim() });
+    saveMut.mutate({ nome: form.nome.trim(), projeto_id: selectedProjectId });
   };
 
   const inativos = all.filter((p) => p.ativo === false).length;
@@ -95,9 +98,10 @@ export default function Pacotes({ asTab = false }) {
         </div>
 
         <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          {isPending && <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>}
-          {isError && <div className="p-8 text-center text-sm text-destructive">Erro ao carregar pacotes.</div>}
-          {!isPending && !isError && (
+          {!selectedProjectId && <div className="p-8 text-center text-sm text-muted-foreground">Selecione um projeto para gerenciar os pacotes.</div>}
+          {selectedProjectId && isPending && <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>}
+          {selectedProjectId && isError && <div className="p-8 text-center text-sm text-destructive">Erro ao carregar pacotes.</div>}
+          {selectedProjectId && !isPending && !isError && (
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted border-b border-border">
