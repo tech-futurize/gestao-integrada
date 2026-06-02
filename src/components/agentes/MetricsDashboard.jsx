@@ -6,7 +6,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   AreaChart, Area, BarChart, Bar, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
-  defs, linearGradient,
 } from 'recharts';
 
 const AGENT_COLORS = {

@@ -11,7 +11,7 @@ export default function AgentsList() {
   const [editingAgent, setEditingAgent] = useState(null); // null = listagem, {} = novo, agent = edição
   const [showEditor, setShowEditor] = useState(false);
 
-  const { data: agentes = [], isPending } = useQuery({
+  const { data: agentes = [], isPending, isError } = useQuery({
     queryKey: ['agentes'],
     queryFn: () => entities.Agente.list({}, { pageSize: 100 }),
   });
@@ -68,6 +68,10 @@ export default function AgentsList() {
       {isPending ? (
         <div className="space-y-3">
           {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
+        </div>
+      ) : isError ? (
+        <div className="text-center py-12 text-destructive text-sm">
+          Erro ao carregar agentes. Tente recarregar a página.
         </div>
       ) : agentes.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground text-sm">

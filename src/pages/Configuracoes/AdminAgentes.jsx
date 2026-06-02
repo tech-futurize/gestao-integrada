@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PageHeader from '@/components/ui/PageHeader';
-import { usePermissionsMap } from '@/hooks/usePermissions';
-import { Lock } from 'lucide-react';
+import { usePermissionsMap, usePermissionsLoading } from '@/hooks/usePermissions';
+import { Lock, Loader2 } from 'lucide-react';
 import AgentsList from '@/components/agentes/AgentsList';
 import ToolsList from '@/components/agentes/ToolsList';
 import MetricsDashboard from '@/components/agentes/MetricsDashboard';
@@ -17,6 +17,18 @@ const TABS = [
 export default function AdminAgentes() {
   const [activeTab, setActiveTab] = useState('agentes');
   const { isAdmin } = usePermissionsMap();
+  const permsLoading = usePermissionsLoading();
+
+  if (permsLoading) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
