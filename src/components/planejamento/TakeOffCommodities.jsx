@@ -643,35 +643,86 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
 
   return (
     <div className="space-y-6">
-      {/* Filtros */}
-      <FilterToolbar
-        active={!!busca || Object.values(filtros).some(a => a?.length > 0)}
-        onClearAll={() => { setBusca(""); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
-      >
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-          <input
-            className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
-            placeholder="Buscar código ou descrição..."
-            value={busca}
-            onChange={e => setBusca(e.target.value)}
+      {/* Filtros + ação */}
+      <div className="flex items-center justify-between gap-3">
+        <FilterToolbar
+          active={!!busca || Object.values(filtros).some(a => a?.length > 0)}
+          onClearAll={() => { setBusca(""); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+        >
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
+              placeholder="Buscar código ou descrição..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+            />
+          </div>
+          <FilterBar
+            key={filterKey}
+            storageKey={FILTROS_KEY}
+            filters={[
+              { key: "disciplina", label: "Disciplina", options: DISCIPLINAS },
+              { key: "unidade",    label: "Unidade",    options: UNIDADE_SIGLAS },
+            ]}
+            onChange={setFiltros}
           />
-        </div>
-        <FilterBar
-          key={filterKey}
-          storageKey={FILTROS_KEY}
-          filters={[
-            { key: "disciplina", label: "Disciplina", options: DISCIPLINAS },
-            { key: "unidade",    label: "Unidade",    options: UNIDADE_SIGLAS },
-          ]}
-          onChange={setFiltros}
-        />
-      </FilterToolbar>
-      <div className="flex justify-end">
+        </FilterToolbar>
         <Button onClick={() => { setEditingItem(null); setShowItemModal(true); }}>
           <Plus className="w-4 h-4 mr-2" />Novo Item
         </Button>
       </div>
+
+      {/* Gráficos de Barras */}
+      {filtered.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground text-sm">Take Off por unidade de medida</h3>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={chartByUnidade}
+                margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+                style={{ cursor: "pointer" }}
+                onClick={(d) => d?.activeLabel && setFiltroUnidade(prev => prev === d.activeLabel ? "" : d.activeLabel)}
+              >
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Contrato"  fill={filtroUnidade ? "#9ca3af66" : "#9ca3af"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Take-Off"  fill={filtroUnidade ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Realizado" fill={filtroUnidade ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground text-sm">Take Off por disciplina</h3>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart
+                data={chartByDisciplina}
+                margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+                style={{ cursor: "pointer" }}
+                onClick={(d) => d?.activeLabel && setFiltroDisciplina(prev => prev === d.activeLabel ? "" : d.activeLabel)}
+              >
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={45} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Contrato"  fill={filtroDisciplina ? "#9ca3af66" : "#9ca3af"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Take-Off"  fill={filtroDisciplina ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Realizado" fill={filtroDisciplina ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Tabela */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -680,8 +731,8 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
             <thead>
               <tr className="bg-muted border-b border-border">
                 {[
-                  { key: "codigo",       label: "Código" },
-                  { key: "descricao",    label: "Descrição" },
+                  { key: "codigo",       label: "Código",    cls: "w-20" },
+                  { key: "descricao",    label: "Descrição", cls: "w-44" },
                   { key: "disciplina",   label: "Disciplina" },
                   { key: "unidade",      label: "Und" },
                   { key: "qtd_contrato", label: "Contrato" },
@@ -690,10 +741,10 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                   { key: "saldo",        label: "Saldo" },
                   { key: "pct",          label: "% Avanço" },
                   { key: "_actions",     label: "" },
-                ].map(({ key, label }) => (
+                ].map(({ key, label, cls }) => (
                   <th
                     key={key}
-                    className={`px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap ${key !== "_actions" ? "cursor-pointer select-none hover:text-foreground" : ""}`}
+                    className={`px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap ${cls || ""} ${key !== "_actions" ? "cursor-pointer select-none hover:text-foreground" : ""}`}
                     onClick={() => key !== "_actions" && handleSort(key)}
                   >
                     {label}{key !== "_actions" && <SortIcon col={key} />}
@@ -709,15 +760,15 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                 return (
                   <tr key={item.id} className={`border-b border-border hover:bg-blue-50/30 dark:hover:bg-blue-900/10 cursor-pointer transition-colors ${i % 2 === 0 ? "bg-card" : "bg-muted/20"}`}
                     onClick={() => setSelectedItem(item)}>
-                    <td className="px-4 py-3 font-bold text-xs text-foreground">{item.codigo}</td>
-                    <td className="px-4 py-3 font-medium text-foreground max-w-xs truncate">{item.descricao}</td>
+                    <td className="px-4 py-3 w-20 font-bold text-xs text-foreground">{item.codigo}</td>
+                    <td className="px-4 py-3 w-44 max-w-[176px] font-medium text-foreground truncate">{item.descricao}</td>
                     <td className="px-4 py-3 text-sm text-foreground">{item.disciplina}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.unidade}</td>
                     <td className="px-4 py-3 text-right font-medium">{item.qtd_contrato?.toLocaleString("pt-BR")}</td>
                     <td className="px-4 py-3 text-right text-blue-500 dark:text-blue-400 font-medium">{item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—"}</td>
                     <td className="px-4 py-3 text-right font-medium text-status-positive">{item.realizado.toLocaleString("pt-BR")}</td>
                     <td className={`px-4 py-3 text-right font-semibold ${item.saldo >= 0 ? "text-status-positive" : "text-status-critical"}`}>{item.saldo.toLocaleString("pt-BR")}</td>
-                    <td className="px-4 py-3 min-w-[115px]">
+                    <td className="px-4 py-3 min-w-[90px]">
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold leading-none" style={{ color: getPctColor(item.pct) }}>{item.pct.toFixed(1)}%</span>
                         <div className="bg-muted rounded-full h-1 overflow-hidden">
@@ -727,7 +778,6 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                     </td>
                     <td className="px-4 py-3">
                       <RowActions
-                        onView={() => setSelectedItem(item)}
                         onEdit={() => { setEditingItem(item); setShowItemModal(true); }}
                         onDelete={() => deleteItem.mutate(item.id)}
                         deleteDescription={`${item.descricao || "Este item"} será excluído permanentemente.`}
@@ -745,7 +795,7 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                   <td className="px-4 py-3 text-right text-blue-500 dark:text-blue-400">{totals.qtd_takeoff.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-3 text-right text-status-positive">{totals.realizado.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-3 text-right text-status-critical">{totals.saldo.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-3 min-w-[115px]">
+                  <td className="px-4 py-3 min-w-[90px]">
                     {(() => {
                       const pct = totals.qtd_contrato > 0 ? (totals.realizado / totals.qtd_contrato) * 100 : 0;
                       return (
@@ -765,59 +815,6 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
           </table>
         </div>
       </div>
-
-      {/* Gráficos de Barras */}
-      {filtered.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-card rounded-xl border border-border shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground text-sm">Contrato · Take-Off · Realizado — por Unidade de Medida</h3>
-              {filtroUnidade && <button className="text-xs text-blue-500 hover:underline" onClick={() => setFiltroUnidade("")}>Limpar filtro</button>}
-            </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={chartByUnidade}
-                margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
-                style={{ cursor: "pointer" }}
-                onClick={(d) => d?.activeLabel && setFiltroUnidade(prev => prev === d.activeLabel ? "" : d.activeLabel)}
-              >
-                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
-                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Contrato"  fill={filtroUnidade ? "#37415166" : "#374151"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Take-Off"  fill={filtroUnidade ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Realizado" fill={filtroUnidade ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-card rounded-xl border border-border shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground text-sm">Contrato · Take-Off · Realizado — por Disciplina</h3>
-              {filtroDisciplina && <button className="text-xs text-blue-500 hover:underline" onClick={() => setFiltroDisciplina("")}>Limpar filtro</button>}
-            </div>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={chartByDisciplina}
-                margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
-                style={{ cursor: "pointer" }}
-                onClick={(d) => d?.activeLabel && setFiltroDisciplina(prev => prev === d.activeLabel ? "" : d.activeLabel)}
-              >
-                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={45} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
-                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Contrato"  fill={filtroDisciplina ? "#37415166" : "#374151"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Take-Off"  fill={filtroDisciplina ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Realizado" fill={filtroDisciplina ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
 
       {/* Modais */}
       {showItemModal && (
