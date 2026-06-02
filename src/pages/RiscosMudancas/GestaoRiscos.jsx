@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldAlert, Plus, Edit, Trash2, Upload } from "lucide-react";
+import { ShieldAlert, Plus, Edit, Trash2, Upload, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterToolbar from "@/components/ui/FilterToolbar";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
@@ -72,8 +74,10 @@ export default function GestaoRiscos() {
   const [showImportExport, setShowImportExport] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [filtros, setFiltros] = useState({});
+  const [filterKey, setFilterKey] = useState(0);
   const [tab, setTab] = useState("riscos");
   const [deleteId, setDeleteId] = useState(null);
+  const FILTROS_KEY = "riscos-filtros";
 
   const { data: riscos = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["riscos", selectedProjectId],
@@ -124,8 +128,10 @@ export default function GestaoRiscos() {
     let r = riscos;
     if (st.length > 0) r = r.filter(x => st.includes(x.status));
     if (cat.length > 0) r = r.filter(x => cat.includes(x.categoria));
-    return r.sort((a, b) => (b.score || b.probabilidade * b.impacto || 0) - (a.score || a.probabilidade * a.impacto || 0));
+    return r;
   }, [riscos, filtros]);
+
+  const { sortedData: riscosSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "codigo" })
 
   // Matriz 5×5 — count risks in each cell
   const matrixData = useMemo(() => {
@@ -178,6 +184,13 @@ export default function GestaoRiscos() {
     else createMut.mutate(payload);
   };
 
+  function SortIcon({ col }) {
+    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 inline ml-1 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+    return sortDir === "asc"
+      ? <ArrowUp className="w-3 h-3 inline ml-1 text-primary" />
+      : <ArrowDown className="w-3 h-3 inline ml-1 text-primary" />
+  }
+
   if (!selectedProjectId) {
     return (
       <div className="flex flex-col h-full">
@@ -223,6 +236,22 @@ export default function GestaoRiscos() {
 
       {tab === "riscos" && (
       <div className="flex-1 overflow-auto p-6 space-y-6">
+
+      {/* Filtros */}
+      <FilterToolbar
+        active={Object.values(filtros).some(a => a?.length > 0)}
+        onClearAll={() => { setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+      >
+        <FilterBar
+          key={filterKey}
+          storageKey={FILTROS_KEY}
+          filters={[
+            { key: "status", label: "Status", options: STATUS_OPTIONS },
+            { key: "categoria", label: "Categoria", options: CATEGORIAS },
+          ]}
+          onChange={setFiltros}
+        />
+      </FilterToolbar>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -298,39 +327,29 @@ export default function GestaoRiscos() {
         </CardContent>
       </Card>
 
-      {/* Filtros */}
-      <FilterBar
-        storageKey="riscos-filtros"
-        filters={[
-          { key: "status", label: "Status", options: STATUS_OPTIONS },
-          { key: "categoria", label: "Categoria", options: CATEGORIAS },
-        ]}
-        onChange={setFiltros}
-      />
-
       {/* Tabela */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Código</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Descrição</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Categoria</th>
+                <th onClick={() => handleSort("codigo")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Código<SortIcon col="codigo" /></th>
+                <th onClick={() => handleSort("descricao")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Descrição<SortIcon col="descricao" /></th>
+                <th onClick={() => handleSort("categoria")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Categoria<SortIcon col="categoria" /></th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Impactos</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">P</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">I</th>
+                <th onClick={() => handleSort("probabilidade")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">P<SortIcon col="probabilidade" /></th>
+                <th onClick={() => handleSort("impacto")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">I<SortIcon col="impacto" /></th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Score</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Responsável</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Status</th>
+                <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Responsável<SortIcon col="responsavel" /></th>
+                <th onClick={() => handleSort("status")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Status<SortIcon col="status" /></th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
               {isLoading && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
               {isError && <tr><td colSpan={10} className="py-10 text-center text-status-critical text-sm">Erro ao carregar riscos. Verifique sua conexão e tente novamente.</td></tr>}
-              {!isLoading && !isError && filtered.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
-              {filtered.map((r, i) => {
+              {!isLoading && !isError && riscosSorted.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
+              {riscosSorted.map((r, i) => {
                 const score = r.score || (r.probabilidade * r.impacto) || 0;
                 const statusColor = { Ativo: "text-amber-600", Mitigado: "text-blue-600", Encerrado: "text-green-600" }[r.status] || "";
                 return (
