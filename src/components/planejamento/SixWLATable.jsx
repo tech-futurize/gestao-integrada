@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Edit, Info, ChevronRight, ChevronLeft } from "lucide-react";
+import { Edit, Info } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
-import DetailDialog from "@/components/ui/DetailDialog";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,7 +9,7 @@ import { getWeekBadgeStyle, fmtDateStr } from "@/utils/sixWLAUtils";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 // Larguras fixas das colunas sticky esquerda (px)
-const COL = { atividade: 200, semana: 80, previsto: 72, real: 72, toggle: 24 };
+const COL = { atividade: 200, semana: 80, previsto: 72, real: 72, det: 44 };
 
 // Larguras fixas das colunas sticky direita (px)
 const R = { restricao: 48, obs: 80, remove: 40 };
@@ -43,8 +42,6 @@ function rRight(idx, total) {
  */
 export default function SixWLATable({ items, restricoes, isLoading, onUpdate, onDelete }) {
   const [editingObs, setEditingObs] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [viewItem, setViewItem] = useState(null);
   const isDark = useDarkMode();
 
   const handleObsClose = (open, item) => {
@@ -54,20 +51,15 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
     }
   };
 
-  const detailColCount = showDetails ? 8 : 0;
-  const totalCols = 5 + detailColCount + restricoes.length + 2;
+  const totalCols = 5 + restricoes.length + 2;
 
   // Offsets left acumulados para cada coluna sticky esquerda
   const L = {
-    sem:    COL.atividade,
-    prev:   COL.atividade + COL.semana,
-    real:   COL.atividade + COL.semana + COL.previsto,
-    toggle: COL.atividade + COL.semana + COL.previsto + COL.real,
+    sem:  COL.atividade,
+    prev: COL.atividade + COL.semana,
+    real: COL.atividade + COL.semana + COL.previsto,
+    det:  COL.atividade + COL.semana + COL.previsto + COL.real,
   };
-
-  // Separator visual na zona expansível
-  const sepStart = "border-l-2 border-slate-300 dark:border-slate-600";
-  const sepEnd   = "border-r-2 border-slate-300 dark:border-slate-600";
 
   return (
     <>
@@ -102,33 +94,11 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                 %Real
               </th>
               <th
-                className="px-1 py-3 text-center sticky bg-muted z-20"
-                style={{ left: L.toggle, width: COL.toggle, minWidth: COL.toggle }}
+                className="px-1 py-3 text-center text-xs font-semibold text-muted-foreground sticky bg-muted z-20"
+                style={{ left: L.det, width: COL.det, minWidth: COL.det }}
               >
-                <button
-                  onClick={() => setShowDetails(v => !v)}
-                  className="p-0.5 rounded hover:bg-border text-muted-foreground hover:text-foreground transition-colors"
-                  title={showDetails ? "Recolher: Área, Disciplina, Datas" : "Expandir: Área, Disciplina, Datas BL/Real/Proj"}
-                >
-                  {showDetails
-                    ? <ChevronLeft className="w-3.5 h-3.5" />
-                    : <ChevronRight className="w-3.5 h-3.5" />}
-                </button>
+                DET
               </th>
-
-              {/* ── EXPANSÍVEL (rolagem horizontal) ─────────────────── */}
-              {showDetails && (
-                <>
-                  <th className={cn("px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap", sepStart)}>Área</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Disciplina</th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">BL Ini</th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">BL Fim</th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Real Ini</th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Real Fim</th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Proj Ini</th>
-                  <th className={cn("px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap", sepEnd)}>Proj Fim</th>
-                </>
-              )}
 
               {/* ── STICKY DIREITA ──────────────────────────────────── */}
               {restricoes.map((r, idx) => (
@@ -233,41 +203,56 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                       {avReal != null ? `${avReal}%` : "—"}
                     </span>
                   </td>
-                  {/* placeholder do toggle — mantém alinhamento */}
                   <td
-                    className={cn("px-1 py-3 sticky z-10", stickyBg)}
-                    style={{ left: L.toggle, width: COL.toggle, minWidth: COL.toggle }}
-                  />
-
-                  {/* ── EXPANSÍVEL ──────────────────────────────────── */}
-                  {showDetails && (
-                    <>
-                      <td className={cn("px-4 py-3 text-xs text-muted-foreground whitespace-nowrap", sepStart)}>
-                        {item.tarefa?.area || "—"}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {item.tarefa?.disciplina || "—"}
-                      </td>
-                      <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                        {fmtDateStr(item.tarefa?.data_inicio_baseline)}
-                      </td>
-                      <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                        {fmtDateStr(item.tarefa?.data_fim_baseline)}
-                      </td>
-                      <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                        {fmtDateStr(item.tarefa?.data_inicio_real)}
-                      </td>
-                      <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                        {fmtDateStr(item.tarefa?.data_fim_real)}
-                      </td>
-                      <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                        {fmtDateStr(item.tarefa?.inicio_previsto)}
-                      </td>
-                      <td className={cn("px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap", sepEnd)}>
-                        {fmtDateStr(item.tarefa?.termino_previsto)}
-                      </td>
-                    </>
-                  )}
+                    className={cn("px-1 py-2 text-center sticky z-10", stickyBg)}
+                    style={{ left: L.det, width: COL.det, minWidth: COL.det }}
+                  >
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="text-[11px] font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors">
+                          DET
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-52 p-3" side="right" align="start">
+                        <div className="space-y-1 text-xs">
+                          <div className="flex gap-2">
+                            <span className="text-muted-foreground w-16 shrink-0">Área</span>
+                            <span className="font-medium text-foreground">{item.tarefa?.area || "—"}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-muted-foreground w-16 shrink-0">Disciplina</span>
+                            <span className="font-medium text-foreground">{item.tarefa?.disciplina || "—"}</span>
+                          </div>
+                          <div className="border-t border-border pt-2 mt-2 space-y-1">
+                            <div className="flex gap-2">
+                              <span className="text-muted-foreground w-16 shrink-0">BL Ini</span>
+                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_inicio_baseline)}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-muted-foreground w-16 shrink-0">BL Fim</span>
+                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_fim_baseline)}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-muted-foreground w-16 shrink-0">Real Ini</span>
+                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_inicio_real)}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-muted-foreground w-16 shrink-0">Real Fim</span>
+                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_fim_real)}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-muted-foreground w-16 shrink-0">Proj Ini</span>
+                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.inicio_previsto)}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <span className="text-muted-foreground w-16 shrink-0">Proj Fim</span>
+                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.termino_previsto)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </td>
 
                   {/* ── STICKY DIREITA ──────────────────────────────── */}
                   {restricoes.map((r, idx) => (
@@ -320,7 +305,6 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                     style={{ right: 0, width: R.remove, minWidth: R.remove }}
                   >
                     <RowActions
-                      onView={() => setViewItem(item)}
                       onDelete={() => onDelete(item.id)}
                       deleteTitle="Remover do 6WLA"
                       deleteDescription="Esta atividade será removida da seleção de semanas. A tarefa no cronograma não será excluída."
@@ -334,24 +318,6 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
       </div>
     </div>
 
-    {viewItem && (
-      <DetailDialog
-        open={!!viewItem}
-        onOpenChange={(o) => !o && setViewItem(null)}
-        title={viewItem.tarefa?.nome || "Atividade"}
-        sections={[
-          { label: "Status", value: viewItem.tarefa?.status },
-          { label: "Área", value: viewItem.tarefa?.area },
-          { label: "Disciplina", value: viewItem.tarefa?.disciplina },
-          { label: "Responsável", value: viewItem.tarefa?.responsavel },
-          { label: "Avanço previsto", value: viewItem.tarefa?.avanco_previsto != null ? `${viewItem.tarefa.avanco_previsto}%` : null },
-          { label: "Avanço realizado", value: viewItem.tarefa?.avanco_realizado != null ? `${viewItem.tarefa.avanco_realizado}%` : null },
-          { label: "Início planejado", value: fmtDateStr(viewItem.tarefa?.data_inicio_planejada) },
-          { label: "Fim planejado", value: fmtDateStr(viewItem.tarefa?.data_fim_planejada) },
-          { label: "Observação", value: viewItem.observacao, full: true },
-        ]}
-      />
-    )}
-    </>
+</>
   );
 }
