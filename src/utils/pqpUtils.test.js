@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeItemValues, flattenLeaves, computeTotais, recalcAcumulado } from "./pqpUtils";
+import { computeItemValues, flattenLeaves, computeTotais, recalcAcumulado, buildTreeFromFlat } from "./pqpUtils";
 
 const folha = {
   item: "1.1", descricao: "X", unidade: "m³",
@@ -46,6 +46,29 @@ describe("computeTotais", () => {
 
   it("progresso 0 quando não há contrato", () => {
     expect(computeTotais([]).progressoFinanceiro).toBe(0);
+  });
+});
+
+describe("buildTreeFromFlat", () => {
+  it("monta árvore por código EAP e converte números", () => {
+    const tree = buildTreeFromFlat([
+      { item: "1", descricao: "Grupo" },
+      { item: "1.1", descricao: "A", qtd_contratual: "10", preco_unitario: "5" },
+      { item: "1.2", descricao: "B" },
+    ]);
+    expect(tree).toHaveLength(1);
+    expect(tree[0].children).toHaveLength(2);
+    expect(tree[0].children[0]).toMatchObject({ item: "1.1", qtd_contratual: 10, preco_unitario: 5 });
+    expect(tree[0].children[0].children).toBeUndefined(); // folha normalizada
+  });
+
+  it("ignora linhas sem código e ordena numericamente", () => {
+    const tree = buildTreeFromFlat([
+      { item: "2", descricao: "Dois" },
+      { item: "", descricao: "vazio" },
+      { item: "10", descricao: "Dez" },
+    ]);
+    expect(tree.map((n) => n.item)).toEqual(["2", "10"]);
   });
 });
 

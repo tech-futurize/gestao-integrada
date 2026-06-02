@@ -41,6 +41,39 @@ export function computeTotais(itens = []) {
 }
 
 /**
+ * Monta uma árvore EAP a partir de linhas flat importadas, usando o código `item`
+ * (ex.: "1" → "1.1" → "1.1.2"). O pai é o código sem o último segmento.
+ */
+export function buildTreeFromFlat(flat = []) {
+  const nodes = flat
+    .filter((r) => r.item != null && String(r.item).trim() !== "")
+    .map((r) => ({
+      item: String(r.item).trim(),
+      descricao: r.descricao ?? "",
+      unidade: r.unidade ?? "",
+      qtd_contratual: Number(r.qtd_contratual) || 0,
+      preco_unitario: Number(r.preco_unitario) || 0,
+      children: [],
+    }))
+    .sort((a, b) => a.item.localeCompare(b.item, undefined, { numeric: true }));
+
+  const byCode = new Map(nodes.map((n) => [n.item, n]));
+  const roots = [];
+  for (const n of nodes) {
+    const parentCode = n.item.split(".").slice(0, -1).join(".");
+    const parent = parentCode ? byCode.get(parentCode) : null;
+    if (parent) parent.children.push(n);
+    else roots.push(n);
+  }
+  // Remove `children: []` das folhas (normalização).
+  const clean = (arr) =>
+    arr.map(({ children, ...rest }) =>
+      children.length ? { ...rest, children: clean(children) } : rest
+    );
+  return clean(roots);
+}
+
+/**
  * Preenche `qtd_acumulada` de cada folha da árvore-base somando as `qtd_medida`
  * das medições anteriores (mesmo código `item`). Retorna uma nova árvore.
  * Usado no editor de medição: acumulado = Σ medições concluídas anteriores.
