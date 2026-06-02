@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit, Info } from "lucide-react";
+import { Edit, Eye, Info } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,10 +9,10 @@ import { getWeekBadgeStyle, fmtDateStr } from "@/utils/sixWLAUtils";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
 // Larguras fixas das colunas sticky esquerda (px)
-const COL = { atividade: 200, semana: 80, previsto: 72, real: 72, det: 44 };
+const COL = { atividade: 200, semana: 176, previsto: 72, real: 72, det: 40 };
 
 // Larguras fixas das colunas sticky direita (px)
-const R = { restricao: 48, obs: 80, remove: 40 };
+const R = { restricao: 36, obs: 64, remove: 32 };
 
 // Offset right de cada coluna de restrição (da mais à direita para a mais à esquerda)
 function rRight(idx, total) {
@@ -40,7 +40,7 @@ function rRight(idx, total) {
  *   onDelete: (id: string) => void
  * }} props
  */
-export default function SixWLATable({ items, restricoes = [], isLoading, onUpdate, onDelete }) {
+export default function SixWLATable({ items, restricoes = [], isLoading, disciplinaMap = {}, onUpdate, onDelete }) {
   const [editingObs, setEditingObs] = useState(null);
   const isDark = useDarkMode();
 
