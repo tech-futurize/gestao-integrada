@@ -51,6 +51,7 @@ const GerenciarProjeto     = lazy(() => import('./pages/Configuracoes/GerenciarP
 const AgenteConfig         = lazy(() => import('./pages/Configuracoes/AgenteConfig'));
 const Usuarios             = lazy(() => import('./pages/Configuracoes/Usuarios'));
 const Cadastros            = lazy(() => import('./pages/Configuracoes/Cadastros'));
+const AdminAgentes         = lazy(() => import('./pages/Configuracoes/AdminAgentes'));
 // UnidadesMedida e Disciplinas são acessadas como abas dentro de Cadastros (via prop asTab)
 // As rotas legadas (/configuracoes/unidades-medida, /configuracoes/disciplinas) redirecionam para /configuracoes/cadastros
 
@@ -147,6 +148,7 @@ const AuthenticatedApp = () => (
     <Route path="/configuracoes/agente-config" element={wrap(AgenteConfig, 'Configurações')} />
     <Route path="/configuracoes/usuarios" element={wrap(Usuarios, 'Configurações')} />
     <Route path="/configuracoes/cadastros" element={wrap(Cadastros, 'Configurações')} />
+    <Route path="/configuracoes/agentes-admin" element={wrap(AdminAgentes, 'Configurações')} />
     <Route path="/configuracoes/unidades-medida" element={<Navigate to="/configuracoes/cadastros" replace />} />
     <Route path="/configuracoes/disciplinas" element={<Navigate to="/configuracoes/cadastros" replace />} />
 
