@@ -163,7 +163,7 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
   );
 
   const weeksFiltradas = useMemo(() => {
-    if (!periodFilter) return projectWeeks;
+    if (!periodFilter?.from || !periodFilter?.to) return projectWeeks;
     const from = periodFilter.from;
     const to   = periodFilter.to;
     return projectWeeks.filter(w => !isBefore(w, from) && !isAfter(w, to));
@@ -187,7 +187,7 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
   }, [projectWeeks]);
 
   const monthsFiltrados = useMemo(() => {
-    if (!periodFilter) return monthPeriods;
+    if (!periodFilter?.from || !periodFilter?.to) return monthPeriods;
     const from = startOfMonth(periodFilter.from);
     const to   = endOfMonth(periodFilter.to);
     return monthPeriods.filter(m => !isBefore(m, from) && !isAfter(m, to));

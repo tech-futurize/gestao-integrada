@@ -173,7 +173,7 @@ export default function HistogramaTabela({ tipo }) {
   );
 
   const mesesFiltrados = useMemo(() => {
-    if (!periodFilter) return projectMonths;
+    if (!periodFilter?.from || !periodFilter?.to) return projectMonths;
     const from = startOfMonth(periodFilter.from);
     const to   = endOfMonth(periodFilter.to);
     return projectMonths.filter(m => !isBefore(m, from) && !isAfter(m, to));
