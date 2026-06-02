@@ -100,9 +100,44 @@ Ambos os módulos (Faturamento e Medição de subcontrato) compartilham o mesmo 
 - Mantém a entidade `Medicao` (tabela `medicoes`) já existente; itens passam a usar a mesma estrutura JSONB hierárquica do `PqpEditor` (hoje são flat em `MedicaoForm.jsx`).
 - **Drop do módulo standalone** (checklist L007): remover componente/página `src/pages/AdminContratual/Medicoes.jsx`, rota em `App.jsx`, item em `navigationConfig.js`, e revisar referências (`grep -r "admin-contratual/medicoes" src/`). A entidade `Medicao` no `TABLE_MAP` **permanece** (continua usada dentro do contrato).
 
+## 7.1 Telas do Módulo de Contratos — UI (brainstorm visual 2026-06-02)
+
+Decisões de interface validadas tela a tela com o PO (Visual Companion). Mockups persistidos em `.superpowers/brainstorm/`.
+
+### Estrutura geral
+- **Detalhe do Contrato = 4 abas:** `Visão Geral · PQP · Medições · Aditivos`. **Sem** aba de Documentos.
+- 🔒 **Regra de contexto:** ao entrar no Detalhe de um contrato, os **KPIs agregados da Lista** (Total contratado, Em andamento, Medido geral) **desaparecem**. O Detalhe exibe **apenas** indicadores **daquele** contrato (valor total, % medido, saldo, fornecedor, vigência) — nunca totais globais persistentes, para não confundir o individual com o agregado.
+
+### Tela 1 — Lista de Contratos
+- Formato **Cards** (um card por contrato: objeto, fornecedor, valor, status, barra de % medido).
+- Topo: **KPIs gerais** (Total contratado · Em andamento · Medido geral) + **filtros** (busca por objeto/fornecedor, status, tipo, período) + botão **Novo Contrato**.
+
+### Aba Visão Geral
+- Layout em **seções empilhadas** (largura total): **Identificação · Valores · Prazo · Gestão**.
+- **Campos:** Nº · Objeto · Fornecedor · CNPJ · Tipo (Serviços/Fornecimento/Fornec.+Serviço) · **Modalidade (Preço unitário × Global/Lump Sum)** · **Origem (orçamento/proposta)** · Valor original · Σ Aditivos · Valor total (calc.) · Data assinatura · Início · Término · Término com aditivos (calc.) · Gestor · Centro de custo · Observações.
+- `Modalidade` e `Origem` são novos campos (ver §11 — ajuste de schema de `contratos`).
+
+### Aba PQP
+- Tabela em **árvore EAP** (1 → 1.1 → 1.1.1). **Níveis-pai mostram subtotal somado** dos filhos; rodapé com TOTAL DO CONTRATO.
+- Barra de ações: **Importar Excel/CSV** · Adicionar item · **Expandir até nível N** · Exportar.
+- **Estado vazio:** CTA "Importar Excel/CSV" + "Adicionar manual".
+- É a **definição** do escopo/preços (sem medição). Renderizada pelo `PqpEditor` em modo definição (`readOnly` nas colunas de medição).
+
+### Aba Medições (subcontrato)
+- **Estrutura "Histórico + editor":** lista de períodos (M-001, M-002…) com Nº · Período · Valor medido · % do período · Status; topo com **Acumulado medido (R$ e %)** + botão **Nova Medição**. Clicar numa medição abre o **editor em tela cheia**.
+- **Status simples:** `Elaboração → Concluído` (sem aprovação).
+- **Editor de lançamento** (`PqpEditor` em modo medição):
+  - Cabeçalho com 3 KPIs: **Acumulado · Medido no período · Avanço financeiro (% + barra)**; ações **Salvar rascunho** / **Concluir medição**.
+  - **Tabela completa** (densidade alta): Item · Descrição · **Contratual** · **Acumulada** · **Saldo** · **Qtd. medida (input destacado)** · Preço unit. · **Valor medido** · Valor acumulado. Scroll horizontal aceitável.
+  - `qtd_medida` é o único campo editável; o resto é derivado (`pqpUtils`).
+
+### Aba Aditivos
+- **Tabela com impactos:** Nº · Tipo (Valor / Prazo / Valor e Prazo / Escopo) · Data assinatura · **Δ Valor** · **Δ Prazo** · Status (Pendente / Assinado / Cancelado) · ações.
+- **Rodapé soma apenas aditivos `Assinado`** → alimenta Valor Total e "Término com aditivos" da Visão Geral.
+
 ## 8. Fora de Escopo (YAGNI)
 
-Evidências / anexo de RDO · central de aprovações com papéis · análise de IA · retenção (valor bruto/líquido) · tabela de itens com `parent_id` · paginação server-side.
+Evidências / anexo de RDO · central de aprovações com papéis · análise de IA · retenção (valor bruto/líquido) · tabela de itens com `parent_id` · paginação server-side · **aba de Documentos**.
 
 ## 9. Critérios de Aceitação
 
@@ -113,9 +148,22 @@ Evidências / anexo de RDO · central de aprovações com papéis · análise de
 5. Importação de PQP via Excel popula a árvore JSONB corretamente.
 6. Loading/empty/error em todas as telas novas; `queryKey` com `selectedProjectId`.
 7. `npm run build` sem erros; `/audit` ≥ 9; RLS validado nas tabelas novas/alteradas.
+8. Detalhe do Contrato com 4 abas (Visão Geral · PQP · Medições · Aditivos); KPIs gerais da Lista **não** aparecem no Detalhe (só indicadores do contrato).
+9. Aba Medições: histórico de períodos → editor em tela cheia (tabela completa, `qtd_medida` destacada); status Elaboração→Concluído. Aba Aditivos: rodapé soma só `Assinado`. Aba Visão Geral exibe `modalidade`, `origem`, `centro_custo` e `observacoes`.
 
 ## 10. Riscos e Pontos de Atenção
 
 - **Migração de dados:** medições existentes em `medicoes` (itens flat) precisam ser lidas pelo novo `PqpEditor` — prever compatibilidade (item flat = folha sem `children`).
 - **Derivação read-time vs performance:** somar faturamentos por mês a cada render é barato para volumes esperados; reavaliar se crescer.
 - **Schema real desatualizado** (L013–L016): toda escrita deve usar nomes de coluna verificados no banco.
+
+## 11. Ajuste de schema — tabela `contratos`
+
+Para os campos novos da Visão Geral, adicionar à tabela `contratos` (verificar nomes reais antes — L016):
+
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `modalidade` | TEXT CHECK (`'Preço unitário'`, `'Global'`) | Preço unitário × Global/Lump Sum. Informativo nesta fase (não altera a lógica de medição por quantidade). |
+| `origem` | TEXT | Vínculo textual com orçamento/proposta de origem (ex.: "ORC-0042"). Sem FK nesta fase. |
+
+Demais campos da Visão Geral já existem em `contratos` (ver mapeamento em §7 e no relatório de exploração). `centro_custo` e `observacoes` — hoje capturados mas não exibidos — passam a aparecer na aba Visão Geral.
