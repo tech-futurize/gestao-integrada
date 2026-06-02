@@ -7,7 +7,7 @@ import {
 import { Receipt } from "lucide-react";
 import { FormDialog } from "@/components/ui/FormDialog";
 import PqpEditor from "@/components/planejamento/PqpEditor";
-import { computeTotais, recalcAcumulado, flattenLeaves } from "@/utils/pqpUtils";
+import { computeTotais, recalcAcumulado } from "@/utils/pqpUtils";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 

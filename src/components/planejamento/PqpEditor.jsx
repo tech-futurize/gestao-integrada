@@ -56,7 +56,7 @@ function maxDepth(itens, level = 1) {
   );
 }
 
-export default function PqpEditor({ itens = [], onChange, mode = "definicao", readOnly = false, contratoLabel }) {
+export default function PqpEditor({ itens = [], onChange, mode = "definicao", readOnly = false }) {
   const [showImport, setShowImport] = useState(false);
   const depth = useMemo(() => maxDepth(itens, 1), [itens]);
   const [maxLevel, setMaxLevel] = useState(99);
@@ -65,7 +65,6 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
   const rows = useMemo(() => visibleRows(itens, maxLevel), [itens, maxLevel]);
   const totais = useMemo(() => computeTotais(itens), [itens]);
   const isMedicao = mode === "medicao";
-  const colCount = isMedicao ? 9 : 6;
 
   const editLeaf = (code, key, raw) => {
     const value = raw === "" ? 0 : Number(raw);

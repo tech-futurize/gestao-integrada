@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShieldAlert, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
@@ -23,6 +23,7 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
 import PlanoAcao from "@/components/riscos/PlanoAcao";
+import RiscoHoverCard from "@/components/riscos/RiscoHoverCard";
 import { CATEGORIAS_RISCO as CATEGORIAS, CAT_COLORS, SCORE_COLORS, IMPACTO_DIMS, getScoreLevel, PROBABILIDADE_OPTIONS, IMPACTO_OPTIONS, STATUS_RISCO, STATUS_RISCO_COLORS, pesoProbabilidade, pesoImpacto, calcScoreRisco } from "@/utils/riscosUtils";
 
 const RISCO_COLUMNS = [
@@ -58,13 +59,18 @@ const EMPTY_FORM = {
   escopo_texto: "", prazo_dias: "", valor_impacto: "",
 };
 
-// 5×5 matrix cell colors — recebe pesos numéricos (1-5) já derivados do texto
-function matrixColor(p, i) {
-  const score = p * i;
-  if (score >= 12) return "bg-red-500/80";
-  if (score >= 6) return "bg-amber-400/80";
-  if (score >= 4) return "bg-yellow-300/80";
-  return "bg-green-300/80";
+function getCellStyle(score) {
+  if (score >= 12) return { bg: "bg-red-500/15",    border: "border-red-500/30"    };
+  if (score >= 6)  return { bg: "bg-amber-500/15",  border: "border-amber-500/30"  };
+  if (score >= 4)  return { bg: "bg-yellow-400/15", border: "border-yellow-400/30" };
+  return            { bg: "bg-green-500/15",  border: "border-green-500/30"  };
+}
+
+function getCellChipStyle(score) {
+  if (score >= 12) return { activeColor: "#ef4444", normalBg: "rgba(239,68,68,0.4)",   textColor: "#fca5a5" };
+  if (score >= 6)  return { activeColor: "#f59e0b", normalBg: "rgba(245,158,11,0.4)",  textColor: "#fcd34d" };
+  if (score >= 4)  return { activeColor: "#eab308", normalBg: "rgba(234,179,8,0.4)",   textColor: "#fef08a" };
+  return            { activeColor: "#22c55e", normalBg: "rgba(34,197,94,0.4)",    textColor: "#86efac" };
 }
 
 export default function GestaoRiscos() {
