@@ -53,7 +53,7 @@ export default function CurvaSChart({
             minWidth: "100%",
           }}
         >
-          <ResponsiveContainer width="100%" height={192}>
+          <ResponsiveContainer width="100%" height={191}>
             <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
