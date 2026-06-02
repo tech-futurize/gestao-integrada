@@ -34,6 +34,7 @@ const TABLE_MAP = {
   AgenteToolLink: 'agente_tool_links',
   AgenteUsoLog: 'agente_uso_logs',
   ModeloPreco: 'modelo_precos',
+  ProviderConfig: 'provider_configs',
 };
 
 function createEntityClient(tableName) {
