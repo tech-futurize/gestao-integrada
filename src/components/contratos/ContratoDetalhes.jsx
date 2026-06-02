@@ -7,6 +7,8 @@ import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/dateUtils";
 
+const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+
 function addDaysToDate(dateStr, days) {
   if (!dateStr || !days) return null;
   const d = new Date(dateStr + "T00:00:00");
