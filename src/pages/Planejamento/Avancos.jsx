@@ -1,17 +1,22 @@
 import { useState } from "react";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Upload } from "lucide-react";
 import { useProject } from "@/lib/ProjectContext";
+import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/ui/PageHeader";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import AvancoFisicoPanel from "@/components/planejamento/AvancoFisicoPanel";
 import AvancoFinanceiroPanel from "@/components/planejamento/AvancoFinanceiroPanel";
 
-// ── Avancos — container de abas Físico / Financeiro ───────────────────────────
-// Espelha a estrutura de Histograma.jsx (abas coladas ao card, padrão visual unificado).
-
 export default function Avancos() {
   const { selectedProjectId } = useProject();
   const [activeTab, setActiveTab] = useState("fisico");
+  const [showImportExport, setShowImportExport] = useState(false);
+
+  const headerActions = (
+    <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+      <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+    </Button>
+  );
 
   if (!selectedProjectId) {
     return (
@@ -29,7 +34,7 @@ export default function Avancos() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader />
+      <PageHeader actions={headerActions} />
       <div className="flex-1 overflow-auto p-6 space-y-4">
         {/* Abas coladas ao card — mesmo padrão do Histograma */}
         <div className="flex gap-1 border-b border-border pb-0">
@@ -51,8 +56,14 @@ export default function Avancos() {
         </div>
 
         {activeTab === "fisico"
-          ? <AvancoFisicoPanel />
-          : <AvancoFinanceiroPanel />}
+          ? <AvancoFisicoPanel
+              showImportExport={showImportExport}
+              setShowImportExport={setShowImportExport}
+            />
+          : <AvancoFinanceiroPanel
+              showImportExport={showImportExport}
+              setShowImportExport={setShowImportExport}
+            />}
       </div>
     </div>
   );

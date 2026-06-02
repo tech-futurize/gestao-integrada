@@ -13,7 +13,6 @@ import {
   eachWeekOfInterval,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Upload } from "lucide-react";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
@@ -98,18 +97,18 @@ function buildRows(cards) {
       headerCls:      "text-amber-700 dark:text-amber-300",
       acumValue:      cards.projAcum,
       isRealRow:      false,
+      blockWhenField: FIELDS.real,
     },
   ];
 }
 
 // ── AvancoFisicoPanel ──────────────────────────────────────────────────────────
 
-export default function AvancoFisicoPanel() {
+export default function AvancoFisicoPanel({ showImportExport, setShowImportExport }) {
   const { selectedProjectId } = useProject();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [showImportExport, setShowImportExport] = React.useState(false);
   const [showPrev, setShowPrev] = React.useState(true);
   const [showReal, setShowReal] = React.useState(true);
   const [showProj, setShowProj] = React.useState(true);
@@ -340,15 +339,6 @@ export default function AvancoFisicoPanel() {
           </button>
         ))}
 
-        <Button
-          size="sm"
-          variant="outline"
-          className="ml-auto"
-          onClick={() => setShowImportExport(true)}
-        >
-          <Upload className="w-3.5 h-3.5 mr-1" />
-          Importar / Exportar
-        </Button>
       </div>
 
       {/* Cards KPI */}
