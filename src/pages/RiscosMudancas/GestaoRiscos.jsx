@@ -448,17 +448,28 @@ export default function GestaoRiscos() {
       {/* Tabela */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
+            <colgroup>
+              <col style={{ width: "72px" }} />   {/* Código */}
+              <col />                              {/* Descrição — responsiva */}
+              <col style={{ width: "110px" }} />  {/* Categoria */}
+              <col style={{ width: "120px" }} />  {/* Impactos */}
+              <col style={{ width: "96px" }} />   {/* P */}
+              <col style={{ width: "96px" }} />   {/* I */}
+              <col style={{ width: "110px" }} />  {/* Score */}
+              <col style={{ width: "130px" }} />  {/* Responsável */}
+              <col style={{ width: "48px" }} />   {/* Ações */}
+            </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted">
-                <th onClick={() => handleSort("codigo")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Código<SortIcon col="codigo" /></th>
+                <th onClick={() => handleSort("codigo")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Código<SortIcon col="codigo" /></th>
                 <th onClick={() => handleSort("descricao")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Descrição<SortIcon col="descricao" /></th>
-                <th onClick={() => handleSort("categoria")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Categoria<SortIcon col="categoria" /></th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Impactos</th>
-                <th onClick={() => handleSort("probabilidade")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">P<SortIcon col="probabilidade" /></th>
-                <th onClick={() => handleSort("impacto")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">I<SortIcon col="impacto" /></th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Score</th>
-                <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Responsável<SortIcon col="responsavel" /></th>
+                <th onClick={() => handleSort("categoria")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Categoria<SortIcon col="categoria" /></th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Impactos</th>
+                <th onClick={() => handleSort("probabilidade")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">P<SortIcon col="probabilidade" /></th>
+                <th onClick={() => handleSort("impacto")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">I<SortIcon col="impacto" /></th>
+                <th onClick={() => handleSort("score")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Score<SortIcon col="score" /></th>
+                <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Responsável<SortIcon col="responsavel" /></th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -472,7 +483,7 @@ export default function GestaoRiscos() {
                 return (
                   <tr key={r.id} className={`border-b border-border hover:bg-muted/40 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
                     <td className="px-4 py-3 font-bold text-xs text-foreground whitespace-nowrap">{r.codigo || "—"}</td>
-                    <td className="px-4 py-3 w-full max-w-sm">
+                    <td className="px-4 py-3">
                       <div className="font-medium text-foreground text-sm line-clamp-2">{r.descricao}</div>
                     </td>
                     <td className="px-4 py-3">
