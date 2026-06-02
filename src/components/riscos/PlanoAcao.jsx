@@ -18,6 +18,8 @@ import { ptBR } from "date-fns/locale";
 
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { KPICard } from "@/components/ui/KPICard";
+import { useSortTable } from "@/hooks/useSortTable";
+import { SortableTableHead } from "@/components/ui/SortableTableHead";
 
 const emptyForm = {
   descricao: "",
@@ -57,6 +59,8 @@ export default function PlanoAcao({ projectId }) {
     queryFn: () => entities.Acao.filter({ projeto_id: projectId }),
     enabled: !!projectId,
   });
+
+  const { sortedData: acoesSorted, sortKey, sortDir, handleSort } = useSortTable(acoes, { defaultKey: "descricao" });
 
   const { data: riscos = [] } = useQuery({
     queryKey: ["riscos", projectId],
@@ -294,16 +298,16 @@ export default function PlanoAcao({ projectId }) {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted">
-                    <TableHead>Descrição</TableHead>
+                    <SortableTableHead columnKey="descricao" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Descrição</SortableTableHead>
                     <TableHead>Vínculo</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead>Previsão</TableHead>
-                    <TableHead>Status</TableHead>
+                    <SortableTableHead columnKey="responsavel" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>
+                    <SortableTableHead columnKey="data_fim_prevista" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Previsão</SortableTableHead>
+                    <SortableTableHead columnKey="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {acoes.map((acao) => (
+                  {acoesSorted.map((acao) => (
                     <TableRow key={acao.id} className="hover:bg-muted">
                       <TableCell className="max-w-md">
                         <p className="font-medium text-foreground line-clamp-2">{acao.descricao}</p>
