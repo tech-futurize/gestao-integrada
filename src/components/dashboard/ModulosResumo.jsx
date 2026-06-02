@@ -172,19 +172,19 @@ function ResumoContratos({ projetoId }) {
   });
 
   const valorTotal = contratos.reduce((s, c) => s + (c.valor_total || 0), 0);
-  const ativos = contratos.filter(c => c.status === "Ativo").length;
+  const ativos = contratos.filter(c => c.status === "Em andamento").length;
   const pieData = [
-    { name: "Ativo", value: contratos.filter(c => c.status === "Ativo").length },
-    { name: "Em Revisão", value: contratos.filter(c => c.status === "Em Revisão").length },
-    { name: "Encerrado", value: contratos.filter(c => c.status === "Encerrado").length },
-    { name: "Suspenso", value: contratos.filter(c => c.status === "Suspenso").length },
+    { name: "A iniciar", value: contratos.filter(c => c.status === "A iniciar").length },
+    { name: "Em andamento", value: contratos.filter(c => c.status === "Em andamento").length },
+    { name: "Concluído", value: contratos.filter(c => c.status === "Concluído").length },
+    { name: "Paralisado", value: contratos.filter(c => c.status === "Paralisado").length },
   ].filter(d => d.value > 0);
 
   const statusVariant = {
-    "Ativo": "positive",
-    "Em Revisão": "attention",
-    "Encerrado": "neutral",
-    "Suspenso": "critical",
+    "A iniciar": "neutral",
+    "Em andamento": "positive",
+    "Concluído": "positive",
+    "Paralisado": "critical",
   };
 
   return (
@@ -718,7 +718,7 @@ function ResumoGestaoRiscos({ projetoId }) {
     total: riscos.length,
     criticos: riscos.filter(r => (r.score || 0) >= 7).length,
     ativos: riscos.filter(r => r.status === "Ativo").length,
-    encerrados: riscos.filter(r => r.status === "Encerrado").length,
+    monitoramento: riscos.filter(r => r.status === "Monitoramento").length,
   };
 
   const riscosCAT = Object.values(
@@ -745,7 +745,7 @@ function ResumoGestaoRiscos({ projetoId }) {
           <KpiCard label="Total de Riscos" value={kpi.total} icon={ShieldAlert} color="#26405d" />
           <KpiCard label="Críticos (score ≥7)" value={kpi.criticos} icon={AlertCircle} color="#ef4444" />
           <KpiCard label="Ativos" value={kpi.ativos} icon={Clock} color="#d97706" />
-          <KpiCard label="Encerrados" value={kpi.encerrados} icon={CheckCircle} color="#16a34a" />
+          <KpiCard label="Em Monitoramento" value={kpi.monitoramento} icon={CheckCircle} color="#16a34a" />
         </div>
         <div className="grid grid-cols-3 gap-6">
           <div>
