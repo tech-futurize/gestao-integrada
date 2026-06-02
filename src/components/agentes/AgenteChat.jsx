@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, User, Layers, AlertCircle } from "lucide-react";
+import { Send, Loader2, User, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -134,22 +134,6 @@ export default function AgenteChat({ agent }) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Barra de contexto */}
-      <div className="bg-muted border-b border-border px-4 py-2 flex items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">{agent.description}</p>
-        {project ? (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 flex-shrink-0">
-            <Layers className="w-3 h-3 text-primary" />
-            <span className="text-xs font-semibold text-primary truncate max-w-[160px]">{project.nome}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-attention/10 border border-status-attention/20 flex-shrink-0">
-            <AlertCircle className="w-3 h-3 text-status-attention" />
-            <span className="text-xs font-semibold text-status-attention">Sem projeto selecionado</span>
-          </div>
-        )}
-      </div>
-
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-muted/20">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
@@ -241,7 +225,7 @@ export default function AgenteChat({ agent }) {
             {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
         </div>
-        <p className="text-center text-xs text-muted-foreground mt-2">Enter para enviar · Shift+Enter para nova linha</p>
+        <p className="text-center text-xs text-muted-foreground mt-2">As respostas são geradas por Inteligência Artificial e podem conter imprecisões. Não substituem validação técnica ou profissional.</p>
       </div>
     </div>
   );
