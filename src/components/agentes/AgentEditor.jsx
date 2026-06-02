@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { entities } from '@/api/supabaseEntities';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/components/ui/use-toast';
@@ -20,12 +20,6 @@ const PROVIDERS = [
   { value: 'groq',      label: 'Groq',      models: ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768', 'gemma2-9b-it'] },
 ];
 
-const SYSTEM_TOOLS = [
-  { id: 'get-schema',     label: 'get-schema',     desc: 'Lê a estrutura do banco de dados' },
-  { id: 'execute-sql',    label: 'execute-sql',     desc: 'Executa queries SELECT no banco' },
-  { id: 'analyze-table',  label: 'analyze-table',   desc: 'Estatísticas e análise de tabela' },
-  { id: 'query-database', label: 'query-database',  desc: 'Delega consulta ao Executor de Dados' },
-];
 
 const STEPS = [
   { key: 'identidade', label: 'Identidade' },
@@ -51,6 +45,13 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!agent?.id;
+
+  const { data: allTools = [] } = useQuery({
+    queryKey: ['agente-tools'],
+    queryFn: () => entities.AgenteTool.list(),
+  });
+  const systemTools_db = allTools.filter(t => t.is_system);
+  const customTools_db = allTools.filter(t => !t.is_system);
 
   useEffect(() => {
     if (agent) {
@@ -102,17 +103,17 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
         agentId = created.id;
       }
 
-      // Sync system tools
-      await supabase.from('agente_system_tools').delete().eq('agente_id', agentId);
+      // Sync tool links (unified — agente_tool_links)
+      await supabase.from('agente_tool_links').delete().eq('agente_id', agentId);
       if (selectedTools.length > 0) {
-        await supabase.from('agente_system_tools').insert(
+        await supabase.from('agente_tool_links').insert(
           selectedTools.map(toolId => ({ agente_id: agentId, tool_id: toolId }))
         );
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['agentes'] });
-      queryClient.invalidateQueries({ queryKey: ['agente-system-tools'] });
+      queryClient.invalidateQueries({ queryKey: ['agente-tool-links'] });
       toast({ title: isEditing ? 'Agente atualizado!' : 'Agente criado!', variant: 'success' });
       onSaved?.();
     },
@@ -353,42 +354,64 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
   );
 
   // ── Passo 4: Tools ──────────────────────────────────────────────────────────
-  const StepTools = () => (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-base font-bold text-foreground">Tools de Sistema</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">Capacidades disponíveis para este agente</p>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {SYSTEM_TOOLS.map(tool => {
-          const active = selectedTools.includes(tool.id);
-          return (
-            <div
-              key={tool.id}
-              className={`flex items-start gap-2 p-3 rounded-md border transition-colors cursor-pointer ${
-                active ? 'border-[hsl(210_62%_16%/30%)] bg-[hsl(210_62%_16%/5%)]' : 'border-border bg-card'
-              }`}
-              onClick={() => toggleTool(tool.id)}
-            >
-              <Switch checked={active} onCheckedChange={() => toggleTool(tool.id)} className="mt-0.5" />
-              <div>
-                <p className="font-mono text-xs font-semibold">{tool.label}</p>
-                <p className="text-xs text-muted-foreground">{tool.desc}</p>
-              </div>
+  const StepTools = () => {
+    const renderToolChip = (tool) => {
+      const active = selectedTools.includes(tool.id);
+      return (
+        <div
+          key={tool.id}
+          className={`flex items-start gap-2 p-3 rounded-md border transition-colors cursor-pointer ${
+            active ? 'border-[hsl(210_62%_16%/30%)] bg-[hsl(210_62%_16%/5%)]' : 'border-border bg-card'
+          }`}
+          onClick={() => toggleTool(tool.id)}
+        >
+          <Switch checked={active} onCheckedChange={() => toggleTool(tool.id)} className="mt-0.5" />
+          <div>
+            <p className="font-mono text-xs font-semibold">{tool.nome}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2">{tool.descricao}</p>
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-5">
+        {/* Tools de Sistema */}
+        <div>
+          <div className="mb-2">
+            <h3 className="text-base font-bold text-foreground">Tools de Sistema</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Capacidades nativas do sistema</p>
+          </div>
+          {systemTools_db.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Carregando...</p>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {systemTools_db.map(renderToolChip)}
             </div>
-          );
-        })}
-      </div>
-      <div className="space-y-2">
-        <p className="text-sm font-semibold">Tools SQL Customizadas</p>
-        <div className="p-4 rounded-md border border-dashed border-border bg-muted/20 text-center">
-          <p className="text-xs text-muted-foreground">
-            Crie tools SQL customizadas na aba <strong>Tools</strong> e vincule-as ao agente.
-          </p>
+          )}
+        </div>
+
+        {/* Tools SQL Customizadas */}
+        <div>
+          <div className="mb-2">
+            <h3 className="text-sm font-semibold text-foreground">Tools SQL Customizadas</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Consultas SQL criadas na aba Tools</p>
+          </div>
+          {customTools_db.length === 0 ? (
+            <div className="p-4 rounded-md border border-dashed border-border bg-muted/20 text-center">
+              <p className="text-xs text-muted-foreground">
+                Nenhuma tool customizada disponível. Crie uma na aba <strong>Tools</strong>.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {customTools_db.map(renderToolChip)}
+            </div>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (

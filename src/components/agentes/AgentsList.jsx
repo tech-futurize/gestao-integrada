@@ -16,19 +16,19 @@ export default function AgentsList() {
     queryFn: () => entities.Agente.list({}, { pageSize: 100 }),
   });
 
-  const { data: systemToolsData = [] } = useQuery({
-    queryKey: ['agente-system-tools'],
-    queryFn: () => entities.AgenteSystemTool.list(),
+  const { data: toolLinksData = [] } = useQuery({
+    queryKey: ['agente-tool-links'],
+    queryFn: () => entities.AgenteToolLink.list(),
   });
 
   const getToolCount = (agentId) =>
-    systemToolsData.filter(st => st.agente_id === agentId).length;
+    toolLinksData.filter(tl => tl.agente_id === agentId).length;
 
-  const getSystemTools = (agentId) =>
-    systemToolsData.filter(st => st.agente_id === agentId).map(st => st.tool_id);
+  const getAgentToolIds = (agentId) =>
+    toolLinksData.filter(tl => tl.agente_id === agentId).map(tl => tl.tool_id);
 
   const handleEdit = (agent) => {
-    setEditingAgent({ ...agent, _systemTools: getSystemTools(agent.id) });
+    setEditingAgent({ ...agent, _systemTools: getAgentToolIds(agent.id) });
     setShowEditor(true);
   };
 
