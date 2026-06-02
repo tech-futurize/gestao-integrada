@@ -3,7 +3,9 @@ import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { eachMonthOfInterval, format, parseISO, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
@@ -137,6 +139,7 @@ export default function HistogramaTabela({ tipo }) {
   const [showProj, setShowProj] = useState(true);
   const [showNovoDialog, setShowNovoDialog] = useState(false);
   const [novoNome, setNovoNome] = useState("");
+  const [viewRecurso, setViewRecurso] = useState(null);
 
   // Data queries
   const { data: histogramas = [], isPending, isError } = useQuery({
@@ -404,17 +407,12 @@ export default function HistogramaTabela({ tipo }) {
                   </td>
                   <td className="px-3 py-2 text-center font-semibold text-muted-foreground">{recurso.pctProj}%</td>
                   <td className="px-2 py-2">
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Excluir "${recurso.nome}"? Esta ação removerá todos os registros mensais e não pode ser desfeita.`)) {
-                          deleteRecurso(recurso.nome);
-                        }
-                      }}
-                      aria-label={`Excluir ${recurso.nome}`}
-                      className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <RowActions
+                      onView={() => setViewRecurso(recurso)}
+                      onDelete={() => deleteRecurso(recurso.nome)}
+                      deleteTitle={`Excluir "${recurso.nome}"?`}
+                      deleteDescription="Esta ação removerá todos os registros mensais e não pode ser desfeita."
+                    />
                   </td>
                 </tr>
               ))}
@@ -542,6 +540,22 @@ export default function HistogramaTabela({ tipo }) {
           })()}
         </DialogContent>
       </Dialog>
+
+      {viewRecurso && (
+        <DetailDialog
+          open={!!viewRecurso}
+          onOpenChange={(o) => !o && setViewRecurso(null)}
+          title={viewRecurso.nome}
+          sections={[
+            { label: "Nome", value: viewRecurso.nome },
+            { label: "Total Previsto", value: viewRecurso.totalPrev },
+            { label: "Total Real", value: viewRecurso.totalReal },
+            { label: "Total Projetado", value: viewRecurso.totalProj },
+            { label: "% Realizado", value: `${viewRecurso.pctReal}%` },
+            { label: "% Projetado", value: `${viewRecurso.pctProj}%` },
+          ]}
+        />
+      )}
     </div>
   );
 }

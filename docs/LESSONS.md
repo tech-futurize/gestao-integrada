@@ -232,6 +232,20 @@ Copie o bloco abaixo para cada nova lição.
 - **Como evitar em projetos futuros:** Incluir `git commit` como etapa obrigatória **no mesmo ciclo** em que `/audit` declara "Verified". Regra: não fechar o ciclo de audit sem o hash do commit no registro.
 - **Referências:** `PLAN.md — M13`, `src/components/riscos/PlanoAcao.jsx`, `src/pages/RiscosMudancas/`.
 
+### L012 — Stash órfão acumulado: commitar working tree ANTES de git stash pop para evitar conflitos em cascata
+
+- **Data:** 2026-06-02
+- **Agente:** Builder
+- **Milestone:** M14 — Padronização de Filtros / FilterToolbar
+- **Categoria:** Processo / Git
+- **Gravidade:** Média
+- **Contexto em 1 frase:** Um stash criado em 8be1d05 acumulou 25 arquivos de correções sem commit; quando o stash foi popado, o working tree dirty gerou conflitos em 5 arquivos simultâneos.
+- **Erro observado:** `git stash pop` produziu conflitos em `MedicaoForm.jsx`, `SixWLATable.jsx`, `TakeOffCommodities.jsx`, `ItemMASForm.jsx` e `MapaSuprimentos.jsx`. Dois deles (`TakeOffCommodities`) ficaram com referências a variáveis indefinidas (`filtroUnidade`, `filtroDisciplina`) que precisaram ser corrigidas manualmente.
+- **Causa raiz:** O stash foi criado em um commit anterior (8be1d05) e o branch acumulou 5 commits com mudanças sobrepostas. Fazer `git stash pop` sem commitar o working tree atual primeiro gerou conflitos tri-laterais (stash base + stash changes + working tree changes).
+- **Correção aplicada:** R1: commit do working tree atual; R2: `git stash pop` + resolução manual dos 5 conflitos; R3: verificação das features críticas; R4: commit de recuperação `521cc1c`.
+- **Como evitar em projetos futuros:** **Nunca criar um stash quando há intenção de continuar trabalhando naqueles arquivos.** Regra: antes de cada `git stash pop`, sempre commitar (ou pelo menos stagear) o working tree atual para que o merge seja binário (HEAD vs stash), não tri-lateral.
+- **Referências:** commits `f7821b6` (R1), `521cc1c` (R4); `src/components/planejamento/SixWLATable.jsx`, `src/components/planejamento/TakeOffCommodities.jsx`.
+
 ---
 
 ## 6. Como curar o arquivo

@@ -106,6 +106,16 @@ Documentação de módulos será escrita ao final de cada milestone, após `/aud
 
 Quando `/audit` declara "Verified & Polished", o mesmo ciclo **deve** incluir um `git commit` com hash registrado antes de fechar o módulo — nunca deixar trabalho auditado sem commitar para a próxima sessão (L011).
 
+### Ciclo de Commit & Push (obrigatório)
+
+- Todo agente que concluir uma task **deve criar um `git commit`** antes de reportar conclusão — nunca deixar trabalho implementado sem commitar.
+- Commits seguem Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`.
+- **`git push origin main`** é de responsabilidade exclusiva do **Architect** no `/milestone-close` — agentes individuais **não fazem push** durante o desenvolvimento ativo.
+- Sequência obrigatória executada pelo Architect no `/milestone-close`:
+  1. `git status` — confirmar ausência de arquivos não commitados
+  2. `git add <arquivos>` + `git commit` — resolver qualquer uncommitted restante
+  3. `git push origin main` — publicar o milestone completo no GitHub
+
 ### Lições Aprendidas (obrigatório)
 
 - Todo agente que encontrar um **erro relevante** registra uma entrada em `/docs/LESSONS.md` antes de fechar a task.

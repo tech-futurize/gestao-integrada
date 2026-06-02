@@ -509,6 +509,90 @@ Fallback: primeira letra do email. Fallback final: `"?"`.
 
 ---
 
+## 12. Modal / Dialog Padrão (FormDialog)
+
+### Quando usar
+
+- **FormDialog** (`src/components/ui/FormDialog.jsx`): todo modal de edição (form) e de visualização (read-only) centralizado na tela.
+- **`Dialog` + `DialogContent` do shadcn** (`src/components/ui/dialog.jsx`): sub-dialogs simples de seleção ou confirmação (sem header com ícone, sem footer estilizado).
+- **`Sheet`** (`src/components/ui/sheet.jsx`): painéis laterais (slide-over) — e.g. HeatmapDrilldown.
+
+### Anatomia
+
+```
+┌─────────────────────────────────────────┐
+│ ▌ [ícone]  Título                   [X] │  ← header
+│           subtítulo                      │
+├─────────────────────────────────────────┤
+│                                         │
+│   corpo (overflow-y-auto, flex-1)       │  ← children
+│                                         │
+├─────────────────────────────────────────┤
+│                  [Cancelar]  [Salvar]   │  ← footer
+└─────────────────────────────────────────┘
+```
+
+- **Faixa de accent**: `bar-left` (padrão) = `w-1 self-stretch rounded-full bg-primary`; `bar-top` = `h-1.5 w-full bg-primary`.
+- **Chip de ícone**: `w-9 h-9 rounded-lg bg-primary/10` + ícone `text-primary`.
+- **Título**: `text-base font-bold text-foreground` (renderizado como `DialogPrimitive.Title` para ARIA).
+- **Subtítulo**: `text-xs text-muted-foreground` (renderizado como `DialogPrimitive.Description` para ARIA).
+- **Body**: `overflow-y-auto flex-1 px-6 py-5 space-y-5`.
+- **Footer**: `border-t border-border px-6 py-4 flex justify-end gap-2 bg-muted/20`.
+- **Container**: `rounded-xl border border-border bg-card shadow-2xl flex flex-col max-h-[90vh] p-0 overflow-hidden`.
+
+### Accent único
+
+Todos os modais usam **sempre** `bg-primary` como cor de accent (faixa e chip) — nunca cor por módulo. Em dark mode, `--primary` é o ciano elétrico; isso é **permitido** na faixa/chip do header. **Nunca** usar ciano em botões — o botão Salvar usa `variant="save"` (`bg-action-save`).
+
+### Tabela de props
+
+| Prop | Tipo | Default | Descrição |
+|------|------|---------|-----------|
+| `open` | boolean | — | Controle Radix |
+| `onOpenChange` | function | — | Callback (ESC, backdrop) |
+| `icon` | LucideIcon | — | Ícone no chip do header |
+| `title` | string | — | Título principal (obrigatório p/ ARIA) |
+| `subtitle` | string | — | Subtítulo/descrição |
+| `badge` | ReactNode | — | Conteúdo à direita do título (e.g. StatusBadge) |
+| `variant` | `"bar-left"` \| `"bar-top"` | `"bar-left"` | Estilo da faixa |
+| `maxWidth` | string (classe Tailwind) | `"max-w-lg"` | Largura máxima |
+| `mode` | `"edit"` \| `"view"` | `"edit"` | Controla footer padrão |
+| `onClose` | function | — | Callback dos botões X / Cancelar / Fechar |
+| `onSave` | function | — | Callback do botão Salvar |
+| `saving` | boolean | `false` | Exibe "Salvando..." e desabilita botões |
+| `saveDisabled` | boolean | `false` | Desabilita só o botão Salvar |
+| `saveLabel` | string | `"Salvar"` | Rótulo do botão de ação |
+| `cancelLabel` | string | `"Cancelar"` | Rótulo cancelar |
+| `closeLabel` | string | `"Fechar"` | Rótulo fechar (mode="view") |
+| `footer` | ReactNode | — | Footer custom (sobrepõe o padrão) |
+| `hideFooter` | boolean | `false` | Oculta o footer |
+
+### VIEW vs EDIT
+
+- `mode="edit"` → footer padrão: Cancelar (esquerda) + Salvar (direita). Criação: label "Criar X". Edição: "Salvar".
+- `mode="view"` → footer padrão: só botão Fechar.
+- Escape hatch: prop `footer` (ReactNode) para footers com ações especiais (Excluir + Cancelar + Salvar; Imprimir + Fechar).
+
+### SectionDivider
+
+Usar o `SectionDivider` exportado de `FormDialog.jsx` em vez de definir um por arquivo. Usa `bg-primary` / `text-primary` — nunca hex hardcoded.
+
+```jsx
+import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
+// ...
+<SectionDivider label="Identificação" />
+```
+
+### Regras herdadas
+
+- `rounded-xl` no container (proibido `rounded-2xl`).
+- Ordem no footer: Cancelar → Salvar (esquerda para direita).
+- `variant="save"` / `variant="outline"` — nunca `bg-emerald-600` em botões de modal.
+- Dark mode via tokens semânticos — proibido `orange-50`, `blue-100`, hex `#6366f1` sem `dark:` correspondente.
+- Sub-dialogs de seleção simples (busca + lista + confirmar) podem usar `Dialog` + `DialogContent` shadcn direto.
+
+---
+
 ## Documentos Relacionados
 
 | Precisa saber... | Leia |

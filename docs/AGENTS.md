@@ -67,6 +67,7 @@ e o usuário aciona cada agente na ordem, um por vez.
 6. Coordenar entregas, resolver conflitos e redistribuir tarefas
 7. **Gerar Sequência de Execução em toda resposta**
 8. Autorizar /deploy após validações de Tester e Security
+9. **Executar `git push origin main` no fechamento de cada milestone** (`/milestone-close`) — único agente autorizado a publicar no repositório remoto
 
 ### Skills
 

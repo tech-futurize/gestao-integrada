@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, Edit, UserX } from "lucide-react";
+import { Users, Plus, UserX } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import PageHeader from "@/components/ui/PageHeader";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +44,7 @@ export default function Usuarios() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [viewItem, setViewItem] = useState(null);
   const [permsMatrix, setPermsMatrix] = useState({});
 
   const { data: usuarios = [], isLoading, isError } = useQuery({
@@ -253,24 +256,22 @@ export default function Usuarios() {
                     <span className="font-medium">Perfil:</span> {u.perfil || "Visualizador"}
                   </div>
                 </div>
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={() => handleEdit(u)}
-                    className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground"
-                    title="Editar"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  {u.status !== "Inativo" && (
+                <RowActions
+                  onView={() => setViewItem(u)}
+                  onEdit={() => handleEdit(u)}
+                  size="md"
+                  extra={u.status !== "Inativo" ? (
                     <button
-                      onClick={() => deactivateMut.mutate(u.id)}
-                      className="p-2 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500"
-                      title="Desativar"
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); deactivateMut.mutate(u.id); }}
+                      className="h-8 w-8 inline-flex items-center justify-center rounded-md text-status-critical hover:bg-status-critical/10 transition-colors"
+                      title="Desativar usuário"
+                      aria-label="Desativar usuário"
                     >
                       <UserX className="w-4 h-4" />
                     </button>
-                  )}
-                </div>
+                  ) : null}
+                />
               </div>
             );
           })}
@@ -421,6 +422,21 @@ export default function Usuarios() {
           )}
 
       </FormDialog>
+
+      {viewItem && (
+        <DetailDialog
+          open={!!viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          title={viewItem.nome || viewItem.email}
+          sections={[
+            { label: "Nome", value: viewItem.nome },
+            { label: "E-mail", value: viewItem.email },
+            { label: "Perfil", value: viewItem.perfil },
+            { label: "Status", value: viewItem.status },
+            { label: "Cargo", value: viewItem.cargo },
+          ]}
+        />
+      )}
       </div>
     </div>
   );
