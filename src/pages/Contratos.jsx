@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { KPICard } from "@/components/ui/KPICard";
-import { Plus, FileText, DollarSign, Upload } from "lucide-react";
+import { Plus, FileText, DollarSign, Upload, Search } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import ContratosList from "@/components/contratos/ContratosList";
 import ContratoForm from "@/components/contratos/ContratoForm";
@@ -14,6 +14,9 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import FilterBar from "@/components/ui/FilterBar";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 
@@ -40,6 +43,12 @@ export default function Contratos() {
   const [editContrato, setEditContrato] = useState(null);
   const [selectedContrato, setSelectedContrato] = useState(null);
 
+  const [busca, setBusca] = useState("");
+  const [filtros, setFiltros] = useState({});
+  const [periodo, setPeriodo] = useState(null);
+  const [filterKey, setFilterKey] = useState(0);
+  const FILTROS_KEY = "contratos-filtros";
+
   const [showAditivoForm, setShowAditivoForm] = useState(false);
   const [editAditivo, setEditAditivo] = useState(null);
 
@@ -51,6 +60,30 @@ export default function Contratos() {
     queryFn: () => entities.Contrato.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
+
+  const tipoOptions = useMemo(
+    () => [...new Set(contratos.map(c => c.tipo).filter(Boolean))].sort(),
+    [contratos]
+  );
+
+  const filteredContratos = useMemo(() => {
+    let r = contratos;
+    if (busca) {
+      const b = busca.toLowerCase();
+      r = r.filter(c => c.objeto?.toLowerCase().includes(b) || c.fornecedor?.toLowerCase().includes(b));
+    }
+    if (filtros.status?.length) r = r.filter(c => filtros.status.includes(c.status));
+    if (filtros.tipo?.length)   r = r.filter(c => filtros.tipo.includes(c.tipo));
+    if (periodo?.from) {
+      const fromStr = periodo.from.toISOString().split("T")[0];
+      r = r.filter(c => c.data_inicio && c.data_inicio >= fromStr);
+    }
+    if (periodo?.to) {
+      const toStr = periodo.to.toISOString().split("T")[0];
+      r = r.filter(c => c.data_inicio && c.data_inicio <= toStr);
+    }
+    return r;
+  }, [contratos, busca, filtros, periodo]);
 
   const createContrato = useMutation({
     mutationFn: (data) => entities.Contrato.create(data),
@@ -173,6 +206,38 @@ export default function Contratos() {
           <KPICard label="Em Andamento" value={emAndamento} icon={<FileText />} />
         </div>
 
+        {!selectedContrato && (
+          <FilterToolbar
+            active={!!busca || !!periodo?.from || Object.values(filtros).some(a => a?.length > 0)}
+            onClearAll={() => { setBusca(""); setPeriodo(null); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+          >
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
+                placeholder="Buscar por objeto ou fornecedor..."
+                value={busca}
+                onChange={e => setBusca(e.target.value)}
+              />
+            </div>
+            <FilterBar
+              key={filterKey}
+              storageKey={FILTROS_KEY}
+              filters={[
+                { key: "status", label: "Status", options: ["A iniciar", "Em andamento", "Concluído", "Paralisado"] },
+                { key: "tipo",   label: "Tipo",   options: tipoOptions },
+              ]}
+              onChange={setFiltros}
+            />
+            <DateRangePicker
+              label="Data Início"
+              value={periodo}
+              onChange={setPeriodo}
+              onClear={() => setPeriodo(null)}
+            />
+          </FilterToolbar>
+        )}
+
         {selectedContrato ? (
           <ContratoDetalhes
             contrato={selectedContrato}
@@ -188,7 +253,7 @@ export default function Contratos() {
           />
         ) : (
           <ContratosList
-            contratos={contratos}
+            contratos={filteredContratos}
             isLoading={loadingContratos}
             onSelect={setSelectedContrato}
             onEdit={(c) => { setEditContrato(c); setShowContratoForm(true); }}
