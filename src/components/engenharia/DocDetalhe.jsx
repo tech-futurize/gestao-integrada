@@ -3,6 +3,7 @@ import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Save, X } from "lucide-react";
 import { DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
+import { formatDate } from "@/lib/dateUtils";
 
 export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpdate }) {
   const tarefaLabel = (id) => {
@@ -23,8 +24,6 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
     setShowRevModal(false);
     setNovaRevisao({ revisao: "", data: "", observacao: "" });
   };
-
-  const formatDate = (d) => d ? d.split("-").reverse().join("/").slice(0, 10) : "—";
 
   return (
     <div className="space-y-5">
@@ -55,8 +54,8 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
             {[
               { label: "Fornecedor", value: doc.fornecedor || "—" },
               { label: "Nº de Folhas", value: doc.num_folhas ? `A4 (${doc.num_folhas})` : "—" },
-              { label: "Dt. Projetada", value: formatDate(doc.data_projetada) },
-              { label: "Dt. Real", value: formatDate(doc.data_real) },
+              { label: "Dt. Projetada", value: formatDate(doc.data_projetada) || "—" },
+              { label: "Dt. Real", value: formatDate(doc.data_real) || "—" },
             ].map(({ label, value }) => (
               <div key={label}>
                 <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
@@ -74,7 +73,7 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
               </div>
               <div>
                 <div className="text-xs text-muted-foreground uppercase tracking-wide">Dt. Cronograma</div>
-                <div className="font-medium mt-0.5 text-foreground">{formatDate(doc.data_cronograma)}</div>
+                <div className="font-medium mt-0.5 text-foreground">{formatDate(doc.data_cronograma) || "—"}</div>
               </div>
             </div>
           )}

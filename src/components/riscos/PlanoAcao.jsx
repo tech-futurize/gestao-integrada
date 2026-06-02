@@ -14,8 +14,7 @@ import DetailDialog from "@/components/ui/DetailDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, CheckCircle2, Clock, X, Save } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDate } from "@/lib/dateUtils";
 
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { KPICard } from "@/components/ui/KPICard";
@@ -317,7 +316,7 @@ export default function PlanoAcao({ projectId }) {
                       <TableCell className="text-xs text-muted-foreground">{getVinculoLabel(acao, riscos, mudancas)}</TableCell>
                       <TableCell className="text-sm">{acao.responsavel || "-"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {acao.data_fim_prevista ? format(new Date(acao.data_fim_prevista), "dd/MM/yyyy", { locale: ptBR }) : "-"}
+                        {formatDate(acao.data_fim_prevista) || "-"}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={acao.status} />
