@@ -11,15 +11,18 @@ import {
   parseISO,
   format,
   eachWeekOfInterval,
+  endOfMonth,
+  isBefore,
+  isAfter,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import PageEmptyState from "@/components/ui/PageEmptyState";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import { computeAvancoSeries } from "./avancoSeries";
 import AvancoCards from "./AvancoCards";
 import CurvaSChart from "./CurvaSChart";
@@ -113,6 +116,7 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
   const [showReal, setShowReal] = React.useState(true);
   const [showProj, setShowProj] = React.useState(true);
   const [viewMode, setViewMode] = React.useState("semanal"); // "semanal" | "mensal"
+  const [periodFilter, setPeriodFilter] = React.useState(null);
 
   // ── Queries ──────────────────────────────────────────────────────────────────
 
@@ -158,6 +162,13 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
     [projeto]
   );
 
+  const weeksFiltradas = useMemo(() => {
+    if (!periodFilter) return projectWeeks;
+    const from = periodFilter.from;
+    const to   = periodFilter.to;
+    return projectWeeks.filter(w => !isBefore(w, from) && !isAfter(w, to));
+  }, [projectWeeks, periodFilter]);
+
   const dataMap = useMemo(() => {
     const m = new Map();
     avancos.forEach((r) => r.semana_iso && m.set(r.semana_iso, r));
@@ -174,6 +185,13 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
     });
     return months;
   }, [projectWeeks]);
+
+  const monthsFiltrados = useMemo(() => {
+    if (!periodFilter) return monthPeriods;
+    const from = startOfMonth(periodFilter.from);
+    const to   = endOfMonth(periodFilter.to);
+    return monthPeriods.filter(m => !isBefore(m, from) && !isAfter(m, to));
+  }, [monthPeriods, periodFilter]);
 
   // dataMap mensal: soma dos valores semanais agrupados por mês (read-only)
   const monthDataMap = useMemo(() => {
@@ -198,7 +216,7 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
   const isMensal = viewMode === "mensal";
 
   const { chartData, cards, lastRealPeriod } = useMemo(() => {
-    const periods = isMensal ? monthPeriods : projectWeeks;
+    const periods = isMensal ? monthsFiltrados : weeksFiltradas;
     if (periods.length === 0) {
       return {
         chartData: [],
@@ -223,7 +241,7 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
       fields: FIELDS,
       currentPeriodKey: curKey,
     });
-  }, [viewMode, isMensal, monthPeriods, monthDataMap, projectWeeks, dataMap]);
+  }, [viewMode, isMensal, monthsFiltrados, monthDataMap, weeksFiltradas, dataMap]);
 
   const lastRealLabel = lastRealPeriod
     ? (isMensal
@@ -339,6 +357,15 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
           </button>
         ))}
 
+        <div className="ml-auto">
+          <DateRangePicker
+            label="Período"
+            value={periodFilter}
+            onChange={setPeriodFilter}
+            onClear={() => setPeriodFilter(null)}
+          />
+        </div>
+
       </div>
 
       {/* Cards KPI */}
@@ -367,7 +394,7 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
 
       {/* Tabela transposta */}
       <AvancoTabela
-        periods={isMensal ? monthPeriods : projectWeeks}
+        periods={isMensal ? monthsFiltrados : weeksFiltradas}
         dataMap={isMensal ? monthDataMap : dataMap}
         periodKey={isMensal ? monthKey : weekKey}
         columnLabel={isMensal
