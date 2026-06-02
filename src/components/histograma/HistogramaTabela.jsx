@@ -3,9 +3,8 @@ import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { eachMonthOfInterval, format, parseISO, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
-import DetailDialog from "@/components/ui/DetailDialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
@@ -172,10 +171,10 @@ export default function HistogramaTabela({ tipo }) {
   const [showPrev, setShowPrev] = useState(true);
   const [showReal, setShowReal] = useState(true);
   const [showProj, setShowProj] = useState(true);
+  const [showTotals, setShowTotals] = useState(false);
   const [showNovoDialog, setShowNovoDialog] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [similarWarning, setSimilarWarning] = useState(null);
-  const [viewRecurso, setViewRecurso] = useState(null);
 
   // Data queries
   const { data: histogramas = [], isPending, isError } = useQuery({
@@ -354,7 +353,7 @@ export default function HistogramaTabela({ tipo }) {
         {[
           { key: "prev", label: "Previsto", active: showPrev, setActive: setShowPrev, activeStyle: "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300" },
           { key: "real", label: "Real", active: showReal, setActive: setShowReal, activeStyle: "bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300" },
-          { key: "proj", label: "Projetado", active: showProj, setActive: setShowProj, activeStyle: "bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300" },
+          { key: "proj", label: "Projetado", active: showProj, setActive: setShowProj, activeStyle: "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400" },
         ].map(({ key, label, active, setActive, activeStyle }) => (
           <button
             key={key}
@@ -414,11 +413,38 @@ export default function HistogramaTabela({ tipo }) {
         <div className="overflow-x-auto">
           <table className="text-sm border-collapse w-max min-w-full">
             <thead>
-              {/* Linha 1: recurso + meses agrupados + totais (rowSpan=2) */}
               <tr className="bg-muted border-b border-border">
-                <th rowSpan={2} className="sticky left-0 z-10 bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap min-w-[140px]">
-                  {tipo === "MO" ? "Função" : "Equipamento"}
+                {/* Nome + botão expandir */}
+                <th
+                  rowSpan={2}
+                  style={{ position: "sticky", left: 0, zIndex: 30, width: 180, minWidth: 180 }}
+                  className="bg-muted px-3 py-3 text-left text-xs font-semibold text-muted-foreground"
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="whitespace-nowrap">{tipo === "MO" ? "Função" : "Equipamento"}</span>
+                    <button
+                      onClick={() => setShowTotals(v => !v)}
+                      title={showTotals ? "Recolher totais" : "Expandir totais"}
+                      className="flex-shrink-0 w-4 h-4 rounded border border-border flex items-center justify-center hover:bg-muted-foreground/20 text-muted-foreground"
+                    >
+                      {showTotals ? <Minus className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
+                    </button>
+                  </div>
                 </th>
+                {/* Totais sticky (expandido) */}
+                {showTotals && <>
+                  <th rowSpan={2} style={{ position: "sticky", left: 180, zIndex: 30 }}
+                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">T.Prev</th>
+                  <th rowSpan={2} style={{ position: "sticky", left: 232, zIndex: 30 }}
+                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">T.Real</th>
+                  <th rowSpan={2} style={{ position: "sticky", left: 284, zIndex: 30 }}
+                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">T.Proj</th>
+                  <th rowSpan={2} style={{ position: "sticky", left: 336, zIndex: 30 }}
+                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">%Real</th>
+                  <th rowSpan={2} style={{ position: "sticky", left: 388, zIndex: 30 }}
+                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">%Proj</th>
+                </>}
+                {/* Meses */}
                 {projectMonths.map((m) => {
                   const colCount = [showPrev, showReal, showProj].filter(Boolean).length || 1;
                   return (
@@ -428,21 +454,15 @@ export default function HistogramaTabela({ tipo }) {
                     </th>
                   );
                 })}
-                <th rowSpan={2} className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground border-l-2 border-border whitespace-nowrap">T.Prev</th>
-                <th rowSpan={2} className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">T.Real</th>
-                <th rowSpan={2} className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">T.Proj</th>
-                <th rowSpan={2} className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">%Real</th>
-                <th rowSpan={2} className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">%Proj</th>
-                <th rowSpan={2} className="px-2 py-3"></th>
+                <th rowSpan={2} className="px-2 py-3" />
               </tr>
-              {/* Linha 2: sub-colunas Prev/Real/Proj */}
               <tr className="bg-muted/50 border-b border-border">
                 {projectMonths.flatMap((m) => {
                   const mk = mesKey(m);
                   const cols = [];
                   if (showPrev) cols.push(<th key={`${mk}-prev`} className="px-2 py-1 text-center text-[10px] font-medium text-blue-600 border-l-2 border-border whitespace-nowrap">Prev</th>);
                   if (showReal) cols.push(<th key={`${mk}-real`} className={`px-2 py-1 text-center text-[10px] font-medium text-green-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap`}>Real</th>);
-                  if (showProj) cols.push(<th key={`${mk}-proj`} className={`px-2 py-1 text-center text-[10px] font-medium text-yellow-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap`}>Proj</th>);
+                  if (showProj) cols.push(<th key={`${mk}-proj`} className={`px-2 py-1 text-center text-[10px] font-medium text-amber-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap`}>Proj</th>);
                   if (cols.length === 0) cols.push(<th key={`${mk}-empty`} className="px-2 py-1 border-l-2 border-border" />);
                   return cols;
                 })}
@@ -457,53 +477,109 @@ export default function HistogramaTabela({ tipo }) {
                   </td>
                 </tr>
               )}
-              {recursos.map((recurso, idx) => (
-                <tr key={recurso.nome}
-                  className={`border-b border-border hover:bg-muted/30 transition-colors ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
-                  <td className="sticky left-0 z-10 bg-card px-4 py-2 font-medium text-foreground whitespace-nowrap min-w-[140px]">
-                    {recurso.nome}
-                  </td>
-                  {projectMonths.flatMap((m) => {
-                    const mk = mesKey(m);
-                    const reg = recurso.byMes[mk];
-                    const cells = [];
-                    if (showPrev) cells.push(
-                      <CelulaEditavel key={`${mk}-prev`} registro={reg} campo="quantidade_prevista_mensal" onSave={updateCelula} isFirstInMonth={true} />
-                    );
-                    if (showReal) cells.push(
-                      <CelulaEditavel key={`${mk}-real`} registro={reg} campo="quantidade_realizada_mensal" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
-                    );
-                    if (showProj) cells.push(
-                      <CelulaEditavel key={`${mk}-proj`} registro={reg} campo="qtd_projetado" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
-                    );
-                    if (cells.length === 0) {
-                      cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
-                    }
-                    return cells;
-                  })}
-                  <td className="px-3 py-2 text-center font-semibold text-blue-700 dark:text-blue-300 border-l-2 border-border">{recurso.totalPrev}</td>
-                  <td className="px-3 py-2 text-center font-semibold text-green-700 dark:text-green-300">{recurso.totalReal}</td>
-                  <td className="px-3 py-2 text-center font-semibold text-yellow-700 dark:text-yellow-300">{recurso.totalProj}</td>
-                  <td className="px-3 py-2 text-center font-semibold" style={{ color: recurso.pctReal >= 100 ? "#16a34a" : recurso.pctReal >= 80 ? "#d97706" : "#dc2626" }}>
-                    {recurso.pctReal}%
-                  </td>
-                  <td className="px-3 py-2 text-center font-semibold text-muted-foreground">{recurso.pctProj}%</td>
-                  <td className="px-2 py-2">
-                    <RowActions
-                      onView={() => setViewRecurso(recurso)}
-                      onDelete={() => deleteRecurso(recurso.nome)}
-                      deleteTitle={`Excluir "${recurso.nome}"?`}
-                      deleteDescription="Esta ação removerá todos os registros mensais e não pode ser desfeita."
-                    />
-                  </td>
-                </tr>
-              ))}
+              {recursos.map((recurso, idx) => {
+                const rowBg = idx % 2 === 1 ? "bg-muted/10" : "bg-card";
+                return (
+                  <tr key={recurso.nome}
+                    className={`border-b border-border hover:bg-muted/30 transition-colors ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                    {/* Nome + botão */}
+                    <td
+                      style={{ position: "sticky", left: 0, zIndex: 10, width: 180, minWidth: 180 }}
+                      className={`${rowBg} px-3 py-2 font-medium text-foreground`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="truncate whitespace-nowrap">{recurso.nome}</span>
+                        <button
+                          onClick={() => setShowTotals(v => !v)}
+                          title={showTotals ? "Recolher totais" : "Expandir totais"}
+                          className="flex-shrink-0 w-4 h-4 rounded border border-border flex items-center justify-center hover:bg-muted/60 text-muted-foreground"
+                        >
+                          {showTotals ? <Minus className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
+                        </button>
+                      </div>
+                    </td>
+                    {/* Totais sticky (expandido) */}
+                    {showTotals && <>
+                      <td style={{ position: "sticky", left: 180, zIndex: 10 }}
+                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-blue-700 dark:text-blue-300 border-l border-border w-[52px]`}>
+                        {recurso.totalPrev}
+                      </td>
+                      <td style={{ position: "sticky", left: 232, zIndex: 10 }}
+                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-green-700 dark:text-green-300 border-l border-border w-[52px]`}>
+                        {recurso.totalReal}
+                      </td>
+                      <td style={{ position: "sticky", left: 284, zIndex: 10 }}
+                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-amber-600 dark:text-amber-400 border-l border-border w-[52px]`}>
+                        {recurso.totalProj}
+                      </td>
+                      <td style={{ position: "sticky", left: 336, zIndex: 10 }}
+                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-green-700 dark:text-green-300 border-l border-border w-[52px]`}>
+                        {recurso.pctReal}%
+                      </td>
+                      <td style={{ position: "sticky", left: 388, zIndex: 10 }}
+                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-amber-600 dark:text-amber-400 border-l border-border w-[52px]`}>
+                        {recurso.pctProj}%
+                      </td>
+                    </>}
+                    {/* Meses */}
+                    {projectMonths.flatMap((m) => {
+                      const mk = mesKey(m);
+                      const reg = recurso.byMes[mk];
+                      const cells = [];
+                      if (showPrev) cells.push(
+                        <CelulaEditavel key={`${mk}-prev`} registro={reg} campo="quantidade_prevista_mensal" onSave={updateCelula} isFirstInMonth={true} />
+                      );
+                      if (showReal) cells.push(
+                        <CelulaEditavel key={`${mk}-real`} registro={reg} campo="quantidade_realizada_mensal" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
+                      );
+                      if (showProj) cells.push(
+                        <CelulaEditavel key={`${mk}-proj`} registro={reg} campo="qtd_projetado" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
+                      );
+                      if (cells.length === 0) {
+                        cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
+                      }
+                      return cells;
+                    })}
+                    {/* Excluir */}
+                    <td className="px-2 py-2">
+                      <RowActions
+                        onDelete={() => deleteRecurso(recurso.nome)}
+                        deleteTitle={`Excluir "${recurso.nome}"?`}
+                        deleteDescription="Esta ação removerá todos os registros mensais e não pode ser desfeita."
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
 
             {recursos.length > 0 && (
               <tfoot>
                 <tr className="border-t-2 border-border bg-muted font-bold text-xs">
-                  <td className="sticky left-0 z-10 bg-muted px-4 py-2 text-muted-foreground uppercase tracking-wide">TOTAL</td>
+                  <td style={{ position: "sticky", left: 0, zIndex: 20, width: 180, minWidth: 180 }}
+                      className="bg-muted px-3 py-2 text-muted-foreground uppercase tracking-wide">TOTAL</td>
+                  {/* Grand totais sticky (expandido) */}
+                  {(() => {
+                    if (!showTotals) return null;
+                    const gPrev = recursos.reduce((s, r) => s + r.totalPrev, 0);
+                    const gReal = recursos.reduce((s, r) => s + r.totalReal, 0);
+                    const gProj = recursos.reduce((s, r) => s + r.totalProj, 0);
+                    const gPctReal = gPrev > 0 ? Math.round((gReal / gPrev) * 100) : 0;
+                    const gPctProj = gPrev > 0 ? Math.round((gProj / gPrev) * 100) : 0;
+                    return (<>
+                      <td style={{ position: "sticky", left: 180, zIndex: 20 }}
+                          className="bg-muted px-2 py-2 text-center text-blue-700 dark:text-blue-300 border-l border-border w-[52px]">{gPrev}</td>
+                      <td style={{ position: "sticky", left: 232, zIndex: 20 }}
+                          className="bg-muted px-2 py-2 text-center text-green-700 dark:text-green-300 border-l border-border w-[52px]">{gReal}</td>
+                      <td style={{ position: "sticky", left: 284, zIndex: 20 }}
+                          className="bg-muted px-2 py-2 text-center text-amber-600 dark:text-amber-400 border-l border-border w-[52px]">{gProj}</td>
+                      <td style={{ position: "sticky", left: 336, zIndex: 20 }}
+                          className="bg-muted px-2 py-2 text-center text-green-700 dark:text-green-300 border-l border-border w-[52px]">{gPctReal}%</td>
+                      <td style={{ position: "sticky", left: 388, zIndex: 20 }}
+                          className="bg-muted px-2 py-2 text-center text-amber-600 dark:text-amber-400 border-l border-border w-[52px]">{gPctProj}%</td>
+                    </>);
+                  })()}
+                  {/* Totais por mês */}
                   {projectMonths.flatMap((m) => {
                     const mk = mesKey(m);
                     const linhas = histogramas.filter((h) => h.mes_referencia?.startsWith(mk));
@@ -513,29 +589,13 @@ export default function HistogramaTabela({ tipo }) {
                     const cells = [];
                     if (showPrev) cells.push(<td key={`${mk}-prev`} className="px-2 py-2 text-center text-blue-700 dark:text-blue-300 border-l-2 border-border">{tPrev || "·"}</td>);
                     if (showReal) cells.push(<td key={`${mk}-real`} className={`px-2 py-2 text-center text-green-700 dark:text-green-300 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border`}>{tReal || "·"}</td>);
-                    if (showProj) cells.push(<td key={`${mk}-proj`} className={`px-2 py-2 text-center text-yellow-700 dark:text-yellow-300 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border`}>{tProj || "·"}</td>);
+                    if (showProj) cells.push(<td key={`${mk}-proj`} className={`px-2 py-2 text-center text-amber-600 dark:text-amber-400 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border`}>{tProj || "·"}</td>);
                     if (cells.length === 0) {
                       cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
                     }
                     return cells;
                   })}
-                  {(() => {
-                    const gPrev = recursos.reduce((s, r) => s + r.totalPrev, 0);
-                    const gReal = recursos.reduce((s, r) => s + r.totalReal, 0);
-                    const gProj = recursos.reduce((s, r) => s + r.totalProj, 0);
-                    const gPctReal = gPrev > 0 ? Math.round((gReal / gPrev) * 100) : 0;
-                    const gPctProj = gPrev > 0 ? Math.round((gProj / gPrev) * 100) : 0;
-                    return (
-                      <>
-                        <td className="px-3 py-2 text-center text-blue-700 dark:text-blue-300 border-l-2 border-border">{gPrev}</td>
-                        <td className="px-3 py-2 text-center text-green-700 dark:text-green-300">{gReal}</td>
-                        <td className="px-3 py-2 text-center text-yellow-700 dark:text-yellow-300">{gProj}</td>
-                        <td className="px-3 py-2 text-center" style={{ color: gPctReal >= 100 ? "#16a34a" : gPctReal >= 80 ? "#d97706" : "#dc2626" }}>{gPctReal}%</td>
-                        <td className="px-3 py-2 text-center text-muted-foreground">{gPctProj}%</td>
-                        <td />
-                      </>
-                    );
-                  })()}
+                  <td />
                 </tr>
               </tfoot>
             )}
@@ -619,21 +679,6 @@ export default function HistogramaTabela({ tipo }) {
         </DialogContent>
       </Dialog>
 
-      {viewRecurso && (
-        <DetailDialog
-          open={!!viewRecurso}
-          onOpenChange={(o) => !o && setViewRecurso(null)}
-          title={viewRecurso.nome}
-          sections={[
-            { label: "Nome", value: viewRecurso.nome },
-            { label: "Total Previsto", value: viewRecurso.totalPrev },
-            { label: "Total Real", value: viewRecurso.totalReal },
-            { label: "Total Projetado", value: viewRecurso.totalProj },
-            { label: "% Realizado", value: `${viewRecurso.pctReal}%` },
-            { label: "% Projetado", value: `${viewRecurso.pctProj}%` },
-          ]}
-        />
-      )}
     </div>
   );
 }
