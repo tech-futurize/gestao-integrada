@@ -747,3 +747,219 @@ ALTER TABLE engenharias ADD CONSTRAINT engenharias_nome_check
 ALTER TABLE engenharias ADD CONSTRAINT engenharias_status_check
   CHECK (status IN ('Iniciado','Em Andamento','Concluído'));
 ALTER TABLE engenharias ALTER COLUMN status SET DEFAULT 'Iniciado';
+
+-- =====================================================================
+-- ADMIN DE AGENTES DE IA
+-- =====================================================================
+
+-- Provedores de modelo suportados
+DO $$ BEGIN
+  CREATE TYPE ai_provider AS ENUM ('openai', 'anthropic', 'google', 'groq');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Tabela de preços por modelo (para custo auditável)
+CREATE TABLE IF NOT EXISTS modelo_precos (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  provider        ai_provider NOT NULL,
+  modelo          TEXT NOT NULL,
+  preco_input_1k  NUMERIC(10, 6) NOT NULL DEFAULT 0,
+  preco_output_1k NUMERIC(10, 6) NOT NULL DEFAULT 0,
+  vigencia_inicio DATE NOT NULL DEFAULT CURRENT_DATE,
+  vigencia_fim    DATE,
+  ativo           BOOLEAN NOT NULL DEFAULT true,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (provider, modelo, vigencia_inicio)
+);
+
+INSERT INTO modelo_precos (provider, modelo, preco_input_1k, preco_output_1k) VALUES
+  ('openai', 'gpt-4o-mini', 0.000150, 0.000600),
+  ('openai', 'gpt-4o', 0.002500, 0.010000),
+  ('openai', 'gpt-4.1-mini', 0.000400, 0.001600),
+  ('anthropic', 'claude-haiku-4-5-20251001', 0.000800, 0.004000),
+  ('anthropic', 'claude-sonnet-4-6', 0.003000, 0.015000)
+ON CONFLICT DO NOTHING;
+
+-- Definições de agentes
+CREATE TABLE IF NOT EXISTS agentes (
+  id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  slug            TEXT NOT NULL UNIQUE,
+  nome            TEXT NOT NULL,
+  descricao       TEXT,
+  icone           TEXT DEFAULT 'Bot',
+  cor             TEXT DEFAULT '#26405d',
+  provider        ai_provider NOT NULL DEFAULT 'openai',
+  modelo          TEXT NOT NULL DEFAULT 'gpt-4o-mini',
+  temperatura     NUMERIC(3,2),
+  max_tokens      INTEGER,
+  instructions    TEXT NOT NULL,
+  injetar_schema  BOOLEAN NOT NULL DEFAULT false,
+  injetar_data    BOOLEAN NOT NULL DEFAULT true,
+  forcar_projeto  BOOLEAN NOT NULL DEFAULT true,
+  sugestoes       TEXT[] DEFAULT '{}',
+  ativo           BOOLEAN NOT NULL DEFAULT true,
+  ordem           INTEGER DEFAULT 0,
+  created_at      TIMESTAMPTZ DEFAULT now(),
+  updated_at      TIMESTAMPTZ DEFAULT now()
+);
+
+-- Tools de sistema por agente
+CREATE TABLE IF NOT EXISTS agente_system_tools (
+  agente_id  UUID NOT NULL REFERENCES agentes(id) ON DELETE CASCADE,
+  tool_id    TEXT NOT NULL,
+  PRIMARY KEY (agente_id, tool_id)
+);
+
+-- Tools SQL customizadas
+CREATE TABLE IF NOT EXISTS agente_tools (
+  id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  nome         TEXT NOT NULL UNIQUE,
+  descricao    TEXT NOT NULL,
+  sql_template TEXT NOT NULL,
+  parametros   JSONB DEFAULT '[]',
+  ativo        BOOLEAN NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ DEFAULT now(),
+  updated_at   TIMESTAMPTZ DEFAULT now()
+);
+
+-- Associação agente ↔ tool customizada
+CREATE TABLE IF NOT EXISTS agente_tool_links (
+  agente_id UUID NOT NULL REFERENCES agentes(id) ON DELETE CASCADE,
+  tool_id   UUID NOT NULL REFERENCES agente_tools(id) ON DELETE CASCADE,
+  PRIMARY KEY (agente_id, tool_id)
+);
+
+-- Logs de uso por execução
+CREATE TABLE IF NOT EXISTS agente_uso_logs (
+  id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  agente_slug       TEXT NOT NULL,
+  modelo            TEXT NOT NULL,
+  provider          ai_provider NOT NULL,
+  usuario_email     TEXT,
+  projeto_id        UUID,
+  prompt_tokens     INTEGER NOT NULL DEFAULT 0,
+  completion_tokens INTEGER NOT NULL DEFAULT 0,
+  total_tokens      INTEGER NOT NULL DEFAULT 0,
+  custo_usd         NUMERIC(10, 6),
+  latencia_ms       INTEGER,
+  status            TEXT DEFAULT 'success',
+  thread_id         TEXT,
+  created_at        TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_uso_logs_agente  ON agente_uso_logs(agente_slug);
+CREATE INDEX IF NOT EXISTS idx_uso_logs_criado  ON agente_uso_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_uso_logs_usuario ON agente_uso_logs(usuario_email);
+CREATE INDEX IF NOT EXISTS idx_uso_logs_projeto ON agente_uso_logs(projeto_id);
+
+-- RLS
+ALTER TABLE agentes             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agente_system_tools ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agente_tools        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agente_tool_links   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE agente_uso_logs     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE modelo_precos       ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "agentes_auth"             ON agentes             FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "agente_system_tools_auth" ON agente_system_tools FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "agente_tools_auth"        ON agente_tools        FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "agente_tool_links_auth"   ON agente_tool_links   FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "agente_uso_logs_sel"      ON agente_uso_logs     FOR SELECT TO authenticated USING (true);
+CREATE POLICY "agente_uso_logs_ins"      ON agente_uso_logs     FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "modelo_precos_auth"       ON modelo_precos       FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Migração: popular com os 3 agentes hard-coded atuais
+INSERT INTO agentes (slug, nome, descricao, icone, cor, provider, modelo, instructions, injetar_schema, injetar_data, forcar_projeto, sugestoes) VALUES
+(
+  'supabase-analyst-agent',
+  'Analista de Dados',
+  'Executa consultas SQL e analisa dados do projeto diretamente no banco.',
+  'Database',
+  '#26405d',
+  'openai',
+  'gpt-4o-mini',
+  'Você é um executor de consultas SQL para um sistema de gestão EPC (engenharia e construção).
+
+## Processo
+
+1. Chame get-schema (sem parâmetros) para descobrir tabelas e colunas disponíveis.
+2. Construa a query SQL com base na pergunta recebida. Sempre inclua filtro por projeto_id quando fornecido.
+3. Chame execute-sql com a query.
+4. Retorne os dados em formato estruturado conforme abaixo.
+
+## Formato de resposta obrigatório
+
+Sempre responda usando esta estrutura:
+
+**Consulta executada:** `[SQL resumido ou descrição da query]`
+
+**Resultados:**
+| Campo | Valor |
+|-------|-------|
+| ...   | ...   |
+
+(Use tabela Markdown quando os dados forem tabulares. Use lista com bullets quando forem itens não tabulares. Se vazio, escreva: "Nenhum dado encontrado para esta consulta.")
+
+**Resumo:** [1 frase resumindo o resultado]
+
+## Restrições
+
+- Nunca execute DELETE, DROP ou TRUNCATE sem confirmação explícita.
+- Nunca retorne dados de outros projetos (sempre filtre por projeto_id).
+- Responda sempre em português do Brasil.
+- Se a query falhar, descreva o erro claramente e sugira como reformular.
+
+## Integridade de Dados
+
+- NUNCA afirme, assuma ou extrapole dados que não estejam no retorno da query.
+- Se a query retornar vazio, escreva exatamente: "Nenhum dado encontrado para esta consulta."
+- NUNCA use "provavelmente", "deve ser", "tipicamente" para compensar dados ausentes.
+- NUNCA invente valores, datas, nomes ou métricas.',
+  true, true, true,
+  ARRAY['Quais são os riscos críticos deste projeto?', 'Mostre o avanço físico por disciplina', 'Liste os contratos ativos e seus valores']
+),
+(
+  'business-analyst-agent',
+  'Analista de Negócio',
+  'Interpreta dados e gera análises estratégicas com contexto do domínio EPC.',
+  'TrendingUp',
+  '#c35e1e',
+  'openai',
+  'gpt-4o-mini',
+  'Você é um Analista de Negócio especializado em projetos EPC. Faça perguntas precisas e relevantes antes de executar consultas. Máximo 3 perguntas durante toda a conversa. Delegue consultas SQL ao Executor via query-database. Sintetize análises em máximo 400 palavras.
+
+## Integridade de Dados
+- NUNCA afirme dados não retornados pelo executor.
+- Declare "Não há dados suficientes" se o executor retornar vazio.
+- Estrutura obrigatória: Situação / Dados Encontrados / Análise / Recomendação',
+  true, true, true,
+  ARRAY['Qual é a situação atual do avanço físico?', 'Analise os riscos do projeto', 'Como está o desempenho de suprimentos?']
+),
+(
+  'contractual-analyst-agent',
+  'Analista Contratual',
+  'Especialista jurídico-contratual: pleitos, atas, documentos e relacionamentos.',
+  'FileText',
+  '#00a49a',
+  'openai',
+  'gpt-4o-mini',
+  'Você é um Analista Contratual especializado em contratos EPC. Consulte dados via query-database antes de emitir pareceres. Postura: defende os interesses do contratado. Responda sempre em português do Brasil.
+
+## Integridade de Dados
+- NUNCA afirme dados não retornados pelo executor.
+- Declare "Não há dados suficientes" quando aplicável.',
+  false, true, true,
+  ARRAY['Quais são os pleitos em aberto?', 'Analise as atas de reunião recentes', 'Mostre os documentos contratuais do projeto']
+)
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO agente_system_tools (agente_id, tool_id)
+SELECT id, 'get-schema'    FROM agentes WHERE slug = 'supabase-analyst-agent'
+UNION ALL
+SELECT id, 'execute-sql'   FROM agentes WHERE slug = 'supabase-analyst-agent'
+UNION ALL
+SELECT id, 'analyze-table' FROM agentes WHERE slug = 'supabase-analyst-agent'
+UNION ALL
+SELECT id, 'query-database' FROM agentes WHERE slug = 'business-analyst-agent'
+UNION ALL
+SELECT id, 'query-database' FROM agentes WHERE slug = 'contractual-analyst-agent'
+ON CONFLICT DO NOTHING;

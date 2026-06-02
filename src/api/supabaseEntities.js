@@ -28,6 +28,12 @@ const TABLE_MAP = {
   Funcao: 'funcoes',
   TipoEquipamento: 'tipos_equipamento',
   PacoteSuprimento: 'pacotes_suprimento',
+  Agente: 'agentes',
+  AgenteSystemTool: 'agente_system_tools',
+  AgenteTool: 'agente_tools',
+  AgenteToolLink: 'agente_tool_links',
+  AgenteUsoLog: 'agente_uso_logs',
+  ModeloPreco: 'modelo_precos',
 };
 
 function createEntityClient(tableName) {
