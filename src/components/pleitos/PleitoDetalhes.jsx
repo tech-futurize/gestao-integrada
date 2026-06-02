@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
   const { data: incidentes = [] } = useQuery({
-    queryKey: ["registros", pleito.id],
+    queryKey: ["registros-por-pleito", pleito.id],
     queryFn: () => entities.Registro.filter({ pleito_id: pleito.id }),
     enabled: !!pleito.id,
   });

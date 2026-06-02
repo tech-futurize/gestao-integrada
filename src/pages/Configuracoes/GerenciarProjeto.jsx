@@ -43,7 +43,7 @@ export default function GerenciarProjeto() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewItem, setViewItem] = useState(null);
 
-  const { data: projetos = [], isLoading } = useQuery({
+  const { data: projetos = [], isLoading, isError } = useQuery({
     queryKey: ["projetos"],
     queryFn: () => entities.Projeto.list(),
   });
@@ -134,6 +134,10 @@ export default function GerenciarProjeto() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+        </div>
+      ) : isError ? (
+        <div className="rounded-xl border border-status-critical/30 bg-status-critical/10 px-4 py-3 text-sm text-status-critical">
+          Erro ao carregar projetos. Verifique sua conexão e tente novamente.
         </div>
       ) : projetos.length === 0 ? (
         <PageEmptyState icon={Settings} description="Nenhum projeto cadastrado. Crie o primeiro projeto." />
