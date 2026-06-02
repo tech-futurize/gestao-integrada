@@ -454,12 +454,12 @@ export default function GestaoRiscos() {
               <col />                              {/* Descrição — responsiva */}
               <col style={{ width: "110px" }} />  {/* Categoria */}
               <col style={{ width: "120px" }} />  {/* Impactos */}
-              <col style={{ width: "96px" }} />   {/* P */}
-              <col style={{ width: "96px" }} />   {/* I */}
+              <col style={{ width: "72px" }} />   {/* Prob. */}
+              <col style={{ width: "72px" }} />   {/* Impac. */}
               <col style={{ width: "110px" }} />  {/* Score */}
               <col style={{ width: "120px" }} />  {/* Responsável */}
               <col style={{ width: "96px" }} />   {/* Status */}
-              <col style={{ width: "48px" }} />   {/* Ações */}
+              <col style={{ width: "64px" }} />   {/* Ações */}
             </colgroup>
             <thead>
               <tr className="border-b border-border bg-muted">
@@ -467,8 +467,8 @@ export default function GestaoRiscos() {
                 <th onClick={() => handleSort("descricao")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Descrição<SortIcon col="descricao" /></th>
                 <th onClick={() => handleSort("categoria")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Categoria<SortIcon col="categoria" /></th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Impactos</th>
-                <th onClick={() => handleSort("probabilidade")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">P<SortIcon col="probabilidade" /></th>
-                <th onClick={() => handleSort("impacto")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">I<SortIcon col="impacto" /></th>
+                <th onClick={() => handleSort("probabilidade")} className="px-2 py-3 text-center text-[10px] font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Prob.<SortIcon col="probabilidade" /></th>
+                <th onClick={() => handleSort("impacto")} className="px-2 py-3 text-center text-[10px] font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Impac.<SortIcon col="impacto" /></th>
                 <th onClick={() => handleSort("score")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Score<SortIcon col="score" /></th>
                 <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Responsável<SortIcon col="responsavel" /></th>
                 <th onClick={() => handleSort("status")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Status<SortIcon col="status" /></th>
@@ -512,8 +512,8 @@ export default function GestaoRiscos() {
                         })}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center font-bold text-foreground">{r.probabilidade}</td>
-                    <td className="px-4 py-3 text-center font-bold text-foreground">{r.impacto}</td>
+                    <td className="px-2 py-3 text-center text-[10px] text-muted-foreground">{r.probabilidade}</td>
+                    <td className="px-2 py-3 text-center text-[10px] text-muted-foreground">{r.impacto}</td>
                     <td className="px-4 py-3 text-center"><ScoreBadge score={score} /></td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{r.responsavel || "—"}</td>
                     <td className="px-4 py-3 text-center">
