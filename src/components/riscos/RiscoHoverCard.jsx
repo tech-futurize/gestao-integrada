@@ -5,10 +5,9 @@ const POPUP_WIDTH = 240;
 const POPUP_OFFSET = 8;
 
 function getSeverityInfo(score) {
-  if (score >= 12) return { label: "CRÍTICO",  color: "#ef4444", headerBg: "rgba(239,68,68,0.08)"  };
-  if (score >= 6)  return { label: "ALTO",     color: "#f59e0b", headerBg: "rgba(245,158,11,0.08)" };
-  if (score >= 4)  return { label: "MODERADO", color: "#eab308", headerBg: "rgba(234,179,8,0.08)"  };
-  return            { label: "BAIXO",    color: "#22c55e", headerBg: "rgba(34,197,94,0.08)"  };
+  if (score >= 12) return { label: "ALTO",  color: "#ef4444", headerBg: "rgba(239,68,68,0.08)"  };
+  if (score >= 6)  return { label: "MÉDIO", color: "#eab308", headerBg: "rgba(234,179,8,0.08)"  };
+  return            { label: "BAIXO", color: "#22c55e", headerBg: "rgba(34,197,94,0.08)"  };
 }
 
 export default function RiscoHoverCard({ risco, anchorRect, onMouseEnter, onMouseLeave }) {

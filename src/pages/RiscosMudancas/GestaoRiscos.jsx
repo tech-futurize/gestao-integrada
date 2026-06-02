@@ -43,7 +43,7 @@ const STATUS_OPTIONS = STATUS_RISCO;
 function ScoreBadge({ score }) {
   const level = getScoreLevel(score || 0);
   const cfg = SCORE_COLORS[level];
-  const label = level === "high" ? "Crítico" : level === "medium" ? "Alto" : "Baixo";
+  const label = level === "high" ? "Alto" : level === "medium" ? "Médio" : "Baixo";
   return (
     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.bg}`}>
       {label} ({score || 0})
@@ -81,22 +81,20 @@ function RiscoChip({ risco, cellScore, isActive, isDimmed, onMouseEnter, onMouse
 
 const EMPTY_FORM = {
   codigo: "", descricao: "", categoria: "", probabilidade: "Média", impacto: "Médio",
-  status: "Ativo", responsavel: "", plano_resposta: "",
+  status: "Ativo", responsavel: "",
   impactos: [],
   escopo_texto: "", prazo_dias: "", valor_impacto: "",
 };
 
 function getCellStyle(score) {
   if (score >= 12) return { bg: "bg-red-500/15",    border: "border-red-500/30"    };
-  if (score >= 6)  return { bg: "bg-amber-500/15",  border: "border-amber-500/30"  };
-  if (score >= 4)  return { bg: "bg-yellow-400/15", border: "border-yellow-400/30" };
+  if (score >= 6)  return { bg: "bg-yellow-400/15", border: "border-yellow-400/30" };
   return            { bg: "bg-green-500/15",  border: "border-green-500/30"  };
 }
 
 function getCellChipStyle(score) {
   if (score >= 12) return { activeColor: "#ef4444", normalBg: "rgba(239,68,68,0.4)",   textColor: "#fca5a5" };
-  if (score >= 6)  return { activeColor: "#f59e0b", normalBg: "rgba(245,158,11,0.4)",  textColor: "#fcd34d" };
-  if (score >= 4)  return { activeColor: "#eab308", normalBg: "rgba(234,179,8,0.4)",   textColor: "#fef08a" };
+  if (score >= 6)  return { activeColor: "#eab308", normalBg: "rgba(234,179,8,0.4)",   textColor: "#fef08a" };
   return            { activeColor: "#22c55e", normalBg: "rgba(34,197,94,0.4)",    textColor: "#86efac" };
 }
 
@@ -202,7 +200,6 @@ export default function GestaoRiscos() {
       impacto: risco.impacto || "Médio",
       status: risco.status || "Ativo",
       responsavel: risco.responsavel || "",
-      plano_resposta: risco.plano_resposta || "",
       impactos: Array.isArray(risco.impactos) ? risco.impactos : [],
       escopo_texto:  risco.escopo_texto  || "",
       prazo_dias:    risco.prazo_dias    ?? "",
@@ -420,9 +417,9 @@ export default function GestaoRiscos() {
           {/* Legenda de severidade */}
           <div className="flex flex-row gap-4 mt-auto pt-3 border-t border-border">
             {[
-              { label: "Baixo",  bg: "bg-green-500/80"  },
-              { label: "Médio",  bg: "bg-yellow-400/80" },
-              { label: "Alto",   bg: "bg-red-500/80"    },
+              { label: "Baixo (1–5)",  bg: "bg-green-500/80"  },
+              { label: "Médio (6–11)", bg: "bg-yellow-400/80" },
+              { label: "Alto (≥12)",   bg: "bg-red-500/80"    },
             ].map(l => (
               <div key={l.label} className="flex items-center gap-1.5">
                 <div className={`w-3 h-3 rounded shrink-0 ${l.bg}`} />
