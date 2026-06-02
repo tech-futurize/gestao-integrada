@@ -4,12 +4,11 @@ import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/lib/ProjectContext";
 import { Button } from "@/components/ui/button";
-import { FormDialog } from "@/components/ui/FormDialog";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import {
   Plus, ArrowLeft, ChevronUp, ChevronDown, ChevronsUpDown,
-  Save, Edit, Package, TrendingUp, X
+  Save, Package, TrendingUp, X
 } from "lucide-react";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -517,13 +516,19 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["commodities"] }),
     onError: onErr,
   });
+  // A coluna persistida é `semana` (NOT NULL); a UI captura o valor ISO em `semana_iso`.
+  // Mapeia para `semana` e remove `semana_iso` antes de enviar ao banco.
+  const toLancPayload = ({ semana_iso, semana, ...rest }) => ({
+    ...rest,
+    semana: semana_iso ?? semana,
+  });
   const createLanc = useMutation({
-    mutationFn: (d) => entities.LancamentoCommodity.create(d),
+    mutationFn: (d) => entities.LancamentoCommodity.create(toLancPayload(d)),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["lancamentos-commodity"] }); setShowLancModal(false); setEditingLanc(null); },
     onError: onErr,
   });
   const updateLanc = useMutation({
-    mutationFn: ({ id, data }) => entities.LancamentoCommodity.update(id, data),
+    mutationFn: ({ id, data }) => entities.LancamentoCommodity.update(id, toLancPayload(data)),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["lancamentos-commodity"] }); setShowLancModal(false); setEditingLanc(null); },
     onError: onErr,
   });
@@ -701,7 +706,6 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
               {isError && <tr><td colSpan={10} className="px-4 py-8 text-center text-destructive">Erro ao carregar itens. Tente novamente.</td></tr>}
               {!isPending && !isError && filtered.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Nenhum item cadastrado</td></tr>}
               {filtered.map((item, i) => {
-                const stCfg = STATUS_CFG[item.status];
                 return (
                   <tr key={item.id} className={`border-b border-border hover:bg-blue-50/30 dark:hover:bg-blue-900/10 cursor-pointer transition-colors ${i % 2 === 0 ? "bg-card" : "bg-muted/20"}`}
                     onClick={() => setSelectedItem(item)}>
