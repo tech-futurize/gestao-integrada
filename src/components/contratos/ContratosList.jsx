@@ -1,13 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Edit, Eye, FileText } from "lucide-react";
-import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
+import { FileText } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { formatDate } from "@/lib/dateUtils";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
-const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
 
 export default function ContratosList({ contratos, isLoading, onSelect, onEdit, onDelete }) {
   if (isLoading) return (
@@ -41,16 +40,18 @@ export default function ContratosList({ contratos, isLoading, onSelect, onEdit, 
               </div>
               <div className="text-right shrink-0">
                 <p className="font-bold text-base text-ocre">{fmt(c.valor_total)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(c.data_inicio)} → {fmtDate(c.data_fim)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{(formatDate(c.data_inicio) || "—")} → {(formatDate(c.data_fim) || "—")}</p>
               </div>
             </div>
             <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
               <span className="text-xs text-muted-foreground">Gestor: {c.gestor || "—"}</span>
-              <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                <Button size="sm" variant="ghost" title="Visualizar" onClick={() => onSelect(c)}><Eye className="w-4 h-4" /></Button>
-                <Button size="sm" variant="ghost" title="Editar" onClick={() => onEdit(c)}><Edit className="w-4 h-4" /></Button>
-                <ConfirmDeleteButton size="sm" onConfirm={() => onDelete(c.id)} description="O contrato será excluído permanentemente." />
-              </div>
+              <RowActions
+                onView={() => onSelect(c)}
+                onEdit={() => onEdit(c)}
+                onDelete={() => onDelete(c.id)}
+                deleteDescription="O contrato será excluído permanentemente."
+                size="md"
+              />
             </div>
           </CardContent>
         </Card>

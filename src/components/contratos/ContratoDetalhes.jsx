@@ -5,9 +5,7 @@ import { ArrowLeft, Edit, DollarSign, Calendar, User, Building } from "lucide-re
 import AditivosList from "@/components/contratos/AditivosList";
 import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-
-const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
-const fmtDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("pt-BR") : "—";
+import { formatDate } from "@/lib/dateUtils";
 
 function addDaysToDate(dateStr, days) {
   if (!dateStr || !days) return null;
@@ -79,9 +77,9 @@ export default function ContratoDetalhes({
               <Calendar className="w-4 h-4 text-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">Início → Término Original</p>
-                <p className="text-sm font-semibold text-foreground">{fmtDate(contrato.data_inicio)} → {fmtDate(contrato.data_fim)}</p>
+                <p className="text-sm font-semibold text-foreground">{(formatDate(contrato.data_inicio) || "—")} → {(formatDate(contrato.data_fim) || "—")}</p>
                 {terminoAtual !== contrato.data_fim && (
-                  <p className="text-xs text-status-attention font-semibold">Término Atual: {fmtDate(terminoAtual)}</p>
+                  <p className="text-xs text-status-attention font-semibold">Término Atual: {(formatDate(terminoAtual) || "—")}</p>
                 )}
               </div>
             </div>
