@@ -48,7 +48,6 @@ const AnalistaContratual   = lazy(() => import('./pages/Agentes/AnalistaContratu
 
 // Configurações
 const GerenciarProjeto     = lazy(() => import('./pages/Configuracoes/GerenciarProjeto'));
-const AgenteConfig         = lazy(() => import('./pages/Configuracoes/AgenteConfig'));
 const Usuarios             = lazy(() => import('./pages/Configuracoes/Usuarios'));
 const Cadastros            = lazy(() => import('./pages/Configuracoes/Cadastros'));
 const AdminAgentes         = lazy(() => import('./pages/Configuracoes/AdminAgentes'));
@@ -145,7 +144,7 @@ const AuthenticatedApp = () => (
 
     {/* Configurações */}
     <Route path="/configuracoes/gerenciar-projeto" element={wrap(GerenciarProjeto, 'Configurações')} />
-    <Route path="/configuracoes/agente-config" element={wrap(AgenteConfig, 'Configurações')} />
+    <Route path="/configuracoes/agente-config" element={<Navigate to="/configuracoes/agentes-admin" replace />} />
     <Route path="/configuracoes/usuarios" element={wrap(Usuarios, 'Configurações')} />
     <Route path="/configuracoes/cadastros" element={wrap(Cadastros, 'Configurações')} />
     <Route path="/configuracoes/agentes-admin" element={wrap(AdminAgentes, 'Configurações')} />
@@ -168,7 +167,7 @@ const AuthenticatedApp = () => (
     <Route path="/GestaoMudancas" element={<Navigate to="/riscos-mudancas/gestao-mudancas" replace />} />
     <Route path="/GestaoRiscos" element={<Navigate to="/riscos-mudancas/gestao-riscos" replace />} />
     <Route path="/Agente" element={<Navigate to="/agentes/executor" replace />} />
-    <Route path="/AgenteConfig" element={<Navigate to="/configuracoes/agente-config" replace />} />
+    <Route path="/AgenteConfig" element={<Navigate to="/configuracoes/agentes-admin" replace />} />
     <Route path="/GerenciarProjeto" element={<Navigate to="/configuracoes/gerenciar-projeto" replace />} />
     <Route path="/Financeiro" element={<Navigate to="/planejamento/avancos" replace />} />
 
