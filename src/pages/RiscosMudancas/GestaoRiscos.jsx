@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldAlert, Plus, Edit, Trash2, Upload, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ShieldAlert, Plus, Edit, Trash2, Upload, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
@@ -75,6 +75,7 @@ export default function GestaoRiscos() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [filtros, setFiltros] = useState({});
   const [filterKey, setFilterKey] = useState(0);
+  const [busca, setBusca] = useState("");
   const [tab, setTab] = useState("riscos");
   const [deleteId, setDeleteId] = useState(null);
   const FILTROS_KEY = "riscos-filtros";
@@ -126,10 +127,14 @@ export default function GestaoRiscos() {
     const st = filtros.status || [];
     const cat = filtros.categoria || [];
     let r = riscos;
+    if (busca) {
+      const b = busca.toLowerCase();
+      r = r.filter(x => x.descricao?.toLowerCase().includes(b) || x.codigo?.toLowerCase().includes(b));
+    }
     if (st.length > 0) r = r.filter(x => st.includes(x.status));
     if (cat.length > 0) r = r.filter(x => cat.includes(x.categoria));
     return r;
-  }, [riscos, filtros]);
+  }, [riscos, busca, filtros]);
 
   const { sortedData: riscosSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "codigo" })
 
@@ -239,9 +244,18 @@ export default function GestaoRiscos() {
 
       {/* Filtros */}
       <FilterToolbar
-        active={Object.values(filtros).some(a => a?.length > 0)}
-        onClearAll={() => { setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+        active={!!busca || Object.values(filtros).some(a => a?.length > 0)}
+        onClearAll={() => { setBusca(""); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
       >
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
+            placeholder="Buscar por descrição..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+          />
+        </div>
         <FilterBar
           key={filterKey}
           storageKey={FILTROS_KEY}
