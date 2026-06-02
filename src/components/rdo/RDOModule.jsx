@@ -2,8 +2,10 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { FileText, Search, Eye, Trash2, Edit, Sun, CloudRain } from "lucide-react";
+import { FileText, Search, Eye, Trash2, Edit, Sun, CloudRain, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { useSortTable } from "@/hooks/useSortTable";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
@@ -25,10 +27,9 @@ export default function RDOModule({
 }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [viewRDO, setViewRDO]       = useState(null);
-  const [search, setSearch]         = useState("");
-  const [dateFrom, setDateFrom]     = useState("");
-  const [dateTo, setDateTo]         = useState("");
+  const [viewRDO, setViewRDO]   = useState(null);
+  const [search, setSearch]     = useState("");
+  const [periodo, setPeriodo]   = useState(null);
 
   const { data: rdos = [], isLoading } = useQuery({
     queryKey: ["rdos", selectedProjectId],
@@ -70,10 +71,18 @@ export default function RDOModule({
     if (search) result = result.filter(r =>
       (r.numero || r.area || "").toLowerCase().includes(search.toLowerCase())
     );
-    if (dateFrom) result = result.filter(r => r.data && r.data >= dateFrom);
-    if (dateTo)   result = result.filter(r => r.data && r.data <= dateTo);
+    if (periodo?.from) {
+      const fromStr = periodo.from.toISOString().split("T")[0];
+      result = result.filter(r => r.data && r.data >= fromStr);
+    }
+    if (periodo?.to) {
+      const toStr = periodo.to.toISOString().split("T")[0];
+      result = result.filter(r => r.data && r.data <= toStr);
+    }
     return result;
-  }, [rdos, search, dateFrom, dateTo]);
+  }, [rdos, search, periodo]);
+
+  const { sortedData: rdosSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "data", defaultDir: "desc" });
 
   const climaCell = turno => {
     if (!turno?.ativo) return <span className="text-muted-foreground/40 text-xs">—</span>;
@@ -86,47 +95,53 @@ export default function RDOModule({
     );
   };
 
+  const isFilterActive = !!search || !!periodo?.from;
+  const handleClearAll = () => { setSearch(""); setPeriodo(null); };
+
+  function SortIcon({ col }) {
+    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 inline ml-1 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />;
+    return sortDir === "asc"
+      ? <ArrowUp className="w-3 h-3 inline ml-1 text-primary" />
+      : <ArrowDown className="w-3 h-3 inline ml-1 text-primary" />;
+  }
+
   return (
     <div className="space-y-4">
 
       {/* Filtros */}
-      <Card className="bg-card shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex-1 min-w-48">
-              <label className="text-xs text-muted-foreground mb-1 block">Busca</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
-                <input
-                  className="w-full border border-border rounded-lg pl-8 pr-3 py-1.5 text-sm bg-background text-foreground"
-                  placeholder="Nº RDO, área..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">De</label>
-              <input type="date" className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
-                value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Até</label>
-              <input type="date" className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
-                value={dateTo} onChange={e => setDateTo(e.target.value)} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <FilterToolbar active={isFilterActive} onClearAll={handleClearAll}>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            className="h-8 border border-border rounded-md pl-8 pr-3 text-sm bg-background text-foreground"
+            placeholder="Nº RDO, área..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <DateRangePicker
+          label="Período"
+          value={periodo}
+          onChange={setPeriodo}
+          onClear={() => setPeriodo(null)}
+        />
+      </FilterToolbar>
 
       {/* Tabela */}
       <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted border-b border-border">
-              {["Data", "Nº RDO", "Área", "Disciplinas", "Clima M/T/N", "MO", "Equip.", "Ocorrências", "Evidências", "Ações"].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
-              ))}
+              <th onClick={() => handleSort("data")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer select-none group">Data<SortIcon col="data" /></th>
+              <th onClick={() => handleSort("numero")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer select-none group">Nº RDO<SortIcon col="numero" /></th>
+              <th onClick={() => handleSort("area")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer select-none group">Área<SortIcon col="area" /></th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Disciplinas</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Clima M/T/N</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">MO</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Equip.</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Ocorrências</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Evidências</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -142,7 +157,7 @@ export default function RDOModule({
                 </td>
               </tr>
             )}
-            {filtered.map(rdo => {
+            {rdosSorted.map(rdo => {
               const nMdo   = (rdo.mao_de_obra  || []).reduce((s, m) => s + (parseInt(m.quantidade) || 0), 0);
               const nEquip = (rdo.equipamentos || []).reduce((s, e) => s + (parseInt(e.quantidade) || 0), 0);
               const nOcorr = (rdo.ocorrencias  || []).length;
