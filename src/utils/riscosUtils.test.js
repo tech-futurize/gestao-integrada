@@ -70,7 +70,7 @@ describe("constantes de domínio", () => {
   it("opções têm 5 níveis e status alinhado ao banco", () => {
     expect(PROBABILIDADE_OPTIONS).toHaveLength(5);
     expect(IMPACTO_OPTIONS).toHaveLength(5);
-    expect(STATUS_RISCO).toContain("Ativo");
-    expect(STATUS_RISCO).toContain("Mitigado");
+    expect(STATUS_RISCO).toEqual(["Ativo", "Mitigado", "Encerrado", "Cancelado"]);
+    expect(STATUS_RISCO).not.toContain("Monitoramento");
   });
 });
