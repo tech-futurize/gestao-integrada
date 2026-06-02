@@ -16,7 +16,7 @@
 - **Gantt Virtualização** *(2026-05-18)* — `useVirtualizer`, WBS sort numérico, `LEVEL_BG` hierárquico, scroll-sync 3 painéis, coluna "Nív" com badge colorido; favicon local substituído
 - **Auditoria de Organização** *(2026-05-27)* — Limpeza geral do repositório: 4 SQLs aplicados removidos da raiz, componentes órfãos dropados (rotinas/relacionamentos/ruídos), `Agents Mastra/` renomeado para `agents-mastra/` (sem espaço), `docs/skills/` removido, `.gitignore` corrigido (`.env.example` agora versionado), links quebrados de CONTRIBUTING.md corrigidos, `docs/temp/` removida, artefatos brainstorm ignorados.
 - **Login Page Redesign** *(2026-05-27)* — `Login.jsx` reescrito com split-screen (hero slideshow de obras industriais + painel de formulário); slideshow automático de 6 imagens com transição suave; branding FuturizeNow (logo mark + nome); cards de módulos do sistema; CSS animations em `index.css`; responsivo (hero oculto em `< 980px`).
-- **Backlog 2026-Q2 — Onda 2** *(2026-05-29)* — 15 módulos entregues e auditados (≥ 9/10): M0 Layout, M2 Engenharia, M3–M12 Suprimentos/Planejamento/Adm. Contratual/RDO/Registros/Mapa Impacto, **M13 Riscos & Mudanças** (impactos JSONB, PlanoAção, DashboardExecutivo), **M13-C Design Standardization** (StatusBadge/KPICard/SectionTitle criados; 30 divergências eliminadas), **M14 Permissões** (matriz módulo×ação, 7 perfis, `usePermissions`), **M15 IAs** (remark-gfm, prompts refinados). M1 Dashboard adiado por decisão do PO.
+- **Backlog 2026-Q2 — Onda 2** *(2026-05-29)* — 15 módulos entregues e auditados (≥ 9/10): M0 Layout, M2 Engenharia, M3–M12 Suprimentos/Planejamento/Adm. Contratual/RDO/Registros/Mapa Impacto, **M13 Riscos & Mudanças** (impactos JSONB, PlanoAção, DashboardExecutivo), **M13-C Design Standardization** (StatusBadge/KPICard/SectionTitle criados; 30 divergências eliminadas), **M14 Permissões** (matriz módulo×ação, 7 perfis, `usePermissions`), **M15 IAs** (remark-gfm, prompts refinados). M1 Dashboard adiado por decisão do PO. Ciclo fechado com `git commit bc48e9d` *(2026-06-02)*.
 
 ---
 
@@ -60,16 +60,12 @@ npm run dev
 
 ---
 
-## Milestone Atual: Backlog 2026-Q2 — Onda 2
+## Milestone Anterior: Backlog 2026-Q2 — Onda 2
 
-**Status:** ✅ **CONCLUÍDO** *(2026-05-29)* — M1 Dashboard adiado por decisão do PO; todos os demais módulos entregues e auditados.
+**Status:** ✅ **CONCLUÍDO & COMMITADO** *(2026-05-29 → fechado 2026-06-02)*
 **Progresso:** ███████████████ 15/15 módulos fechados · M1 adiado (revisão futura dedicada)
 
-> **Pendente commit:** ~20 arquivos (M13 + M13-C) aguardam `git commit` — funcionalidade validada, build passando.
-
-**Objetivo:** Completar os módulos remanescentes do backlog consolidado pelo PO, fechando um módulo de cada vez com QA ≥ 9 antes de avançar.
-
-> Cada módulo abaixo é uma fase autônoma — fechar e validar com `/audit` antes de iniciar o próximo.
+> Cada módulo abaixo é uma fase autônoma — referência histórica da Onda 2.
 
 ---
 
@@ -350,15 +346,27 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 ---
 
-## Próximo Milestone: Onda 3 — Finalização & Polimento
+## Milestone Atual: Onda 3 — Finalização & Polimento
 
-**Status:** 🔲 Não iniciado · aguarda aprovação do PO
+**Status:** 🟡 Em andamento · início 2026-06-02 · tasks de qualidade + permissões em paralelo
 
 **Escopo preliminar (a confirmar com `/brainstorming`):**
 
-1. **Commit do backlog:** Commitar os ~20 arquivos pendentes de M13 + M13-C (funcionalidade já auditada).
-2. **M1 — Dashboard Review:** Widgets, reorganização e KPIs globais — revisão dedicada após todos os módulos prontos (decisão PO 2026-05-27).
-3. **Camada 3 Permissões — Expansão:** Aplicar `usePermissions` nos módulos restantes (Contratos, Pleitos, RDO, Registros, Planejamento, Riscos, Mudanças, IAs).
-4. **Deploy:** Definir hospedagem (Render / Fly.io / Railway) + pipeline CI/CD + domínio.
+### Melhorias de Qualidade (2026-06-02)
+
+- [x] **Sort por Coluna:** Implementado hook `useSortTable` + componente `SortableTableHead` + aplicado em 5 módulos (Plano de Ação, Gestão de Riscos, Gestão de Mudanças, Documentos, RDOs) *(7 commits integrados, `npm run build` ✓, tests 9/9 ✓)*
+
+1. **M1 — Dashboard Review:** Widgets, reorganização e KPIs globais — revisão dedicada após todos os módulos prontos (decisão PO 2026-05-27).
+2. **Camada 3 Permissões — Expansão:** Aplicar `usePermissions` nos módulos restantes (Contratos, Pleitos, RDO, Registros, Planejamento, Riscos, Mudanças, IAs).
+3. **Deploy:** Definir hospedagem (Render / Fly.io / Railway) + pipeline CI/CD + domínio.
 
 > **Gate:** `/brainstorming` com PO antes de iniciar qualquer item desta onda.
+
+---
+
+### Critérios de Aceitação — Onda 3
+
+- [ ] `/audit` ≥ 9 em cada módulo tocado
+- [ ] `npm run build` sem erros
+- [ ] Deploy funcional em ambiente de staging
+- [ ] Permissões aplicadas em todos os módulos

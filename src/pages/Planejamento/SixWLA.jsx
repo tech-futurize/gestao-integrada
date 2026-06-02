@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarRange, Plus, AlertCircle, Upload } from "lucide-react";
+import { CalendarRange, Plus, AlertCircle, Upload, Search } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { cn } from "@/lib/utils";
 import { entities } from "@/api/supabaseEntities";
@@ -13,6 +13,8 @@ import { getSemanas, getSemanasBadge, formatData, formatDataDDMM, getWeekBadgeSt
 import { useDarkMode } from "@/hooks/useDarkMode";
 import SixWLATable from "@/components/planejamento/SixWLATable";
 import AdicionarCronogramaModal from "@/components/planejamento/AdicionarCronogramaModal";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import FilterBar from "@/components/ui/FilterBar";
 
 const SIXWLA_EXPORT_COLUMNS = [
   { key: "tarefa_nome",            label: "Atividade",           type: "string" },
@@ -40,13 +42,14 @@ export default function SixWLAPage() {
   const { toast } = useToast();
 
   const semanas = useMemo(() => getSemanas(new Date()), []);
-  const [semanasAtivas, setSemanasAtivas] = useState(() => semanas.map(s => s.label));
+  const [semanasAtivas, setSemanasAtivas] = useState([]);
   const [showImportExport, setShowImportExport] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [filtroHoje, setFiltroHoje] = useState(false);
-  const [filtroDisciplina, setFiltroDisciplina] = useState("");
+  const [filtros, setFiltros] = useState({});
+  const [filterKey, setFilterKey] = useState(0);
   const [filtroRestricao, setFiltroRestricao] = useState(null);
+  const FILTROS_KEY = "sixwla-filtros";
   const autoImported = useRef(false);
 
   // Q1 — registros 6WLA do projeto
@@ -153,19 +156,9 @@ export default function SixWLAPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- bulkCreateMut is stable (useMutation)
   }, [pendingItens, pendingTarefas, tarefasNaJanela, existingTarefaIds]);
 
-  const hojeDateStr = useMemo(() => new Date().toISOString().split("T")[0], []);
-
   const filtered = useMemo(() => {
     let items = merged;
-
-    if (filtroHoje) {
-      items = items.filter(i => {
-        const ini = i.tarefa?.inicio_previsto;
-        const fim = i.tarefa?.termino_previsto;
-        if (!ini || !fim) return false;
-        return ini <= hojeDateStr && fim >= hojeDateStr;
-      });
-    }
+    const discs = filtros.disciplina || [];
 
     const q = searchText.trim().toLowerCase();
     if (q) {
@@ -175,11 +168,11 @@ export default function SixWLAPage() {
       );
     }
 
-    if (filtroDisciplina) {
-      items = items.filter(i => i.tarefa?.disciplina === filtroDisciplina);
+    if (discs.length > 0) {
+      items = items.filter(i => discs.includes(i.tarefa?.disciplina));
     }
 
-    if (semanasAtivas.length < semanas.length) {
+    if (semanasAtivas.length > 0) {
       items = items.filter(i => i.semanasBadge.some(s => semanasAtivas.includes(s)));
     }
 
@@ -188,7 +181,7 @@ export default function SixWLAPage() {
     }
 
     return items;
-  }, [merged, filtroHoje, searchText, filtroDisciplina, semanasAtivas, semanas.length, filtroRestricao, hojeDateStr]);
+  }, [merged, searchText, filtros, semanasAtivas, filtroRestricao]);
 
   // KPIs — 7 cards: Total + 1 por categoria de restrição
   const kpis = useMemo(() => ({
@@ -258,10 +251,10 @@ export default function SixWLAPage() {
 
         {/* KPIs — Total + 6 categorias de restrição */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          <div className="rounded-xl border p-3 bg-cobalt border-cobalt">
-            <p className="text-xs font-medium text-titanium">Total Atividades</p>
-            <p className="text-2xl font-bold text-cyan-electric">{kpis.total}</p>
-            <p className="text-[10px] text-titanium/70 mt-0.5">no 6WLA</p>
+          <div className="rounded-xl border p-3 bg-card border-border dark:bg-cobalt dark:border-cobalt">
+            <p className="text-xs font-medium text-muted-foreground dark:text-titanium">Total Atividades</p>
+            <p className="text-2xl font-bold text-foreground dark:text-cyan-electric">{kpis.total}</p>
+            <p className="text-[10px] text-muted-foreground/70 dark:text-titanium/70 mt-0.5">no 6WLA</p>
           </div>
           {RESTRICOES.map(r => {
             const isActive = filtroRestricao === r.key;
@@ -285,60 +278,53 @@ export default function SixWLAPage() {
           })}
         </div>
 
-        {/* Row semanas + filtros */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
-            {semanas.map((s, i) => {
-              const ativa = semanasAtivas.includes(s.label);
-              return (
-                <button
-                  key={s.label}
-                  onClick={() => toggleSemana(s.label)}
-                  title={`${formatData(s.start)} – ${formatData(s.end)}`}
-                  style={ativa ? getWeekBadgeStyle(i, isDark) : undefined}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
-                    ativa
-                      ? ""
-                      : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
-                  )}
-                >
-                  {s.label}-{formatDataDDMM(s.start)}
-                </button>
-              );
-            })}
-          </div>
+        {/* Semanas — mini-cards filtrantes */}
+        <div className="flex flex-wrap gap-2">
+          {semanas.map((s, i) => {
+            const ativa = semanasAtivas.includes(s.label);
+            return (
+              <button
+                key={s.label}
+                onClick={() => toggleSemana(s.label)}
+                title={`${formatData(s.start)} – ${formatData(s.end)}`}
+                style={ativa ? getWeekBadgeStyle(i, isDark) : undefined}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                  ativa
+                    ? ""
+                    : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                )}
+              >
+                {s.label}-{formatDataDDMM(s.start)}
+              </button>
+            );
+          })}
+        </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+        {/* Filtros */}
+        <FilterToolbar
+          active={!!searchText || semanasAtivas.length > 0 || Object.values(filtros).some(a => a?.length > 0)}
+          onClearAll={() => { setSearchText(""); setSemanasAtivas([]); setFiltros({}); setFilterKey(k => k + 1); }}
+        >
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             <input
-              type="text"
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
+              className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
               placeholder="Buscar por ID ou atividade..."
               aria-label="Buscar atividade"
-              className="h-8 px-3 text-xs rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-56"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
             />
-            <Button
-              size="sm"
-              variant={filtroHoje ? "default" : "outline"}
-              onClick={() => setFiltroHoje(v => !v)}
-              className="h-8 text-xs"
-            >
-              Hoje
-            </Button>
-            <select
-              value={filtroDisciplina}
-              onChange={e => setFiltroDisciplina(e.target.value)}
-              aria-label="Filtrar por disciplina"
-              className="h-8 px-2 text-xs rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="">Todas as disciplinas</option>
-              {disciplinas.map(d => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
           </div>
-        </div>
+          <FilterBar
+            key={filterKey}
+            storageKey={FILTROS_KEY}
+            filters={[
+              { key: "disciplina", label: "Disciplina", options: disciplinas },
+            ]}
+            onChange={setFiltros}
+          />
+        </FilterToolbar>
 
         {/* Visualização — pills S1–S6 por linha, 6 checkboxes de restrição, observacao */}
         <SixWLATable

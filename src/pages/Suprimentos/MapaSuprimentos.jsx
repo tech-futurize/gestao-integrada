@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { UNIDADE_SIGLAS } from "@/lib/unidadesMedida";
 import { ShoppingCart, Upload, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
@@ -15,7 +16,7 @@ const EXPORT_COLUMNS = [
   { key: "numero_sc",       label: "Nº SC/OC",          type: "string",  required: true },
   { key: "descricao",       label: "Descrição",          type: "string",  required: true },
   { key: "fornecedor",      label: "Fornecedor",         type: "string" },
-  { key: "unidade",         label: "Unidade",            type: "string" },
+  { key: "unidade",         label: "Und",                type: "string" },
   { key: "quantidade",      label: "Quantidade",         type: "number" },
   { key: "responsavel",     label: "Responsável",        type: "string" },
   { key: "status",          label: "Status",             type: "string" },
@@ -38,24 +39,20 @@ export default function MapaSuprimentos() {
     enabled: !!selectedProjectId,
   });
 
-  const { data: unidades = [] } = useQuery({
-    queryKey: ["unidades_medida"],
-    queryFn: () => entities.UnidadeMedida.list(),
-    staleTime: 1000 * 60 * 10,
-  });
-
   const handleImport = async (row) => {
     setImporting(true);
     try {
-      const unidadeMatch = unidades.find(u =>
-        u.sigla?.toLowerCase() === (row.unidade || "").toLowerCase()
-      );
+      // Normaliza a sigla importada: aceita qualquer sigla da lista ou string livre
+      const siglaImportada = (row.unidade || "").trim();
+      const unidadeNormalizada = UNIDADE_SIGLAS.find(
+        s => s.toLowerCase() === siglaImportada.toLowerCase()
+      ) || siglaImportada || null;
       const payload = {
         projeto_id:       selectedProjectId,
         numero_sc:        row.numero_sc        || "",
         descricao:        row.descricao        || "",
         fornecedor:       row.fornecedor       || "",
-        unidade_id:       unidadeMatch?.id     || null,
+        unidade:          unidadeNormalizada,
         quantidade:       row.quantidade       ?? 0,
         responsavel:      row.responsavel      || "",
         status:           row.status           || "A iniciar",
@@ -114,10 +111,7 @@ export default function MapaSuprimentos() {
         title="Mapa de Suprimentos"
         exportFileName="mapa_suprimentos"
         columns={EXPORT_COLUMNS}
-        onExport={() => itens.map(item => ({
-          ...item,
-          unidade: unidades.find(u => u.id === item.unidade_id)?.sigla || item.unidade || "",
-        }))}
+        onExport={() => itens}
         onImport={handleImport}
       />
     </div>

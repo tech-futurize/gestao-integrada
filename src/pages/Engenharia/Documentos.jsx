@@ -13,7 +13,8 @@ import DocDetalhe from "@/components/engenharia/DocDetalhe";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,8 +22,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import {
   FileText, Plus, Upload, TrendingUp, AlertTriangle, AlertCircle,
-  Edit, Trash2, History, ArrowUpDown, ArrowUp, ArrowDown,
+  History, ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 
 import { ETAPAS, DISCIPLINAS, DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
 
@@ -81,7 +84,7 @@ export default function Documentos() {
   const [showImportExport, setShowImportExport] = useState(false);
   const [importing, setImporting] = useState(false);
   const [historyDoc, setHistoryDoc] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewItem, setViewItem] = useState(null);
 
   // Filtros e ordenação
   const [busca, setBusca] = useState("");
@@ -399,7 +402,7 @@ export default function Documentos() {
                       </span>
                     </th>
                   ))}
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">Ações</th>
+                  <th className="px-3 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap w-28"><span className="sr-only">Ações</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -436,33 +439,23 @@ export default function Documentos() {
                         <span className="text-xs font-semibold rounded-full px-2 py-0.5 whitespace-nowrap" style={{ backgroundColor: stEtapa.bg, color: stEtapa.text }}>{doc.etapa}</span>
                       </td>
                       <td className="px-3 py-2.5">
-                        <div className="flex items-center justify-center gap-1">
-                          {canEdit && (
+                        <RowActions
+                          onView={() => setViewItem(doc)}
+                          onEdit={canEdit ? () => handleOpenEdit(doc) : undefined}
+                          onDelete={canDelete ? () => deleteMut.mutate(doc.id) : undefined}
+                          deleteDescription={`${doc.tag_id} — ${doc.titulo} será excluído permanentemente.`}
+                          extra={
                             <button
-                              onClick={() => handleOpenEdit(doc)}
-                              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                              title="Editar"
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setHistoryDoc(doc); }}
+                              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                              title="Histórico"
+                              aria-label="Histórico"
                             >
-                              <Edit className="w-3.5 h-3.5" />
+                              <History className="w-3.5 h-3.5" />
                             </button>
-                          )}
-                          {canDelete && (
-                            <button
-                              onClick={() => setDeleteTarget(doc)}
-                              className="p-1.5 rounded hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
-                              title="Excluir"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setHistoryDoc(doc)}
-                            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                            title="Histórico"
-                          >
-                            <History className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                          }
+                        />
                       </td>
                     </tr>
                   );
@@ -490,53 +483,31 @@ export default function Documentos() {
       )}
 
       {/* Modal Criação/Edição */}
-      <Dialog open={showForm} onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="sm:max-w-3xl">
-          {/* Header */}
-          <DialogHeader className={`pb-3 -mx-6 -mt-6 px-6 pt-6 rounded-t-lg border-b border-border mb-1${editing ? " bg-green-50" : ""}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-1 self-stretch rounded-full flex-shrink-0 ${editing ? "bg-emerald-600" : "bg-primary"}`}
-                  style={{ minHeight: "40px" }}
-                />
-                <div className="w-9 h-9 rounded-lg bg-green-50 border border-emerald-200 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <DialogTitle className="text-base font-bold leading-tight">
-                    {editing ? "Editar Documento" : "Novo Documento"}
-                  </DialogTitle>
-                  {editing ? (
-                    <p className="text-xs text-muted-foreground font-mono truncate max-w-xs mt-0.5">
-                      {editing.tag_id} — {editing.titulo}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground mt-0.5">Engenharia de Documentos</p>
-                  )}
-                </div>
-              </div>
-              {editing && form.etapa && ETAPA_COLORS[form.etapa] && (
-                <span
-                  className="text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 mt-1"
-                  style={{ backgroundColor: ETAPA_COLORS[form.etapa].bg, color: ETAPA_COLORS[form.etapa].text }}
-                >
-                  {form.etapa}
-                </span>
-              )}
-            </div>
-          </DialogHeader>
-
+      <FormDialog
+        open={showForm}
+        onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); } }}
+        icon={FileText}
+        title={editing ? "Editar Documento" : "Novo Documento"}
+        subtitle={editing ? `${editing.tag_id} — ${editing.titulo}` : "Engenharia de Documentos"}
+        maxWidth="max-w-3xl"
+        badge={editing && form.etapa && ETAPA_COLORS[form.etapa] ? (
+          <span
+            className="text-xs font-semibold px-2.5 py-1 rounded-full"
+            style={{ backgroundColor: ETAPA_COLORS[form.etapa].bg, color: ETAPA_COLORS[form.etapa].text }}
+          >
+            {form.etapa}
+          </span>
+        ) : undefined}
+        onClose={() => { setShowForm(false); setEditing(null); }}
+        onSave={handleSubmit}
+        saving={createMut.isPending || updateMut.isPending}
+        saveLabel={editing ? "Salvar alterações" : "Criar documento"}
+      >
           {/* Seções */}
-          <div className="max-h-[65vh] overflow-y-auto space-y-5 py-1 px-2">
 
-            {/* Identificação (sky) */}
+            {/* Identificação */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2.5 h-2.5 rounded-sm bg-sky-500 flex-shrink-0" />
-                <span className="text-xs font-bold uppercase tracking-wider text-sky-500">Identificação</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
+              <SectionDivider label="Identificação" className="mb-3" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">TAG / ID <span className="text-red-500">*</span></Label>
@@ -567,13 +538,9 @@ export default function Documentos() {
               </div>
             </div>
 
-            {/* Detalhes Técnicos (violet) */}
+            {/* Detalhes Técnicos */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2.5 h-2.5 rounded-sm bg-violet-500 flex-shrink-0" />
-                <span className="text-xs font-bold uppercase tracking-wider text-violet-500">Detalhes Técnicos</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
+              <SectionDivider label="Detalhes Técnicos" className="mb-3" />
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Etapa</Label>
@@ -614,13 +581,9 @@ export default function Documentos() {
               </div>
             </div>
 
-            {/* Datas (amber) */}
+            {/* Datas */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2.5 h-2.5 rounded-sm bg-amber-500 flex-shrink-0" />
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-500">Datas</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
+              <SectionDivider label="Datas" className="mb-3" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Data Projetada</Label>
@@ -633,13 +596,9 @@ export default function Documentos() {
               </div>
             </div>
 
-            {/* Vínculo ao Cronograma (emerald) */}
+            {/* Vínculo ao Cronograma */}
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0" />
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-500">Vínculo ao Cronograma</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
+              <SectionDivider label="Vínculo ao Cronograma" className="mb-3" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Tarefa do Cronograma</Label>
@@ -664,20 +623,7 @@ export default function Documentos() {
               </div>
             </div>
 
-          </div>
-
-          <DialogFooter className="gap-2 border-t pt-4 -mx-6 -mb-6 px-6 pb-6 bg-muted/30 rounded-b-lg">
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={createMut.isPending || updateMut.isPending}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            >
-              {editing ? "Salvar alterações" : "Criar documento"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
 
       {/* Dialog Histórico (DocDetalhe) */}
       <Dialog open={!!historyDoc} onOpenChange={(open) => { if (!open) setHistoryDoc(null); }}>

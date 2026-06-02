@@ -27,7 +27,7 @@ export default function ConfirmDeleteButton({
         <button
           type="button"
           title="Excluir"
-          className={`${btnSize} rounded-lg flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-200 ${className}`}
+          className={`${btnSize} rounded-lg flex items-center justify-center text-status-critical hover:text-status-critical hover:bg-status-critical/10 transition-colors focus:outline-none focus:ring-2 focus:ring-status-critical/30 ${className}`}
         >
           <Trash2 className={iconSize} />
         </button>
@@ -41,7 +41,7 @@ export default function ConfirmDeleteButton({
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-status-critical hover:bg-status-critical/90 text-white"
           >
             Excluir
           </AlertDialogAction>

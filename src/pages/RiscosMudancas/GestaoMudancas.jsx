@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightLeft, Plus, Edit, Trash2, Upload, ArrowUpDown, ArrowUp, ArrowDown, Check, Search } from "lucide-react";
+import { ArrowRightLeft, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Check, Search } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
@@ -8,7 +10,6 @@ import { useProject } from "@/lib/ProjectContext";
 import DashboardExecutivo from "@/components/mudancas/DashboardExecutivo";
 import MudancaForm from "@/components/mudancas/MudancaForm";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
@@ -53,7 +54,7 @@ export default function GestaoMudancas() {
   const [editing, setEditing] = useState(null);
   const [filtros, setFiltros] = useState({});
   const [filterKey, setFilterKey] = useState(0);
-  const [deleteId, setDeleteId] = useState(null);
+  const [viewItem, setViewItem] = useState(null);
   const [busca, setBusca] = useState("");
   const [periodo, setPeriodo] = useState(null);
   const FILTROS_KEY = "mudancas-filtros";
@@ -261,10 +262,12 @@ export default function GestaoMudancas() {
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{m.responsavel || "—"}</td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => handleEdit(m)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Edit className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setDeleteId(m.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
+                    <RowActions
+                      onView={() => setViewItem(m)}
+                      onEdit={() => handleEdit(m)}
+                      onDelete={() => deleteMut.mutate(m.id)}
+                      deleteDescription="A mudança será excluída permanentemente."
+                    />
                   </td>
                 </tr>
               ))}
@@ -282,20 +285,23 @@ export default function GestaoMudancas() {
         onExport={() => filtered}
         onImport={(row) => createMut.mutateAsync({ ...row, projeto_id: selectedProjectId })}
       />
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir mudança?</AlertDialogTitle>
-            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { deleteMut.mutate(deleteId); setDeleteId(null); }}>
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {viewItem && (
+        <DetailDialog
+          open={!!viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          title={viewItem.titulo || "Mudança"}
+          sections={[
+            { label: "Título", value: viewItem.titulo, full: true },
+            { label: "Origem", value: viewItem.origem },
+            { label: "Status", value: viewItem.status },
+            { label: "Responsável", value: viewItem.responsavel },
+            { label: "Data ocorrência", value: viewItem.data_ocorrencia },
+            { label: "Impacto custo", value: viewItem.impacto_custo != null ? `R$ ${viewItem.impacto_custo}` : null },
+            { label: "Impacto prazo", value: viewItem.impacto_prazo_dias != null ? `${viewItem.impacto_prazo_dias > 0 ? "+" : ""}${viewItem.impacto_prazo_dias}d` : null },
+            { label: "Descrição", value: viewItem.descricao, full: true },
+          ]}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShieldAlert, Plus, Edit, Trash2, Upload, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
+import { ShieldAlert, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
@@ -8,7 +10,7 @@ import { useProject } from "@/lib/ProjectContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { KPICard } from "@/components/ui/KPICard";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,6 +80,7 @@ export default function GestaoRiscos() {
   const [busca, setBusca] = useState("");
   const [tab, setTab] = useState("riscos");
   const [deleteId, setDeleteId] = useState(null);
+  const [viewItem, setViewItem] = useState(null);
   const FILTROS_KEY = "riscos-filtros";
 
   const { data: riscos = [], isPending: isLoading, isError } = useQuery({
@@ -397,10 +400,12 @@ export default function GestaoRiscos() {
                       <span className={`text-xs font-semibold ${statusColor}`}>{r.status}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1 justify-end">
-                        <button onClick={() => handleEdit(r)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => setDeleteId(r.id)} className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
-                      </div>
+                      <RowActions
+                        onView={() => setViewItem(r)}
+                        onEdit={() => handleEdit(r)}
+                        onDelete={() => deleteMut.mutate(r.id)}
+                        deleteDescription="O risco será excluído permanentemente."
+                      />
                     </td>
                   </tr>
                 );
@@ -411,15 +416,26 @@ export default function GestaoRiscos() {
       </div>
 
       {/* Modal */}
-      <Dialog open={showForm} onOpenChange={open => { if (!open) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar Risco" : "Novo Risco"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="col-span-2 pb-1">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Identificação</p>
-            </div>
+      <FormDialog
+        open={showForm}
+        onOpenChange={open => { if (!open) { setShowForm(false); setEditing(null); } }}
+        icon={ShieldAlert}
+        title={editing ? "Editar Risco" : "Novo Risco"}
+        subtitle={editing ? editing.codigo || "Editar registro de risco" : "Cadastrar novo risco"}
+        maxWidth="max-w-lg"
+        onClose={() => { setShowForm(false); setEditing(null); }}
+        footer={
+          <>
+            {editing && <Button variant="destructive" onClick={() => { setDeleteId(editing.id); setShowForm(false); setEditing(null); setForm(EMPTY_FORM); }}>Excluir</Button>}
+            <Button variant="outline" onClick={() => { setShowForm(false); setEditing(null); }}>Cancelar</Button>
+            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
+              {editing ? "Salvar" : "Criar"}
+            </Button>
+          </>
+        }
+      >
+          <SectionDivider label="Identificação" />
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Código</Label>
               <Input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="RSC-001" />
@@ -435,9 +451,10 @@ export default function GestaoRiscos() {
               <Label>Descrição *</Label>
               <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={3} placeholder="Descrição do risco" />
             </div>
-            <div className="col-span-2 border-t border-border pt-3 mt-1">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Avaliação</p>
-            </div>
+          </div>
+
+          <SectionDivider label="Avaliação" />
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label>Probabilidade (1-5)</Label>
               <Input type="number" min={1} max={5} value={form.probabilidade} onChange={e => setForm(f => ({ ...f, probabilidade: e.target.value }))} />
@@ -466,10 +483,11 @@ export default function GestaoRiscos() {
               <Label>Plano de Resposta</Label>
               <Textarea value={form.plano_resposta} onChange={e => setForm(f => ({ ...f, plano_resposta: e.target.value }))} rows={2} placeholder="Ações de mitigação..." />
             </div>
-            <div className="col-span-2 border-t border-border pt-3 mt-1">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Impactos no Projeto</p>
-            </div>
-            <div className="space-y-2 col-span-2">
+          </div>
+
+          <SectionDivider label="Impactos no Projeto" />
+          <div className="space-y-3">
+            <div className="space-y-2">
               <Label>Dimensões de Impacto</Label>
               <div className="flex gap-4 flex-wrap">
                 {IMPACTO_DIMS.map(dim => (
@@ -484,7 +502,7 @@ export default function GestaoRiscos() {
               </div>
             </div>
             {form.impactos.includes("Escopo") && (
-              <div className="space-y-1 col-span-2">
+              <div className="space-y-1">
                 <Label>Descrição do Impacto no Escopo</Label>
                 <Textarea
                   value={form.escopo_texto}
@@ -494,38 +512,32 @@ export default function GestaoRiscos() {
                 />
               </div>
             )}
-            {form.impactos.includes("Prazo") && (
-              <div className="space-y-1">
-                <Label>Impacto em Prazo (dias)</Label>
-                <Input
-                  type="number"
-                  value={form.prazo_dias}
-                  onChange={e => setForm(f => ({ ...f, prazo_dias: e.target.value }))}
-                  placeholder="+15 ou -5"
-                />
-              </div>
-            )}
-            {form.impactos.includes("Valor") && (
-              <div className="space-y-1">
-                <Label>Impacto Financeiro (R$)</Label>
-                <Input
-                  type="number"
-                  value={form.valor_impacto}
-                  onChange={e => setForm(f => ({ ...f, valor_impacto: e.target.value }))}
-                  placeholder="+150000 ou -50000"
-                />
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-4">
+              {form.impactos.includes("Prazo") && (
+                <div className="space-y-1">
+                  <Label>Impacto em Prazo (dias)</Label>
+                  <Input
+                    type="number"
+                    value={form.prazo_dias}
+                    onChange={e => setForm(f => ({ ...f, prazo_dias: e.target.value }))}
+                    placeholder="+15 ou -5"
+                  />
+                </div>
+              )}
+              {form.impactos.includes("Valor") && (
+                <div className="space-y-1">
+                  <Label>Impacto Financeiro (R$)</Label>
+                  <Input
+                    type="number"
+                    value={form.valor_impacto}
+                    onChange={e => setForm(f => ({ ...f, valor_impacto: e.target.value }))}
+                    placeholder="+150000 ou -50000"
+                  />
+                </div>
+              )}
+            </div>
           </div>
-          <DialogFooter className="gap-2">
-            {editing && <Button variant="destructive" onClick={() => { setDeleteId(editing.id); setShowForm(false); setEditing(null); setForm(EMPTY_FORM); }}>Excluir</Button>}
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
-              {editing ? "Salvar" : "Criar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
       </div>
       )}
       <ImportExportDialog
@@ -545,12 +557,30 @@ export default function GestaoRiscos() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { deleteMut.mutate(deleteId); setDeleteId(null); }}>
+            <AlertDialogAction className="bg-status-critical hover:bg-status-critical/90 text-white" onClick={() => { deleteMut.mutate(deleteId); setDeleteId(null); }}>
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {viewItem && (
+        <DetailDialog
+          open={!!viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          title={`Risco ${viewItem.codigo || ""}`}
+          sections={[
+            { label: "Código", value: viewItem.codigo },
+            { label: "Categoria", value: viewItem.categoria },
+            { label: "Status", value: viewItem.status },
+            { label: "Probabilidade", value: viewItem.probabilidade },
+            { label: "Impacto", value: viewItem.impacto },
+            { label: "Responsável", value: viewItem.responsavel },
+            { label: "Descrição", value: viewItem.descricao, full: true },
+            { label: "Plano de resposta", value: viewItem.plano_resposta, full: true },
+          ]}
+        />
+      )}
     </div>
   );
 }

@@ -303,10 +303,11 @@ Recursos visuais em `/docs/design/assets/`:
 Toda página do sistema deve seguir esta estrutura, nesta ordem:
 
 1. `<PageHeader />` — breadcrumb automático + slot de ações
-2. Cards de KPIs / totalizadores (quando houver)
-3. Filtros (se houver) + tabela ou visualização principal
+2. **`<FilterToolbar>`** — barra de filtros (quando houver), **antes dos KPI cards**
+3. Cards de KPIs / totalizadores (quando houver)
+4. Tabela ou visualização principal
 
-**Proibido:** `<h1>` duplicando o breadcrumb · subtítulos descritivos abaixo do header · mini-headers locais com `flex justify-between`.
+**Proibido:** `<h1>` duplicando o breadcrumb · subtítulos descritivos abaixo do header · mini-headers locais com `flex justify-between` · filtros dentro de `<Card>` · filtros depois dos KPI cards.
 
 ### Componente
 
@@ -381,8 +382,12 @@ export default function MinhaPagina() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader actions={…} />
-      <div className="flex-1 overflow-auto p-6">
-        {/* filtros (se houver) + conteúdo */}
+      <div className="flex-1 overflow-auto p-6 space-y-6">
+        <FilterToolbar active={isFilterActive} onClearAll={handleClearAll}>
+          {/* controles de filtro */}
+        </FilterToolbar>
+        {/* KPI cards */}
+        {/* tabela / conteúdo */}
       </div>
     </div>
   );
@@ -395,12 +400,83 @@ Ao aplicar o `PageHeader` em qualquer módulo novo ou existente:
 
 1. Remover o bloco local de cabeçalho: `<div className="flex justify-between …">` com `<h1>`, `<p>` e botões
 2. Adicionar `<PageHeader actions={…} />` como **primeiro filho** do wrapper da página
-3. Envolver o conteúdo restante em `<div className="flex-1 overflow-auto p-6">`
-4. Colocar filtros (se houver) dentro do `<div className="flex-1 overflow-auto p-6">`, antes do conteúdo principal
+3. Envolver o conteúdo restante em `<div className="flex-1 overflow-auto p-6 space-y-6">`
+4. Colocar `<FilterToolbar>` como **primeiro elemento** dentro do wrapper, antes dos KPI cards
 
 ---
 
-## 10. Sidebar — Menu de Usuário (SidebarUserMenu)
+## 10. Componentes de Filtro (FilterToolbar + DateRangePicker)
+
+### FilterToolbar
+
+**Localização:** [src/components/ui/FilterToolbar.jsx](../../src/components/ui/FilterToolbar.jsx)
+
+Wrapper padrão de toda barra de filtros do sistema. Renderiza o ícone + texto "Filtros" à esquerda, com um "X" overlay sobre o ícone quando há filtro ativo (mesmo padrão do `MultiSelectDropdown`). Recebe os controles de filtro como `children`.
+
+```jsx
+<FilterToolbar active={isFilterActive} onClearAll={handleClearAll}>
+  <SearchInput … />
+  <FilterBar … />
+  <DateRangePicker … />
+</FilterToolbar>
+```
+
+| Prop | Tipo | Descrição |
+|------|------|-----------|
+| `active` | `boolean` | `true` quando qualquer filtro está aplicado. Mostra o "X" sobre o ícone. |
+| `onClearAll` | `() => void` | Limpa todos os filtros (busca, multiselect, período). |
+| `children` | `ReactNode` | Controles de filtro da página (qualquer combinação). |
+
+**Receita de `active` e `onClearAll`:**
+```js
+const isFilterActive =
+  !!searchText ||
+  !!periodo?.from ||
+  Object.values(filtros).some(a => a?.length > 0);
+
+const handleClearAll = () => {
+  setSearchText("");
+  setPeriodo(null);
+  setFiltros({});
+  localStorage.removeItem(FILTROS_KEY);
+  setFilterKey(k => k + 1); // remonta o FilterBar, limpando persistência
+};
+```
+
+### DateRangePicker
+
+**Localização:** [src/components/ui/DateRangePicker.jsx](../../src/components/ui/DateRangePicker.jsx)
+
+Campo único de período (início + fim) no padrão visual do `MultiSelectDropdown`. Abre um calendário de 2 meses (react-day-picker v8, locale `ptBR`). Quando preenchido, exibe o intervalo formatado (`dd/MM/yy – dd/MM/yy`) e fica em estado ativo (azul). Tem "X" overlay individual para limpar só o período.
+
+```jsx
+const [periodo, setPeriodo] = useState(null); // { from: Date, to: Date } | null
+
+<DateRangePicker
+  label="Período de Fornecimento"
+  value={periodo}
+  onChange={setPeriodo}
+  onClear={() => setPeriodo(null)}
+/>
+```
+
+**Filtragem:**
+```js
+if (periodo?.from) {
+  const fromStr = periodo.from.toISOString().split("T")[0];
+  result = result.filter(item => item.data_campo >= fromStr);
+}
+if (periodo?.to) {
+  const toStr = periodo.to.toISOString().split("T")[0];
+  result = result.filter(item => item.data_campo <= toStr);
+}
+```
+
+**Padrão visual:** idêntico ao `MultiSelectDropdown` — `Button variant="outline" size="sm" h-8`, estado ativo `border-primary text-primary bg-primary/5`, "X" overlay em `absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary`.
+
+---
+
+## 11. Sidebar — Menu de Usuário (SidebarUserMenu)
 
 **Localização:** [src/components/ui/SidebarUserMenu.jsx](../../src/components/ui/SidebarUserMenu.jsx)
 

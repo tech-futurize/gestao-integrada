@@ -70,6 +70,7 @@ export const navigationGroups = [
       { title: "Usuários", path: "/configuracoes/usuarios" },
       { title: "Gerenciar Projeto", path: "/configuracoes/gerenciar-projeto" },
       { title: "Config. Agentes", path: "/configuracoes/agente-config" },
+      { title: "Unidades de Medida", path: "/configuracoes/unidades-medida" },
     ],
   },
 ];

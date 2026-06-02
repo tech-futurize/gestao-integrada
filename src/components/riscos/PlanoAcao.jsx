@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, CheckCircle2, Clock, X, Trash2, Save } from "lucide-react";
+import { Plus, Edit, CheckCircle2, Clock, X, Save } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,7 +50,7 @@ export default function PlanoAcao({ projectId }) {
   const [showForm, setShowForm] = useState(false);
   const [editingAcao, setEditingAcao] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
-  const [deleteId, setDeleteId] = useState(null);
+  const [viewItem, setViewItem] = useState(null);
   const queryClient = useQueryClient();
   const [vinculoTipo, setVinculoTipo] = useState("risco");
   const { toast } = useToast();
@@ -303,7 +304,7 @@ export default function PlanoAcao({ projectId }) {
                     <SortableTableHead columnKey="responsavel" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>
                     <SortableTableHead columnKey="data_fim_prevista" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Previsão</SortableTableHead>
                     <SortableTableHead columnKey="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableHead className="text-right w-28"><span className="sr-only">Ações</span></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -322,31 +323,27 @@ export default function PlanoAcao({ projectId }) {
                         <StatusBadge status={acao.status} />
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button size="sm" variant="outline" className="text-muted-foreground border-border"
-                            onClick={() => {
-                              setEditingAcao(acao);
-                              setFormData({
-                                descricao: acao.descricao,
-                                formato_tratativa: acao.formato_tratativa || "Reunião",
-                                data_inicio_prevista: acao.data_inicio_prevista || "",
-                                data_fim_prevista: acao.data_fim_prevista || "",
-                                responsavel: acao.responsavel || "",
-                                status: acao.status,
-                                observacoes: acao.observacoes || "",
-                                registro_risco_id: acao.registro_risco_id || null,
-                                registro_mudanca_id: acao.registro_mudanca_id || null,
-                              });
-                              setVinculoTipo(acao.registro_mudanca_id ? "mudanca" : "risco");
-                              setShowForm(true);
-                            }}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                                          <Button size="sm" variant="outline" className="text-status-critical border-status-critical/30 hover:bg-status-critical/10"
-                            onClick={() => setDeleteId(acao.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                        <RowActions
+                          onView={() => setViewItem(acao)}
+                          onEdit={() => {
+                            setEditingAcao(acao);
+                            setFormData({
+                              descricao: acao.descricao,
+                              formato_tratativa: acao.formato_tratativa || "Reunião",
+                              data_inicio_prevista: acao.data_inicio_prevista || "",
+                              data_fim_prevista: acao.data_fim_prevista || "",
+                              responsavel: acao.responsavel || "",
+                              status: acao.status,
+                              observacoes: acao.observacoes || "",
+                              registro_risco_id: acao.registro_risco_id || null,
+                              registro_mudanca_id: acao.registro_mudanca_id || null,
+                            });
+                            setVinculoTipo(acao.registro_mudanca_id ? "mudanca" : "risco");
+                            setShowForm(true);
+                          }}
+                          onDelete={() => deleteAcaoMutation.mutate(acao.id)}
+                          deleteDescription="A ação de tratamento será excluída permanentemente."
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -356,20 +353,22 @@ export default function PlanoAcao({ projectId }) {
           )}
         </CardContent>
       </Card>
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir ação?</AlertDialogTitle>
-            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => { deleteAcaoMutation.mutate(deleteId); setDeleteId(null); }}>
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {viewItem && (
+        <DetailDialog
+          open={!!viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          title={`Ação — ${viewItem.descricao?.substring(0, 50) || ""}`}
+          sections={[
+            { label: "Formato de tratativa", value: viewItem.formato_tratativa },
+            { label: "Responsável", value: viewItem.responsavel },
+            { label: "Status", value: viewItem.status },
+            { label: "Previsão início", value: viewItem.data_inicio_prevista },
+            { label: "Previsão fim", value: viewItem.data_fim_prevista },
+            { label: "Descrição", value: viewItem.descricao, full: true },
+            { label: "Observações", value: viewItem.observacoes, full: true },
+          ]}
+        />
+      )}
     </div>
   );
 }

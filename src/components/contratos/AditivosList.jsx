@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Plus } from "lucide-react";
-import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
+import { Plus } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const fmt = (v) => v != null && v !== 0
@@ -15,6 +17,8 @@ const TIPO_COLORS = {
 };
 
 export default function AditivosList({ aditivos, onAdd, onEdit, onDelete }) {
+  const [viewItem, setViewItem] = useState(null);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
@@ -48,13 +52,32 @@ export default function AditivosList({ aditivos, onAdd, onEdit, onDelete }) {
                   )}
                 </div>
               </div>
-              <div className="flex gap-1 shrink-0">
-                <Button size="sm" variant="ghost" onClick={() => onEdit(a)}><Edit className="w-3 h-3" /></Button>
-                <ConfirmDeleteButton size="sm" onConfirm={() => onDelete(a.id)} description="O aditivo será excluído permanentemente." />
-              </div>
+              <RowActions
+                onView={() => setViewItem(a)}
+                onEdit={() => onEdit(a)}
+                onDelete={() => onDelete(a.id)}
+                deleteDescription="O aditivo será excluído permanentemente."
+                size="sm"
+              />
             </div>
           ))}
         </div>
+      )}
+
+      {viewItem && (
+        <DetailDialog
+          open={!!viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          title={`Aditivo ${viewItem.numero || ""}`}
+          sections={[
+            { label: "Número", value: viewItem.numero },
+            { label: "Tipo", value: viewItem.tipo },
+            { label: "Status", value: viewItem.status },
+            { label: "Prazo adicional", value: viewItem.prazo_dias ? `+${viewItem.prazo_dias} dias` : null },
+            { label: "Valor", value: viewItem.valor ? fmt(viewItem.valor) : null },
+            { label: "Escopo", value: viewItem.escopo_texto, full: true },
+          ]}
+        />
       )}
     </div>
   );

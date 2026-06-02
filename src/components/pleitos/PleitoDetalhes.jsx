@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Edit, FileText, AlertTriangle } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDate, formatDateTime } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
@@ -32,7 +31,7 @@ export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
               ))}
               <span className="text-sm text-muted-foreground">
                 Aberto em{" "}
-                {pleito.data_abertura && format(new Date(pleito.data_abertura), "dd/MM/yyyy", { locale: ptBR })}
+                {formatDate(pleito.data_abertura)}
               </span>
             </div>
           </div>

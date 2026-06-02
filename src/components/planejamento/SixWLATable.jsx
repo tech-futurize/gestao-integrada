@@ -315,27 +315,16 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                       </PopoverContent>
                     </Popover>
                   </td>
-<<<<<<< Updated upstream
-                  <td className="px-2 py-3">
+                  <td
+                    className={cn("px-2 py-3 sticky z-10", stickyBg)}
+                    style={{ right: 0, width: R.remove, minWidth: R.remove }}
+                  >
                     <RowActions
                       onView={() => setViewItem(item)}
                       onDelete={() => onDelete(item.id)}
                       deleteTitle="Remover do 6WLA"
                       deleteDescription="Esta atividade será removida da seleção de semanas. A tarefa no cronograma não será excluída."
                     />
-=======
-                  <td
-                    className={cn("px-2 py-3 sticky z-10", stickyBg)}
-                    style={{ right: 0, width: R.remove, minWidth: R.remove }}
-                  >
-                    <button
-                      onClick={() => onDelete(item.id)}
-                      className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500"
-                      title="Remover do 6WLA"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
->>>>>>> Stashed changes
                   </td>
                 </tr>
               );

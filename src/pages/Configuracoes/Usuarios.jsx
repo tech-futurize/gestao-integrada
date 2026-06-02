@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { FormDialog } from "@/components/ui/FormDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -277,12 +277,19 @@ export default function Usuarios() {
         </div>
       )}
 
-      <Dialog open={showForm} onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar Usuário" : "Novo Usuário"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
+      <FormDialog
+        open={showForm}
+        onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); } }}
+        icon={Users}
+        title={editing ? "Editar Usuário" : "Novo Usuário"}
+        subtitle={editing ? editing.email : "Cadastro de usuário"}
+        maxWidth="max-w-2xl"
+        onClose={() => { setShowForm(false); setEditing(null); }}
+        onSave={handleSubmit}
+        saving={createMut.isPending || updateMut.isPending}
+        saveLabel={editing ? "Salvar" : "Criar Usuário"}
+      >
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1 col-span-2">
               <Label>Nome *</Label>
               <Input
@@ -330,7 +337,7 @@ export default function Usuarios() {
 
           {/* Seção de permissões — aparece apenas no modo de edição */}
           {editing && (
-            <div className="mt-4 border-t pt-4 space-y-3">
+            <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-foreground">Permissões</span>
                 <div className="flex items-center gap-2">
@@ -403,7 +410,7 @@ export default function Usuarios() {
               <div className="flex justify-end">
                 <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  variant="save"
                   onClick={() => savePermsMut.mutate({ usuarioId: editing.id, matrix: permsMatrix })}
                   disabled={savePermsMut.isPending}
                 >
@@ -413,14 +420,7 @@ export default function Usuarios() {
             </div>
           )}
 
-          <DialogFooter className="gap-2 mt-2">
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
-              {editing ? "Salvar" : "Criar Usuário"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
       </div>
     </div>
   );

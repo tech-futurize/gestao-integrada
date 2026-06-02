@@ -1,26 +1,30 @@
 import { Fragment, useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, AlertTriangle, X, Edit, Trash2, FilterX } from "lucide-react";
+import { Search, AlertTriangle, X, FilterX } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import ItemMASForm from "./ItemMASForm";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const PER_PAGE = 25;
 const FILTROS_STORAGE_KEY = "suprimentos-filtros";
 
 const ETAPAS = [
-  { key: "requisicao",  label: "Requisição",  cor: "#64748b" },
-  { key: "cotacao",     label: "Cotação",     cor: "#374151" },
-  { key: "patec",       label: "PATEC",       cor: "#4b5563" },
-  { key: "aquisicao",   label: "Aquisição",   cor: "#92400e" },
-  { key: "fabricacao",  label: "Fabricação",  cor: "#c35e1e" },
-  { key: "transporte",  label: "Transporte",  cor: "#4d7c0f" },
-  { key: "fornecimento",label: "Fornecimento",cor: "#15803d" },
+  { key: "requisicao",  label: "Requisição",   abbr: "Req.",    cor: "#64748b" },
+  { key: "cotacao",     label: "Cotação",       abbr: "Cot.",    cor: "#374151" },
+  { key: "patec",       label: "PATEC",         abbr: "PATEC",   cor: "#4b5563" },
+  { key: "aquisicao",   label: "Aquisição",     abbr: "Aquis.",  cor: "#92400e" },
+  { key: "fabricacao",  label: "Fabricação",    abbr: "Fabr.",   cor: "#c35e1e" },
+  { key: "transporte",  label: "Transporte",    abbr: "Transp.", cor: "#4d7c0f" },
+  { key: "fornecimento",label: "Fornecimento",  abbr: "Forn.",   cor: "#15803d" },
 ];
 
 const DEFAULT_ETAPAS = ETAPAS.map(e => ({ nome: e.label, status: "pendente", data: "" }));
@@ -43,10 +47,16 @@ function NodeColor(status) {
   return "#d1d5db";
 }
 
-function Popover({ item, etapaIdx, onClose, onSave }) {
+function Popover({ item, etapaIdx, rect, onClose, onSave }) {
   const etapa = item.etapas?.[etapaIdx] || { nome: ETAPAS[etapaIdx].label, status: "pendente", data: "" };
   const [status, setStatus] = useState(etapa.status);
-  const [data, setData] = useState(etapa.data || "");
+  const [data, setData] = useState(etapa.status === "nao_aplicavel" ? "" : (etapa.data || ""));
+
+  const handleStatusChange = (e) => {
+    const novoStatus = e.target.value;
+    setStatus(novoStatus);
+    if (novoStatus === "nao_aplicavel") setData("");
+  };
 
   const handleSave = () => {
     const novasEtapas = [...(item.etapas || DEFAULT_ETAPAS)];
@@ -56,17 +66,23 @@ function Popover({ item, etapaIdx, onClose, onSave }) {
       for (let i = 0; i <= etapaIdx; i++) {
         novasEtapas[i] = { ...novasEtapas[i], nome: ETAPAS[i].label, status: "concluida" };
       }
-      novasEtapas[etapaIdx].data = data;
+      novasEtapas[etapaIdx] = { ...novasEtapas[etapaIdx], data };
     } else if (status === "pendente") {
       for (let i = etapaIdx; i < 7; i++) {
         novasEtapas[i] = { ...novasEtapas[i], status: "pendente", data: "" };
       }
     } else {
-      novasEtapas[etapaIdx] = { ...novasEtapas[etapaIdx], nome: ETAPAS[etapaIdx].label, status, data };
+      novasEtapas[etapaIdx] = {
+        ...novasEtapas[etapaIdx],
+        nome: ETAPAS[etapaIdx].label,
+        status,
+        data: status === "nao_aplicavel" ? "" : data,
+      };
     }
 
     let lastDate = null;
     for (let i = 0; i < 7; i++) {
+      if (novasEtapas[i].status === "nao_aplicavel") continue;
       if (novasEtapas[i].data) {
         lastDate = new Date(novasEtapas[i].data);
       } else if (lastDate) {
@@ -90,9 +106,24 @@ function Popover({ item, etapaIdx, onClose, onSave }) {
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-card rounded-xl shadow-2xl border border-border w-72 p-4" onClick={e => e.stopPropagation()}>
+  // Posição: abre abaixo do botão se houver espaço, caso contrário abre acima
+  const POPOVER_W = 288;
+  const POPOVER_H = 210;
+  const GAP = 6;
+  let left = rect.left + rect.width / 2 - POPOVER_W / 2;
+  left = Math.max(GAP, Math.min(left, window.innerWidth - POPOVER_W - GAP));
+  const spaceBelow = window.innerHeight - rect.bottom - GAP;
+  const top = spaceBelow >= POPOVER_H
+    ? rect.bottom + GAP
+    : Math.max(GAP, rect.top - GAP - POPOVER_H);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100]" onClick={onClose}>
+      <div
+        className="absolute bg-card rounded-xl shadow-2xl border border-border w-72 p-4"
+        style={{ top, left }}
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-3">
           <p className="font-semibold text-foreground">{ETAPAS[etapaIdx].label}</p>
           <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
@@ -103,7 +134,7 @@ function Popover({ item, etapaIdx, onClose, onSave }) {
             <select
               className="w-full border border-border bg-background text-foreground rounded-lg px-3 py-2 text-sm"
               value={status}
-              onChange={e => setStatus(e.target.value)}
+              onChange={handleStatusChange}
             >
               <option value="pendente">Não iniciada</option>
               <option value="em_andamento">Em andamento</option>
@@ -115,9 +146,10 @@ function Popover({ item, etapaIdx, onClose, onSave }) {
             <label className="text-xs text-muted-foreground mb-1 block">Data referência</label>
             <input
               type="date"
-              className="w-full border border-border bg-background text-foreground rounded-lg px-3 py-2 text-sm"
+              className={`w-full border border-border bg-background text-foreground rounded-lg px-3 py-2 text-sm ${status === "nao_aplicavel" ? "opacity-40 cursor-not-allowed" : ""}`}
               value={data}
               onChange={e => setData(e.target.value)}
+              disabled={status === "nao_aplicavel"}
             />
           </div>
           <Button variant="save" className="w-full text-sm" onClick={handleSave}>
@@ -125,7 +157,8 @@ function Popover({ item, etapaIdx, onClose, onSave }) {
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -138,11 +171,10 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
   const [filtros, setFiltros] = useState({});
   const [filtroResponsavel, setFiltroResponsavel] = useState("");
   const [filtroFornecedor, setFiltroFornecedor] = useState("");
-  const [filtroFornecimentoInicio, setFiltroFornecimentoInicio] = useState("");
-  const [filtroFornecimentoFim, setFiltroFornecimentoFim] = useState("");
+  const [periodoFornecimento, setPeriodoFornecimento] = useState(null);
   const [filterKey, setFilterKey] = useState(0);
   const [page, setPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewItem, setViewItem] = useState(null);
 
   useEffect(() => {
     if (triggerNew > 0) { setEditItem(null); setShowForm(true); }
@@ -160,15 +192,22 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     enabled: !!selectedProjectId,
   });
 
-  const { data: unidades = [] } = useQuery({
-    queryKey: ["unidades_medida"],
-    queryFn: () => entities.UnidadeMedida.list(),
-    staleTime: 1000 * 60 * 10,
-  });
-
   const updateItem = useMutation({
     mutationFn: ({ id, data }) => entities.ItemMAS.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itemMAS"] }),
+    onMutate: async ({ id, data: patch }) => {
+      await queryClient.cancelQueries({ queryKey: ["itemMAS", selectedProjectId] });
+      const prev = queryClient.getQueryData(["itemMAS", selectedProjectId]);
+      queryClient.setQueryData(["itemMAS", selectedProjectId], (old) =>
+        Array.isArray(old) ? old.map(i => i.id === id ? { ...i, ...patch } : i) : old
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev !== undefined) {
+        queryClient.setQueryData(["itemMAS", selectedProjectId], ctx.prev);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["itemMAS"] }),
   });
 
   const deleteItem = useMutation({
@@ -182,8 +221,6 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     if (!t) return "—";
     return t.codigo_wbs ? `${t.codigo_wbs} — ${t.nome}` : t.nome;
   };
-
-  const unidadeSigla = (id) => unidades.find(u => u.id === id)?.sigla || "";
 
   const kpis = ETAPAS.map((etapa, idx) => ({
     ...etapa,
@@ -207,8 +244,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     setFiltros({});
     setFiltroResponsavel("");
     setFiltroFornecedor("");
-    setFiltroFornecimentoInicio("");
-    setFiltroFornecimentoFim("");
+    setPeriodoFornecimento(null);
     localStorage.removeItem(FILTROS_STORAGE_KEY);
     setFilterKey(k => k + 1);
   };
@@ -219,7 +255,11 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
   };
 
   const filtered = useMemo(() => {
-    let result = [...itens];
+    let result = [...itens].sort((a, b) => {
+      const dateCompare = new Date(b.created_at) - new Date(a.created_at);
+      if (dateCompare !== 0) return dateCompare;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
     if (filtroSC) result = result.filter(i => i.numero_sc?.toLowerCase().includes(filtroSC.toLowerCase()));
     const st = filtros.status || [];
     if (st.length > 0) {
@@ -241,21 +281,78 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     }
     if (filtroResponsavel) result = result.filter(i => i.responsavel?.toLowerCase().includes(filtroResponsavel.toLowerCase()));
     if (filtroFornecedor) result = result.filter(i => i.fornecedor?.toLowerCase().includes(filtroFornecedor.toLowerCase()));
-    if (filtroFornecimentoInicio) result = result.filter(i => (i.etapas?.[6]?.data || "") >= filtroFornecimentoInicio);
-    if (filtroFornecimentoFim) result = result.filter(i => (i.etapas?.[6]?.data || "") <= filtroFornecimentoFim);
+    if (periodoFornecimento?.from) {
+      const fromStr = periodoFornecimento.from.toISOString().split("T")[0];
+      result = result.filter(i => (i.etapas?.[6]?.data || "") >= fromStr);
+    }
+    if (periodoFornecimento?.to) {
+      const toStr = periodoFornecimento.to.toISOString().split("T")[0];
+      result = result.filter(i => (i.etapas?.[6]?.data || "") <= toStr);
+    }
     return result;
-  }, [itens, filtroSC, filtros, filtroResponsavel, filtroFornecedor, filtroFornecimentoInicio, filtroFornecimentoFim]);
+  }, [itens, filtroSC, filtros, filtroResponsavel, filtroFornecedor, periodoFornecimento]);
 
   // Reset página quando filtros mudam
   useEffect(() => {
     setPage(1);
-  }, [filtroSC, filtros, filtroResponsavel, filtroFornecedor, filtroFornecimentoInicio, filtroFornecimentoFim]);
+  }, [filtroSC, filtros, filtroResponsavel, filtroFornecedor, periodoFornecimento]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
+  const isFilterActive =
+    !!filtroSC || !!filtroResponsavel || !!filtroFornecedor ||
+    !!periodoFornecimento?.from ||
+    Object.values(filtros).some(a => a?.length > 0);
+
   return (
     <div className="space-y-6">
+      {/* Filtros */}
+      <FilterToolbar active={isFilterActive} onClearAll={handleClearFilters}>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            className="h-8 border border-border bg-background text-foreground rounded-md pl-8 pr-3 text-sm"
+            placeholder="Nº SC/OC"
+            value={filtroSC}
+            onChange={e => setFiltroSC(e.target.value)}
+          />
+        </div>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            className="h-8 border border-border bg-background text-foreground rounded-md pl-8 pr-3 text-sm"
+            placeholder="Responsável"
+            value={filtroResponsavel}
+            onChange={e => setFiltroResponsavel(e.target.value)}
+          />
+        </div>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
+          <input
+            className="h-8 border border-border bg-background text-foreground rounded-md pl-8 pr-3 text-sm"
+            placeholder="Fornecedor"
+            value={filtroFornecedor}
+            onChange={e => setFiltroFornecedor(e.target.value)}
+          />
+        </div>
+        <FilterBar
+          key={filterKey}
+          storageKey={FILTROS_STORAGE_KEY}
+          filters={[
+            { key: "status", label: "Status", options: ["A iniciar", "Em andamento", "Concluído", "Cancelado", "Atrasado"] },
+            { key: "etapa", label: "Etapa", options: ETAPAS.map(e => e.label) },
+          ]}
+          onChange={setFiltros}
+        />
+        <DateRangePicker
+          label="Período de Fornecimento"
+          value={periodoFornecimento}
+          onChange={setPeriodoFornecimento}
+          onClear={() => setPeriodoFornecimento(null)}
+        />
+      </FilterToolbar>
+
       {/* KPI Cards — stage colors are pipeline identity, kept as inline styles */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {kpis.map(etapa => (
@@ -268,74 +365,21 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
         ))}
       </div>
 
-      {/* Filters */}
-      <Card className="bg-card shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="w-36">
-              <label className="text-xs text-muted-foreground mb-1 block">Nº SC/OC</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
-                <input className="w-full border border-border bg-background text-foreground rounded-lg pl-8 pr-3 py-1.5 text-sm" placeholder="SC/OC-0001" value={filtroSC} onChange={e => setFiltroSC(e.target.value)} />
-              </div>
-            </div>
-            <div className="w-36">
-              <label className="text-xs text-muted-foreground mb-1 block">Responsável</label>
-              <input className="w-full border border-border bg-background text-foreground rounded-lg px-3 py-1.5 text-sm" placeholder="Nome..." value={filtroResponsavel} onChange={e => setFiltroResponsavel(e.target.value)} />
-            </div>
-            <div className="flex-1 min-w-36">
-              <label className="text-xs text-muted-foreground mb-1 block">Fornecedor</label>
-              <input className="w-full border border-border bg-background text-foreground rounded-lg px-3 py-1.5 text-sm" placeholder="Nome do fornecedor..." value={filtroFornecedor} onChange={e => setFiltroFornecedor(e.target.value)} />
-            </div>
-            <FilterBar
-              key={filterKey}
-              storageKey={FILTROS_STORAGE_KEY}
-              filters={[
-                { key: "status", label: "Status", options: ["A iniciar", "Em andamento", "Concluído", "Cancelado", "Atrasado"] },
-                { key: "etapa", label: "Etapa", options: ETAPAS.map(e => e.label) },
-              ]}
-              onChange={setFiltros}
-            />
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Período de Fornecimento</label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="date"
-                  className="border border-border bg-background text-foreground rounded-lg px-2 py-1.5 text-sm"
-                  value={filtroFornecimentoInicio}
-                  onChange={e => setFiltroFornecimentoInicio(e.target.value)}
-                />
-                <span className="text-xs text-muted-foreground">–</span>
-                <input
-                  type="date"
-                  className="border border-border bg-background text-foreground rounded-lg px-2 py-1.5 text-sm"
-                  value={filtroFornecimentoFim}
-                  onChange={e => setFiltroFornecimentoFim(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button variant="outline" onClick={handleClearFilters}>
-              <FilterX className="w-4 h-4 mr-1" /> Limpar filtros
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Table */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground min-w-48">Descrição</th>
-                <th className="text-left py-3 px-3 text-xs font-semibold text-muted-foreground min-w-24">Fornecedor</th>
-                <th className="text-center py-3 px-3 text-xs font-semibold text-muted-foreground whitespace-nowrap">Und / Qtd</th>
-                <th className="text-center py-3 px-3 text-xs font-semibold text-muted-foreground whitespace-nowrap min-w-28">Nº SC/OC</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground min-w-96">Linha do Tempo do Processo</th>
-                <th className="text-center py-3 px-3 text-xs font-semibold text-muted-foreground whitespace-nowrap">Data Crono.</th>
-                <th className="text-left py-3 px-3 text-xs font-semibold text-muted-foreground min-w-28 whitespace-normal leading-tight">ID Cronograma</th>
-                <th className="text-center py-3 px-3 text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="py-3 px-3"></th>
+                <th className="text-left py-3 px-3 text-xs font-semibold text-muted-foreground min-w-40">Descrição</th>
+                <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground min-w-20">Fornecedor</th>
+                <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground whitespace-nowrap">Qtd / Und</th>
+                <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground whitespace-nowrap min-w-24">Nº SC/OC</th>
+                <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground">Linha do Tempo do Processo</th>
+                <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground whitespace-nowrap">Data Crono.</th>
+                <th className="text-left py-3 px-2 text-xs font-semibold text-muted-foreground min-w-24 whitespace-normal leading-tight">ID Cronograma</th>
+                <th className="text-center py-3 px-2 text-xs font-semibold text-muted-foreground">Status</th>
+                <th className="py-3 px-2"></th>
               </tr>
             </thead>
             <tbody>
@@ -368,35 +412,40 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
 
                 return (
                   <tr key={item.id} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-3">
                       <p className="font-medium text-foreground text-xs leading-snug">{item.descricao}</p>
                       {item.responsavel && <p className="text-muted-foreground text-xs mt-0.5">{item.responsavel}</p>}
                     </td>
-                    <td className="py-3 px-3 text-xs text-muted-foreground">
+                    <td className="py-3 px-2 text-xs text-muted-foreground">
                       {item.fornecedor || "—"}
                     </td>
-                    <td className="py-3 px-3 text-center text-xs text-muted-foreground whitespace-nowrap">
-                      {item.quantidade ? `${item.quantidade} ${unidadeSigla(item.unidade_id)}`.trim() : "—"}
+                    <td className="py-3 px-2 text-center">
+                      {item.quantidade ? (
+                        <div className="flex flex-col items-center leading-tight">
+                          <span className="text-xs text-foreground">{item.quantidade}</span>
+                          <span className="text-[10px] text-muted-foreground/70">{item.unidade || "—"}</span>
+                        </div>
+                      ) : "—"}
                     </td>
-                    <td className="py-3 px-3 text-center">
+                    <td className="py-3 px-2 text-center">
                       <span className="text-xs font-mono bg-muted text-muted-foreground px-2 py-0.5 rounded">{item.numero_sc || "—"}</span>
                     </td>
                     {/* Timeline — node colors are pipeline stage indicators, kept as inline styles */}
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-2">
                       <div className="flex items-center gap-0">
                         {ETAPAS.map((etapaConf, idx) => {
                           const est = getEtapaStatus(item, idx);
                           const cor = NodeColor(est);
-                          const dataEtapa = etapas[idx]?.data;
+                          const dataEtapa = est === "nao_aplicavel" ? "" : etapas[idx]?.data;
                           const isLast = idx === ETAPAS.length - 1;
 
                           return (
                             <Fragment key={etapaConf.key}>
                               <div className="flex flex-col items-center">
-                                <span className="text-muted-foreground/60" style={{ fontSize: 9, marginBottom: 2, whiteSpace: "nowrap" }}>{etapaConf.label}</span>
+                                <span className="text-muted-foreground/60" style={{ fontSize: 9, marginBottom: 2, whiteSpace: "nowrap" }}>{etapaConf.abbr}</span>
                                 <div className="relative flex items-center justify-center">
                                   <button
-                                    onClick={() => setPopover({ itemId: item.id, etapaIdx: idx })}
+                                    onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setPopover({ itemId: item.id, etapaIdx: idx, rect: r }); }}
                                     className="w-5 h-5 rounded-full border-2 border-card shadow transition-transform hover:scale-125 focus:outline-none"
                                     style={{ backgroundColor: cor, boxShadow: `0 0 0 2px ${cor}40` }}
                                     title={`${etapaConf.label}: ${est}`}
@@ -408,16 +457,18 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                                     />
                                   )}
                                 </div>
-                                <span
-                                  className={`mt-1 font-medium ${atrasado && isLast ? "text-status-critical" : "text-muted-foreground/60"}`}
-                                  style={{ fontSize: 8, whiteSpace: "nowrap" }}
-                                >
-                                  {atrasado && isLast && <AlertTriangle className="inline w-2 h-2 mr-0.5" />}
-                                  {fmtDate(dataEtapa)}
-                                </span>
+                                <div className="mt-1 h-3 flex items-center justify-center">
+                                  <span
+                                    className={`font-medium ${atrasado && isLast ? "text-status-critical" : "text-muted-foreground/60"}`}
+                                    style={{ fontSize: 8, whiteSpace: "nowrap" }}
+                                  >
+                                    {atrasado && isLast && <AlertTriangle className="inline w-2 h-2 mr-0.5" />}
+                                    {fmtDate(dataEtapa)}
+                                  </span>
+                                </div>
                               </div>
                               {!isLast && (
-                                <div className="h-0.5 flex-1 mx-1" style={{ backgroundColor: est === "concluida" ? "#15803d" : "#e5e7eb", minWidth: 12 }} />
+                                <div className="h-0.5 flex-1" style={{ backgroundColor: est === "concluida" ? "#15803d" : "#e5e7eb", minWidth: 6 }} />
                               )}
                             </Fragment>
                           );
@@ -425,24 +476,26 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                       </div>
                     </td>
 
-                    <td className="py-3 px-3 text-center text-xs text-muted-foreground whitespace-nowrap">
+                    <td className="py-3 px-2 text-center text-xs text-muted-foreground whitespace-nowrap">
                       {item.data_cronograma ? fmtDate(item.data_cronograma) : "—"}
                     </td>
-                    <td className="py-3 px-3 text-xs text-muted-foreground max-w-28">
+                    <td className="py-3 px-2 text-xs text-muted-foreground max-w-24">
                       {item.id_cronograma ? (
                         <span className="leading-snug break-words">
                           {tarefaLabel(item.id_cronograma)}
                         </span>
                       ) : "—"}
                     </td>
-                    <td className="py-3 px-3 text-center">
+                    <td className="py-3 px-2 text-center">
                       <StatusBadge status={item.status} />
                     </td>
                     <td className="py-3 px-2">
-                      <div className="flex gap-1">
-                        <button onClick={() => { setEditItem(item); setShowForm(true); }} className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors" title="Editar"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => setDeleteTarget(item)} className="p-1 text-status-critical hover:bg-status-critical/10 rounded transition-colors" title="Excluir"><Trash2 className="w-3.5 h-3.5" /></button>
-                      </div>
+                      <RowActions
+                        onView={() => setViewItem(item)}
+                        onEdit={() => { setEditItem(item); setShowForm(true); }}
+                        onDelete={() => deleteItem.mutate(item.id)}
+                        deleteDescription={`${item.descricao || "Este item"} será removido permanentemente.`}
+                      />
                     </td>
                   </tr>
                 );
@@ -487,31 +540,28 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
           <Popover
             item={item}
             etapaIdx={popover.etapaIdx}
+            rect={popover.rect}
             onClose={() => setPopover(null)}
             onSave={(data) => updateItem.mutate({ id: item.id, data })}
           />
         );
       })()}
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir item?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget?.descricao || "Este item"} será removido permanentemente. Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { deleteItem.mutate(deleteTarget.id); setDeleteTarget(null); }}
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {viewItem && (
+        <DetailDialog
+          open={!!viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          title={viewItem.descricao || "Item de suprimento"}
+          sections={[
+            { label: "Descrição", value: viewItem.descricao, full: true },
+            { label: "Fornecedor", value: viewItem.fornecedor },
+            { label: "Responsável", value: viewItem.responsavel },
+            { label: "Status", value: viewItem.status },
+            { label: "Nº SC", value: viewItem.numero_sc },
+            { label: "Quantidade", value: viewItem.quantidade },
+          ]}
+        />
+      )}
 
       {showForm && (
         <ItemMASForm

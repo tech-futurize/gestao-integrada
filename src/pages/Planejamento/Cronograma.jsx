@@ -7,6 +7,8 @@ import GanttChart from "@/components/cronograma/GanttChart";
 import ViewTarefaModal from "@/components/cronograma/ViewTarefaModal";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, Upload, Eye, GitBranch, Search, Layers } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
@@ -46,6 +48,9 @@ export default function Cronograma() {
   const [busca, setBusca] = useState("");
   const deferredBusca = useDeferredValue(busca);
   const [filtros, setFiltros] = useState({});
+  const [periodoAtividade, setPeriodoAtividade] = useState(null);
+  const [filterKey, setFilterKey] = useState(0);
+  const FILTROS_KEY = "cronograma-filtros";
   const [show6WLA, setShow6WLA] = useState(false);
 
   const { data: tarefas = [], isPending, isError } = useQuery({
@@ -91,9 +96,17 @@ export default function Cronograma() {
         if (!inicio || !fim) return false;
         if (fim < today || inicio > sixWeeks) return false;
       }
+      if (periodoAtividade?.from) {
+        const fromStr = periodoAtividade.from.toISOString().split("T")[0];
+        const toStr   = periodoAtividade.to ? periodoAtividade.to.toISOString().split("T")[0] : fromStr;
+        const inicio  = t.data_inicio_planejada || "";
+        const fim     = t.data_fim_planejada    || "";
+        if (!inicio || !fim) return false;
+        if (inicio > toStr || fim < fromStr) return false;
+      }
       return true;
     });
-  }, [tarefas, deferredBusca, filtros, show6WLA, selectedLevels, somenteAtividades]);
+  }, [tarefas, deferredBusca, filtros, show6WLA, selectedLevels, somenteAtividades, periodoAtividade]);
 
   const handleImport = async (row) => {
     const payload = {
@@ -178,36 +191,23 @@ export default function Cronograma() {
       />
       <div className="flex-1 overflow-hidden p-6 flex flex-col gap-4">
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
-        {[
-          { label: "Total de Atividades", value: totalTarefas, color: "#26405d" },
-          { label: "Concluídas",        value: concluidas,   color: "#16a34a" },
-          { label: "Em Andamento",      value: emAndamento,  color: "#eab308" },
-          { label: "Atrasadas",         value: atrasadas,    color: "#ef4444" },
-          { label: "Caminho Crítico",   value: criticas,     color: "#c35e1e" },
-          { label: "Atividades 6WLA",    value: tarefas6WLA,  color: "#6366f1" },
-        ].map(kpi => (
-          <div key={kpi.label} className="bg-card rounded-xl border border-border p-4">
-            <p className="text-xs text-muted-foreground">{kpi.label}</p>
-            <p className="text-2xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Filtros + Controles — linha única */}
-      <div className="flex flex-wrap items-center gap-2 shrink-0">
+      {/* Filtros */}
+      <FilterToolbar
+        active={!!busca || Object.values(filtros).some(a => a?.length > 0) || selectedLevels.size > 0 || somenteAtividades || !!periodoAtividade?.from}
+        onClearAll={() => { setBusca(""); setFiltros({}); setSelectedLevels(new Set()); setSomenteAtividades(false); setPeriodoAtividade(null); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+      >
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
           <input
-            className="border border-border rounded-lg pl-8 pr-3 py-1.5 text-sm w-56 bg-background text-foreground"
+            className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
             placeholder="Buscar WBS ou atividade..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
           />
         </div>
         <FilterBar
-          storageKey="cronograma-filtros"
+          key={filterKey}
+          storageKey={FILTROS_KEY}
           filters={[
             { key: "status",      label: "Status",     options: ["A Iniciar", "Em Andamento", "Atrasada", "Concluído"] },
             { key: "area",        label: "Área",        options: areaOptions },
@@ -215,31 +215,6 @@ export default function Cronograma() {
           ]}
           onChange={setFiltros}
         />
-
-        {/* Separador visual */}
-        <div className="w-px h-6 bg-border mx-1 shrink-0" />
-
-        <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
-          <button
-            onClick={() => setZoom("semanas")}
-            className={`px-3 py-1.5 text-sm font-medium transition-colors ${zoom === "semanas" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
-          >
-            Semanas
-          </button>
-          <button
-            onClick={() => setZoom("meses")}
-            className={`px-3 py-1.5 text-sm font-medium transition-colors ${zoom === "meses" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
-          >
-            Meses
-          </button>
-        </div>
-        <Button variant={showBaseline ? "default" : "outline"} size="sm" onClick={() => setShowBaseline(b => !b)}>
-          <Eye className="w-3.5 h-3.5 mr-1" /> Baseline
-        </Button>
-        <Button variant={showCritical ? "default" : "outline"} size="sm" onClick={() => setShowCritical(c => !c)}>
-          <GitBranch className="w-3.5 h-3.5 mr-1" /> Caminho Crítico
-        </Button>
-
         {/* Filtro de Níveis */}
         <div className="relative">
           <Button
@@ -291,6 +266,53 @@ export default function Cronograma() {
             </>
           )}
         </div>
+        <DateRangePicker
+          label="Período de Atividade"
+          value={periodoAtividade}
+          onChange={setPeriodoAtividade}
+          onClear={() => setPeriodoAtividade(null)}
+        />
+      </FilterToolbar>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 shrink-0">
+        {[
+          { label: "Total de Atividades", value: totalTarefas, color: "#26405d" },
+          { label: "Concluídas",        value: concluidas,   color: "#16a34a" },
+          { label: "Em Andamento",      value: emAndamento,  color: "#eab308" },
+          { label: "Atrasadas",         value: atrasadas,    color: "#ef4444" },
+          { label: "Caminho Crítico",   value: criticas,     color: "#c35e1e" },
+          { label: "Atividades 6WLA",    value: tarefas6WLA,  color: "#6366f1" },
+        ].map(kpi => (
+          <div key={kpi.label} className="bg-card rounded-xl border border-border p-4">
+            <p className="text-xs text-muted-foreground">{kpi.label}</p>
+            <p className="text-2xl font-bold" style={{ color: kpi.color }}>{kpi.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Controles de Visualização */}
+      <div className="flex flex-wrap items-center gap-2 shrink-0">
+        <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
+          <button
+            onClick={() => setZoom("semanas")}
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${zoom === "semanas" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            Semanas
+          </button>
+          <button
+            onClick={() => setZoom("meses")}
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${zoom === "meses" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            Meses
+          </button>
+        </div>
+        <Button variant={showBaseline ? "default" : "outline"} size="sm" onClick={() => setShowBaseline(b => !b)}>
+          <Eye className="w-3.5 h-3.5 mr-1" /> Baseline
+        </Button>
+        <Button variant={showCritical ? "default" : "outline"} size="sm" onClick={() => setShowCritical(c => !c)}>
+          <GitBranch className="w-3.5 h-3.5 mr-1" /> Caminho Crítico
+        </Button>
       </div>
 
       {/* Gantt — flex-1 min-h-0 para ocupar o restante da altura disponível */}

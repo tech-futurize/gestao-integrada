@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Plus, Edit, Trash2, CheckCircle, Clock, PauseCircle } from "lucide-react";
+import { Settings, Plus, CheckCircle, Clock, PauseCircle } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import PageHeader from "@/components/ui/PageHeader";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { FormDialog } from "@/components/ui/FormDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,6 +38,7 @@ export default function GerenciarProjeto() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [viewItem, setViewItem] = useState(null);
 
   const { data: projetos = [], isLoading } = useQuery({
     queryKey: ["projetos"],
@@ -75,9 +78,9 @@ export default function GerenciarProjeto() {
       descricao: projeto.descricao || "",
       status: projeto.status || "Ativo",
       data_inicio: projeto.data_inicio || "",
-      data_fim_prevista: projeto.data_fim_prevista || "",
+      data_fim_prevista: projeto.data_prevista_termino || "",
       cliente: projeto.cliente || "",
-      responsavel: projeto.responsavel || "",
+      responsavel: projeto.responsavel_geral || "",
       contrato_numero: projeto.contrato_numero || "",
       valor_contrato: projeto.valor_contrato ?? "",
     });
@@ -85,7 +88,17 @@ export default function GerenciarProjeto() {
   };
 
   const handleSubmit = () => {
-    const payload = { ...form, valor_contrato: parseFloat(form.valor_contrato) || 0 };
+    const payload = {
+      nome: form.nome,
+      descricao: form.descricao,
+      status: form.status,
+      data_inicio: form.data_inicio || null,
+      data_prevista_termino: form.data_fim_prevista || null,
+      cliente: form.cliente,
+      responsavel_geral: form.responsavel,
+      contrato_numero: form.contrato_numero,
+      valor_contrato: parseFloat(form.valor_contrato) || 0,
+    };
     if (editing) updateMut.mutate({ id: editing.id, data: payload });
     else createMut.mutate(payload);
   };
@@ -133,20 +146,21 @@ export default function GerenciarProjeto() {
                 {p.descricao && <p className="text-sm text-muted-foreground line-clamp-2">{p.descricao}</p>}
                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                   {p.data_inicio && <div><span className="font-medium">Início:</span> {p.data_inicio}</div>}
-                  {p.data_fim_prevista && <div><span className="font-medium">Fim Prev.:</span> {p.data_fim_prevista}</div>}
-                  {p.responsavel && <div className="col-span-2"><span className="font-medium">Resp.:</span> {p.responsavel}</div>}
+                  {p.data_prevista_termino && <div><span className="font-medium">Fim Prev.:</span> {p.data_prevista_termino}</div>}
+                  {p.responsavel_geral && <div className="col-span-2"><span className="font-medium">Resp.:</span> {p.responsavel_geral}</div>}
                   {p.valor_contrato && <div className="col-span-2"><span className="font-medium">Contrato:</span> {fmt(p.valor_contrato)}</div>}
                 </div>
-                <div className="flex gap-2 pt-1">
-                  <Button size="sm" variant="outline" className="flex-1" onClick={() => handleSelect(p.id)}>
+                <div className="flex items-center justify-between pt-1">
+                  <Button size="sm" variant="outline" className="flex-1 mr-2" onClick={() => handleSelect(p.id)}>
                     Selecionar
                   </Button>
-                  <button onClick={() => handleEdit(p)} className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground">
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => deleteMut.mutate(p.id)} className="p-2 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <RowActions
+                    onView={() => setViewItem(p)}
+                    onEdit={() => handleEdit(p)}
+                    onDelete={() => deleteMut.mutate(p.id)}
+                    deleteDescription="O projeto será excluído permanentemente. Esta ação não pode ser desfeita."
+                    size="md"
+                  />
                 </div>
               </div>
             );
@@ -155,12 +169,28 @@ export default function GerenciarProjeto() {
       )}
 
       {/* Modal */}
-      <Dialog open={showForm} onOpenChange={open => { if (!open) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar Projeto" : "Novo Projeto"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-2">
+      <FormDialog
+        open={showForm}
+        onOpenChange={open => { if (!open) { setShowForm(false); setEditing(null); } }}
+        icon={Settings}
+        title={editing ? "Editar Projeto" : "Novo Projeto"}
+        subtitle={editing ? editing.nome : "Configurar novo projeto"}
+        maxWidth="max-w-2xl"
+        onClose={() => { setShowForm(false); setEditing(null); }}
+        onSave={handleSubmit}
+        saving={createMut.isPending || updateMut.isPending}
+        saveLabel={editing ? "Salvar" : "Criar Projeto"}
+        footer={
+          <>
+            {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); }}>Excluir</Button>}
+            <Button variant="outline" onClick={() => { setShowForm(false); setEditing(null); }}>Cancelar</Button>
+            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
+              {editing ? "Salvar" : "Criar Projeto"}
+            </Button>
+          </>
+        }
+      >
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1 col-span-2">
               <Label>Nome do Projeto *</Label>
               <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Planta Industrial XYZ" />
@@ -201,15 +231,24 @@ export default function GerenciarProjeto() {
               </Select>
             </div>
           </div>
-          <DialogFooter className="gap-2">
-            {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); }}>Excluir</Button>}
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
-              {editing ? "Salvar" : "Criar Projeto"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </FormDialog>
+
+      {viewItem && (
+        <DetailDialog
+          open={!!viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          title={viewItem.nome}
+          sections={[
+            { label: "Nome", value: viewItem.nome },
+            { label: "Status", value: viewItem.status },
+            { label: "Cliente", value: viewItem.cliente },
+            { label: "Responsável", value: viewItem.responsavel_geral },
+            { label: "Início", value: viewItem.data_inicio },
+            { label: "Fim previsto", value: viewItem.data_prevista_termino },
+            { label: "Descrição", value: viewItem.descricao, full: true },
+          ]}
+        />
+      )}
       </div>
     </div>
   );

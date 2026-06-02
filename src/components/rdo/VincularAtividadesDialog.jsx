@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, Link2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -44,8 +44,17 @@ export function VincularAtividadesDialog({ open, onClose, onConfirm, tarefas = [
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0">
-        <div className="px-6 py-4 border-b border-border shrink-0">
-          <h2 className="text-base font-bold text-foreground">Vincular Atividades ao Cronograma</h2>
+        <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-border shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="w-1 self-stretch rounded-full shrink-0 min-h-[36px] bg-primary" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+              <Link2 className="w-5 h-5 text-primary" />
+            </div>
+            <div className="pt-0.5">
+              <p className="text-base font-bold text-foreground leading-tight">Vincular Atividades ao Cronograma</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Selecione as tarefas para vincular ao RDO</p>
+            </div>
+          </div>
         </div>
         <div className="px-6 py-3 border-b border-border shrink-0 flex gap-3">
           <div className="relative flex-1">

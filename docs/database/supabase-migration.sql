@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS projetos (
   data_prevista_termino DATE,
   status TEXT DEFAULT 'Planejamento' CHECK (status IN ('Planejamento','Em Andamento','Pausado','Concluído','Cancelado')),
   responsavel_geral TEXT,
+  contrato_numero TEXT,
   valor_contrato NUMERIC,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()

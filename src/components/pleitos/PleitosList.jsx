@@ -1,37 +1,10 @@
 import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { FileText, ChevronRight, AlertCircle, Clock, Layers } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { formatDate } from "@/lib/dateUtils";
 
-/* ── Badge helpers ─────────────────────────────────────────────────────────
-   Cores semânticas FuturizeNow conforme o manual de identidade visual.
-   Background semi-transparente + borda 1px + glow neon (status activo/crítico).
-   box-shadow mantido como inline style — único valor não expresso pelo Tailwind v3.
-*/
-function statusBadge(status) {
-  const map = {
-    Aberto:          { cls: "bg-cyan-electric/10 border border-cyan-electric text-cyan-electric", glow: "0 0 8px rgba(38,255,255,0.45)" },
-    "Em Análise":    { cls: "bg-ocre/10 border border-ocre text-ocre",                            glow: "0 0 8px rgba(169,135,67,0.45)" },
-    "Em Andamento":  { cls: "bg-ocre/10 border border-ocre text-ocre",                            glow: "0 0 8px rgba(169,135,67,0.45)" },
-    Resolvido:       { cls: "bg-cyan-electric/[0.07] border border-cyan-electric/40 text-cyan-electric" },
-    Fechado:         { cls: "bg-titanium/10 border border-titanium/40 text-titanium" },
-    Cancelado:       { cls: "bg-magenta/10 border border-magenta text-magenta",                   glow: "0 0 8px rgba(219,73,116,0.45)" },
-  };
-  return map[status] || map.Fechado;
-}
-
-function prioridadeBadge(prioridade) {
-  const map = {
-    Baixa:   { cls: "bg-cyan-electric/[0.07] border border-cyan-electric/40 text-cyan-electric" },
-    Média:   { cls: "bg-ocre/10 border border-ocre text-ocre" },
-    Alta:    { cls: "bg-ocre/[0.16] border border-ocre text-ocre",                               glow: "0 0 6px rgba(169,135,67,0.35)" },
-    Crítica: { cls: "bg-magenta/[0.14] border border-magenta text-magenta",                      glow: "0 0 8px rgba(219,73,116,0.5)" },
-  };
-  return map[prioridade] || map.Média;
-}
-
-const badgeBase = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap";
+const PRIORITY_TONE = { Baixa: "info", Média: "attention", Alta: "attention", Crítica: "critical" };
 
 /* ── KPI Card ──────────────────────────────────────────────────────────── */
 function KpiCard({ label, value, color, glow, icon: Icon, sub }) {
@@ -93,8 +66,8 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
   if (total === 0) {
     return (
       <div className="bg-card border border-border rounded-2xl py-16 px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-cyan-electric/[0.08] border border-cyan-electric/20 flex items-center justify-center mx-auto mb-5">
-          <FileText size={28} className="text-cyan-electric opacity-70" />
+        <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-5">
+          <FileText size={28} className="text-primary opacity-70" />
         </div>
         <h3 className="text-lg font-bold text-foreground mb-2">Nenhum Pleito Registrado</h3>
         <p className="text-sm text-muted-foreground">Crie pleitos para gerenciar questões contratuais</p>
@@ -116,8 +89,7 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
         <KpiCard
           label="Abertos"
           value={abertos}
-          color="text-cyan-electric"
-          glow="rgba(38,255,255,0.6)"
+          color="text-status-info"
           icon={FileText}
           sub={total > 0 ? `${Math.round((abertos / total) * 100)}% do total` : null}
         />
@@ -194,26 +166,12 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
 
                   {/* Prioridade */}
                   <div>
-                    {(() => {
-                      const b = prioridadeBadge(pleito.prioridade);
-                      return (
-                        <span className={`${badgeBase} ${b.cls}`} style={b.glow ? { boxShadow: b.glow } : undefined}>
-                          {pleito.prioridade}
-                        </span>
-                      );
-                    })()}
+                    <StatusBadge status={pleito.prioridade} tone={PRIORITY_TONE[pleito.prioridade] ?? "attention"} />
                   </div>
 
                   {/* Status */}
                   <div>
-                    {(() => {
-                      const b = statusBadge(pleito.status);
-                      return (
-                        <span className={`${badgeBase} ${b.cls}`} style={b.glow ? { boxShadow: b.glow } : undefined}>
-                          {pleito.status}
-                        </span>
-                      );
-                    })()}
+                    <StatusBadge status={pleito.status} />
                   </div>
 
                   {/* Responsável */}
@@ -221,9 +179,7 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
 
                   {/* Data */}
                   <div className="text-xs text-muted-foreground">
-                    {pleito.data_abertura
-                      ? format(new Date(pleito.data_abertura), "dd/MM/yyyy", { locale: ptBR })
-                      : "—"}
+                    {formatDate(pleito.data_abertura) || "—"}
                   </div>
 
                   {/* Chevron */}

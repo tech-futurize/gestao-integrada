@@ -189,11 +189,22 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
       <div className="bg-card rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="sticky top-0 bg-card z-10 flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-base font-bold text-foreground">
-            {rdo ? "Editar RDO" : "Novo Relatório Diário de Obra"}
-          </h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground hover:text-foreground" /></button>
+        <div className="sticky top-0 bg-card z-10 flex items-start justify-between gap-3 px-6 py-4 border-b border-border shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="w-1 self-stretch rounded-full shrink-0 min-h-[36px] bg-primary" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+              <ClipboardList className="w-5 h-5 text-primary" />
+            </div>
+            <div className="pt-0.5">
+              <p className="text-base font-bold text-foreground leading-tight">
+                {rdo ? "Editar RDO" : "Novo Relatório Diário de Obra"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Relatório Diário de Obra</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors pt-0.5">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="p-6 space-y-5">

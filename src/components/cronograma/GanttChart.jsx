@@ -1,6 +1,7 @@
 import { useRef, useMemo, useState, useEffect } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronRight, ChevronDown, Eye, AlertTriangle, Calendar } from "lucide-react";
+import { ChevronRight, ChevronDown, AlertTriangle, Calendar } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -372,7 +373,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
         {/* Cabeçalho das colunas extras — overflow-x: clip sem criar scroll container */}
         {colsExpanded && (
           <div className="shrink-0 border-r border-border" style={{ maxWidth: "35vw", overflowX: "clip" }}>
-            <div ref={extraHdrInner} className="flex" style={{ width: EXTRA_W }}>
+            <div ref={extraHdrInner} className="flex h-full" style={{ width: EXTRA_W }}>
               {EXTRA_COLS.map(col => (
                 <div key={col.key}
                      className="flex items-center justify-center border-r border-border shrink-0"
@@ -386,7 +387,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
 
         {/* Cabeçalho da timeline Gantt — overflow-x: clip sem criar scroll container */}
         <div className="flex-1" style={{ overflowX: "clip" }}>
-          <div ref={ganttHdrInner} className="flex" style={{ width: ganttWidth }}>
+          <div ref={ganttHdrInner} className="flex h-full" style={{ width: ganttWidth }}>
             {headers.map((h, i) => (
               <div key={i}
                    className="border-r border-border flex items-center justify-center text-xs text-muted-foreground shrink-0"
@@ -459,9 +460,7 @@ export default function GanttChart({ tarefas, isLoading, zoom, showBaseline, sho
                 {/* Ações */}
                 <div className="flex items-center justify-center shrink-0"
                      style={{ width: W_ACT, background: bg }}>
-                  <button onClick={() => onView(t)} className="p-0.5 hover:bg-muted rounded">
-                    <Eye className="w-3.5 h-3.5 text-blue-500" />
-                  </button>
+                  <RowActions onView={() => onView(t)} stopPropagation={false} />
                 </div>
               </div>
             );

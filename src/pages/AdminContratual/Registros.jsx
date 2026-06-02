@@ -1,11 +1,10 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, AlertTriangle, Search, Edit, Trash2, CalendarRange, Paperclip, Link2 } from "lucide-react";
+import { Plus, AlertTriangle, Search, Edit, Trash2, Paperclip, Link2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
@@ -19,6 +18,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import { entities } from "@/api/supabaseEntities";
 import RegistroForm from "@/components/pleitos/RegistroForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
@@ -55,8 +56,9 @@ export default function Registros() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filtros, setFiltros] = useState({});
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [periodoData, setPeriodoData] = useState(null);
+  const [filterKey, setFilterKey] = useState(0);
+  const FILTROS_KEY = "registros-filtros";
 
   const { data: incidentes = [], isLoading, isError } = useQuery({
     queryKey: ["registros", selectedProjectId],
@@ -120,8 +122,8 @@ export default function Registros() {
       if (tp.length > 0 && !tp.includes(inc.tipo_registro)) return false;
       if (st.length > 0 && !st.includes(inc.status)) return false;
       if (resp.length > 0 && !resp.includes(inc.responsabilidade)) return false;
-      if (dateFrom && inc.data_hora && new Date(inc.data_hora) < new Date(dateFrom)) return false;
-      if (dateTo && inc.data_hora && new Date(inc.data_hora) > new Date(dateTo + "T23:59:59")) return false;
+      if (periodoData?.from && inc.data_hora && new Date(inc.data_hora) < periodoData.from) return false;
+      if (periodoData?.to && inc.data_hora && new Date(inc.data_hora) > new Date(periodoData.to.getTime() + 86399999)) return false;
       const needle = searchText.toLowerCase();
       if (needle) {
         const matchText =
@@ -132,7 +134,7 @@ export default function Registros() {
       }
       return true;
     });
-  }, [baseList, filtros, searchText, dateFrom, dateTo]);
+  }, [baseList, filtros, searchText, periodoData]);
 
   const kpis = useMemo(() => {
     const total = baseList.length;
@@ -207,6 +209,47 @@ export default function Registros() {
           />
         )}
 
+        {/* Filtros */}
+        {(() => {
+          const isFilterActive = !!searchText || !!periodoData?.from || Object.values(filtros).some(a => a?.length > 0);
+          const handleClearAll = () => {
+            setSearchText("");
+            setPeriodoData(null);
+            setFiltros({});
+            localStorage.removeItem(FILTROS_KEY);
+            setFilterKey(k => k + 1);
+          };
+          return (
+            <FilterToolbar active={isFilterActive} onClearAll={handleClearAll}>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  className="h-8 border border-border bg-background text-foreground rounded-md pl-8 pr-3 text-sm"
+                  placeholder="Buscar por descrição, tipo ou responsável..."
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)}
+                />
+              </div>
+              <FilterBar
+                key={filterKey}
+                storageKey={FILTROS_KEY}
+                filters={[
+                  { key: "tipo", label: "Tipo", options: ["Ata de Reunião", "E-mail", "Notificação"] },
+                  { key: "status", label: "Status", options: ["Registrado", "Em Análise", "Resolvido"] },
+                  { key: "responsabilidade", label: "Responsabilidade", options: ["Contratada", "Contratante"] },
+                ]}
+                onChange={setFiltros}
+              />
+              <DateRangePicker
+                label="Período"
+                value={periodoData}
+                onChange={setPeriodoData}
+                onClear={() => setPeriodoData(null)}
+              />
+            </FilterToolbar>
+          );
+        })()}
+
         {/* KPI Cards */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-3">
@@ -218,19 +261,9 @@ export default function Registros() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-row gap-3">
 
             {/* Card Total */}
-            <div
-              className="rounded-xl px-4 py-4 flex flex-col justify-center gap-1 lg:min-w-[110px]"
-              style={{
-                background: "rgba(38,255,255,0.06)",
-                border: "1px solid rgba(38,255,255,0.2)",
-                boxShadow: "0 0 14px rgba(38,255,255,0.12)",
-              }}
-            >
+            <div className="rounded-xl px-4 py-4 flex flex-col justify-center gap-1 lg:min-w-[110px] bg-card border border-border dark:bg-cyan-electric/[0.06] dark:border-cyan-electric/20 dark:shadow-[0_0_14px_rgba(38,255,255,0.12)]">
               <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Total</span>
-              <span
-                className="text-3xl font-bold leading-none text-cyan-electric"
-                style={{ textShadow: "0 0 14px rgba(38,255,255,0.6)" }}
-              >
+              <span className="text-3xl font-bold leading-none text-foreground dark:text-cyan-electric">
                 {kpis.total}
               </span>
               <span className="text-[10px] text-muted-foreground">registros</span>
@@ -273,50 +306,6 @@ export default function Registros() {
 
           </div>
         )}
-
-        {/* Filters */}
-        <div className="flex flex-col gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Buscar por descrição, tipo ou responsável..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex-1 min-w-0">
-              <FilterBar
-                storageKey="registros-filtros"
-                filters={[
-                  { key: "tipo", label: "Tipo", options: ["Ata de Reunião", "E-mail", "Notificação"] },
-                  { key: "status", label: "Status", options: ["Registrado", "Em Análise", "Resolvido"] },
-                  { key: "responsabilidade", label: "Responsabilidade", options: ["Contratada", "Contratante"] },
-                ]}
-                onChange={setFiltros}
-              />
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <CalendarRange className="w-4 h-4 text-muted-foreground" />
-              <Input
-                type="date"
-                className="w-36 text-sm"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                title="Data inicial"
-              />
-              <span className="text-muted-foreground text-sm">até</span>
-              <Input
-                type="date"
-                className="w-36 text-sm"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                title="Data final"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Cards Grid */}
         {isLoading ? (

@@ -1,14 +1,15 @@
 import { useState, useMemo } from "react";
+import { UNIDADE_SIGLAS } from "@/lib/unidadesMedida";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProject } from "@/lib/ProjectContext";
 import { Button } from "@/components/ui/button";
-import CloseButton from "@/components/ui/CloseButton";
+import { FormDialog } from "@/components/ui/FormDialog";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import {
   Plus, ArrowLeft, ChevronUp, ChevronDown, ChevronsUpDown,
-  Save, Edit, Trash2
+  Save, Edit, Package, TrendingUp, X
 } from "lucide-react";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -17,16 +18,16 @@ import {
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import FilterBar from "@/components/ui/FilterBar";
 import { Search } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 
 const DISCIPLINAS = ["Civil", "Mecânica", "Tubulação", "Elétrica", "Estrutura Metálica", "Instrumentação", "Pintura", "Outros"];
-const UNIDADES = ["m³", "kg", "m", "un", "m²", "ton", "l", "hr"];
-const UNIDADE_SIGLAS = UNIDADES;
 
 const COMMODITY_COLUMNS = [
   { key: "codigo",       label: "Código",        type: "string", required: true },
   { key: "descricao",    label: "Descrição",      type: "string", required: true },
   { key: "disciplina",   label: "Disciplina",     type: "string" },
-  { key: "unidade",      label: "Unidade",        type: "string" },
+  { key: "unidade",      label: "Und",            type: "string" },
   { key: "qtd_contrato", label: "Qtd. Contrato",  type: "number", required: true },
   { key: "qtd_takeoff",  label: "Qtd. Take-Off",  type: "number" },
 ];
@@ -43,6 +44,25 @@ function currentIsoWeek() {
   const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
   const week = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
   return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function getPctColor(pct) {
+  const p = Math.min(100, Math.max(0, pct));
+  const stops = [
+    { at: 0,   r: 239, g: 68,  b: 68  }, // vermelho
+    { at: 33,  r: 249, g: 115, b: 22  }, // laranja
+    { at: 66,  r: 234, g: 179, b: 8   }, // amarelo
+    { at: 100, r: 22,  g: 163, b: 74  }, // verde
+  ];
+  let lo = stops[0], hi = stops[stops.length - 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (p >= stops[i].at && p <= stops[i + 1].at) { lo = stops[i]; hi = stops[i + 1]; break; }
+  }
+  const t = lo.at === hi.at ? 0 : (p - lo.at) / (hi.at - lo.at);
+  const r = Math.round(lo.r + (hi.r - lo.r) * t);
+  const g = Math.round(lo.g + (hi.g - lo.g) * t);
+  const b = Math.round(lo.b + (hi.b - lo.b) * t);
+  return `rgb(${r},${g},${b})`;
 }
 
 function calcStatus(realizado, contrato) {
@@ -71,48 +91,185 @@ function Field({ label, children }) {
 }
 
 // ── MODAL ITEM ─────────────────────────────────────────────────────────────────
-function ItemModal({ item, onSave, onClose, totalItems }) {
+function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSaveLancamento, onDeleteLancamento, projetoId }) {
+  const [tab, setTab] = useState("info");
   const [form, setForm] = useState(item || {
     codigo: `COM-${String(totalItems + 1).padStart(3, "0")}`,
     descricao: "", disciplina: "Civil", unidade: "m³", qtd_contrato: "", qtd_takeoff: ""
   });
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const [lancForm, setLancForm] = useState(null);
+  const [editingLancId, setEditingLancId] = useState(null);
+  const [viewLanc, setViewLanc] = useState(null);
+
+  const openNewLanc = () => {
+    setEditingLancId(null);
+    setLancForm({ semana_iso: currentIsoWeek(), quantidade: "", observacao: "" });
+  };
+  const openEditLanc = (l) => {
+    setEditingLancId(l.id);
+    setLancForm({ semana_iso: l.semana_iso || l.semana || "", quantidade: String(l.quantidade), observacao: l.observacao || "" });
+  };
+  const saveLanc = () => {
+    if (!lancForm?.quantidade) return;
+    onSaveLancamento({ ...lancForm, quantidade: Number(lancForm.quantidade), commodity_id: item.id, projeto_id: projetoId }, editingLancId);
+    setLancForm(null);
+    setEditingLancId(null);
+  };
+
+  let acum = 0;
+  const sortedLanc = [...lancamentos]
+    .sort((a, b) => (a.semana_iso || a.semana || "").localeCompare(b.semana_iso || b.semana || ""))
+    .map(l => { acum += l.quantidade; return { ...l, acumulado: acum }; });
+
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="font-bold text-foreground">{item ? "Editar Item" : "Novo Item"}</h3>
-          <CloseButton onClick={onClose} />
+      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+
+        {/* Cabeçalho */}
+        <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-border shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="w-1 self-stretch rounded-full shrink-0 min-h-[36px] bg-primary" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+              <Package className="w-5 h-5 text-primary" />
+            </div>
+            <div className="pt-0.5">
+              <p className="text-base font-bold text-foreground leading-tight">{item ? "Editar Item" : "Novo Item"}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{item ? item.descricao : "Take-Off de Commodities"}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors pt-0.5">
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Código"><input className={inputCls} value={form.codigo} onChange={e => set("codigo", e.target.value)} placeholder="COM-001" /></Field>
-            <Field label="Disciplina">
-              <select className={selectCls} value={form.disciplina} onChange={e => set("disciplina", e.target.value)}>
-                {DISCIPLINAS.map(d => <option key={d}>{d}</option>)}
-              </select>
-            </Field>
+
+        {/* Abas — só ao editar */}
+        {item && (
+          <div className="flex border-b border-border shrink-0">
+            {[
+              { key: "info", label: "Informações" },
+              { key: "lancamentos", label: `Lançamentos${lancamentos.length ? ` (${lancamentos.length})` : ""}` },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === key ? "border-blue-500 text-blue-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+              >{label}</button>
+            ))}
           </div>
-          <Field label="Descrição *"><input className={inputCls} value={form.descricao} onChange={e => set("descricao", e.target.value)} placeholder="Ex: Concreto Estrutural FCK 30" /></Field>
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Unidade">
-              <select className={selectCls} value={form.unidade} onChange={e => set("unidade", e.target.value)}>
-                {UNIDADES.map(u => <option key={u}>{u}</option>)}
-              </select>
-            </Field>
-            <Field label="Qtd. Contrato *"><input type="number" className={inputCls} value={form.qtd_contrato} onChange={e => set("qtd_contrato", e.target.value)} /></Field>
-            <Field label="Qtd. Take-Off"><input type="number" className={inputCls} value={form.qtd_takeoff} onChange={e => set("qtd_takeoff", e.target.value)} /></Field>
+        )}
+
+        {/* Aba: Informações */}
+        {tab === "info" && (
+          <div className="p-6 space-y-4 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Código"><input className={inputCls} value={form.codigo} onChange={e => set("codigo", e.target.value)} placeholder="COM-001" /></Field>
+              <Field label="Disciplina">
+                <select className={selectCls} value={form.disciplina} onChange={e => set("disciplina", e.target.value)}>
+                  {DISCIPLINAS.map(d => <option key={d}>{d}</option>)}
+                </select>
+              </Field>
+            </div>
+            <Field label="Descrição *"><input className={inputCls} value={form.descricao} onChange={e => set("descricao", e.target.value)} placeholder="Ex: Concreto Estrutural FCK 30" /></Field>
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Und">
+                <select className={selectCls} value={form.unidade} onChange={e => set("unidade", e.target.value)}>
+                  {UNIDADE_SIGLAS.map(u => <option key={u}>{u}</option>)}
+                </select>
+              </Field>
+              <Field label="Qtd. Contrato *"><input type="number" className={inputCls} value={form.qtd_contrato} onChange={e => set("qtd_contrato", e.target.value)} /></Field>
+              <Field label="Qtd. Take-Off"><input type="number" className={inputCls} value={form.qtd_takeoff} onChange={e => set("qtd_takeoff", e.target.value)} /></Field>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={onClose}>Cancelar</Button>
+              <Button variant="save" onClick={() => onSave({ ...form, qtd_contrato: Number(form.qtd_contrato), qtd_takeoff: Number(form.qtd_takeoff) || null })}>
+                <Save className="w-4 h-4 mr-1" />Salvar
+              </Button>
+            </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button variant="save" onClick={() => onSave({ ...form, qtd_contrato: Number(form.qtd_contrato), qtd_takeoff: Number(form.qtd_takeoff) || null })}>
-              <Save className="w-4 h-4 mr-1" />Salvar
-            </Button>
+        )}
+
+        {/* Aba: Lançamentos */}
+        {tab === "lancamentos" && item && (
+          <div className="flex flex-col overflow-hidden">
+            {lancForm ? (
+              <div className="p-4 border-b border-border bg-muted/30 space-y-3 shrink-0">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {editingLancId ? "Editar Lançamento" : "Novo Lançamento"}
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Semana ISO (YYYY-Wxx)">
+                    <input className={inputCls} value={lancForm.semana_iso} onChange={e => setLancForm(f => ({ ...f, semana_iso: e.target.value }))} placeholder="2026-W22" />
+                  </Field>
+                  <Field label="Quantidade *">
+                    <input type="number" className={inputCls} value={lancForm.quantidade} onChange={e => setLancForm(f => ({ ...f, quantidade: e.target.value }))} />
+                  </Field>
+                </div>
+                <Field label="Observação">
+                  <input className={inputCls} value={lancForm.observacao} onChange={e => setLancForm(f => ({ ...f, observacao: e.target.value }))} />
+                </Field>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => { setLancForm(null); setEditingLancId(null); }}>Cancelar</Button>
+                  <Button variant="save" size="sm" onClick={saveLanc}><Save className="w-3.5 h-3.5 mr-1" />Salvar</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="px-4 py-3 border-b border-border flex justify-end shrink-0">
+                <Button size="sm" onClick={openNewLanc}><Plus className="w-4 h-4 mr-1" />Lançar Realizado</Button>
+              </div>
+            )}
+            <div className="overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted border-b border-border">
+                    {["Semana ISO", "Qtd. Lançada", "Acumulado", ""].map(h => (
+                      <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedLanc.length === 0 && (
+                    <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground text-sm">Nenhum lançamento ainda</td></tr>
+                  )}
+                  {sortedLanc.map((l, i) => (
+                    <tr key={l.id} className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
+                      <td className="px-4 py-2 font-bold text-xs text-foreground">{l.semana_iso || l.semana || "—"}</td>
+                      <td className="px-4 py-2 font-semibold">{l.quantidade.toLocaleString("pt-BR")}</td>
+                      <td className="px-4 py-2 text-foreground">{l.acumulado.toLocaleString("pt-BR")}</td>
+                      <td className="px-4 py-2">
+                        <RowActions
+                          onView={() => setViewLanc(l)}
+                          onEdit={() => openEditLanc(l)}
+                          onDelete={() => onDeleteLancamento(l.id)}
+                          deleteDescription="O lançamento será excluído permanentemente."
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
+
       </div>
     </div>
+    {viewLanc && (
+      <DetailDialog
+        open={!!viewLanc}
+        onOpenChange={(o) => !o && setViewLanc(null)}
+        title={`Lançamento — Semana ${viewLanc.semana_iso || viewLanc.semana || "—"}`}
+        sections={[
+          { label: "Semana", value: viewLanc.semana_iso || viewLanc.semana },
+          { label: "Quantidade", value: viewLanc.quantidade },
+          { label: "Acumulado", value: viewLanc.acumulado },
+          { label: "Observação", value: viewLanc.observacao, full: true },
+        ]}
+      />
+    )}
+    </>
   );
 }
 
@@ -126,9 +283,20 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
       <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h3 className="font-bold text-foreground">{lancamento ? "Editar Lançamento" : "Lançar Realizado"}</h3>
-          <CloseButton onClick={onClose} />
+        <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-border shrink-0">
+          <div className="flex items-start gap-3">
+            <div className="w-1 self-stretch rounded-full shrink-0 min-h-[36px] bg-primary" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+              <TrendingUp className="w-5 h-5 text-primary" />
+            </div>
+            <div className="pt-0.5">
+              <p className="text-base font-bold text-foreground leading-tight">{lancamento ? "Editar Lançamento" : "Lançar Realizado"}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Take-Off de Commodities</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors pt-0.5">
+            <X className="w-4 h-4" />
+          </button>
         </div>
         <div className="p-6 space-y-4">
           <Field label="Semana ISO (YYYY-Wxx)">
@@ -156,6 +324,7 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose }
 
 // ── DETALHE ITEM ───────────────────────────────────────────────────────────────
 function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLancamento, onEditLancamento, onDeleteLancamento }) {
+  const [viewLanc, setViewLanc] = useState(null);
   const sorted = [...lancamentos].sort((a, b) =>
     (a.semana_iso || a.semana || "").localeCompare(b.semana_iso || b.semana || "")
   );
@@ -177,6 +346,7 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
   }));
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button onClick={onBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -232,7 +402,7 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
                 <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="semana" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
@@ -268,10 +438,12 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
                   <td className="px-4 py-2 font-semibold">{l.quantidade.toLocaleString("pt-BR")} <span className="text-xs text-muted-foreground">{item.unidade}</span></td>
                   <td className="px-4 py-2 font-semibold text-foreground">{l.acumulado.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-2">
-                    <div className="flex gap-1">
-                      <button onClick={() => onEditLancamento(l)} className="text-muted-foreground hover:text-blue-600 p-1"><Edit className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => onDeleteLancamento(l.id)} className="text-muted-foreground hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
+                    <RowActions
+                      onView={() => setViewLanc(l)}
+                      onEdit={() => onEditLancamento(l)}
+                      onDelete={() => onDeleteLancamento(l.id)}
+                      deleteDescription="O lançamento será excluído permanentemente."
+                    />
                   </td>
                 </tr>
               ))}
@@ -280,6 +452,20 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
         </div>
       </div>
     </div>
+    {viewLanc && (
+      <DetailDialog
+        open={!!viewLanc}
+        onOpenChange={(o) => !o && setViewLanc(null)}
+        title={`Lançamento — Semana ${viewLanc.semana_iso || viewLanc.semana || "—"}`}
+        sections={[
+          { label: "Semana", value: viewLanc.semana_iso || viewLanc.semana },
+          { label: "Quantidade", value: `${viewLanc.quantidade} ${item.unidade}` },
+          { label: "Acumulado", value: viewLanc.acumulado },
+          { label: "Observação", value: viewLanc.observacao, full: true },
+        ]}
+      />
+    )}
+    </>
   );
 }
 
@@ -379,13 +565,14 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
   [filtered]);
 
   const chartByUnidade = useMemo(() =>
-    UNIDADES
+    UNIDADE_SIGLAS
       .map(u => {
         const its = filtered.filter(i => i.unidade === u);
         if (its.length === 0) return null;
         return {
           name:      u,
           Contrato:  its.reduce((s, i) => s + (i.qtd_contrato || 0), 0),
+          "Take-Off": its.reduce((s, i) => s + (i.qtd_takeoff || 0), 0),
           Realizado: its.reduce((s, i) => s + i.realizado, 0),
         };
       })
@@ -400,6 +587,7 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
         return {
           name:      d,
           Contrato:  its.reduce((s, i) => s + (i.qtd_contrato || 0), 0),
+          "Take-Off": its.reduce((s, i) => s + (i.qtd_takeoff || 0), 0),
           Realizado: its.reduce((s, i) => s + i.realizado, 0),
         };
       })
@@ -410,6 +598,8 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
     else { setSortCol(col); setSortDir("asc"); }
   };
+
+  const formatYAxis = (v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 
   const SortIcon = ({ col }) => {
     if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 inline ml-1 text-muted-foreground" />;
@@ -486,7 +676,7 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                   { key: "codigo",       label: "Código" },
                   { key: "descricao",    label: "Descrição" },
                   { key: "disciplina",   label: "Disciplina" },
-                  { key: "unidade",      label: "Un." },
+                  { key: "unidade",      label: "Und" },
                   { key: "qtd_contrato", label: "Contrato" },
                   { key: "qtd_takeoff",  label: "Take-Off" },
                   { key: "realizado",    label: "Realizado" },
@@ -513,29 +703,29 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                 return (
                   <tr key={item.id} className={`border-b border-border hover:bg-blue-50/30 dark:hover:bg-blue-900/10 cursor-pointer transition-colors ${i % 2 === 0 ? "bg-card" : "bg-muted/20"}`}
                     onClick={() => setSelectedItem(item)}>
-                    <td className="px-4 py-3 font-bold text-xs text-ocre">{item.codigo}</td>
+                    <td className="px-4 py-3 font-bold text-xs text-foreground">{item.codigo}</td>
                     <td className="px-4 py-3 font-medium text-foreground max-w-xs truncate">{item.descricao}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs bg-blue-50 text-blue-700 rounded-full px-2 py-0.5 dark:bg-blue-900/30 dark:text-blue-300">{item.disciplina}</span>
-                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">{item.disciplina}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.unidade}</td>
                     <td className="px-4 py-3 text-right font-medium">{item.qtd_contrato?.toLocaleString("pt-BR")}</td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">{item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—"}</td>
+                    <td className="px-4 py-3 text-right text-blue-500 dark:text-blue-400 font-medium">{item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—"}</td>
                     <td className="px-4 py-3 text-right font-medium text-status-positive">{item.realizado.toLocaleString("pt-BR")}</td>
                     <td className={`px-4 py-3 text-right font-semibold ${item.saldo >= 0 ? "text-status-positive" : "text-status-critical"}`}>{item.saldo.toLocaleString("pt-BR")}</td>
-                    <td className="px-4 py-3 min-w-36">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(item.pct, 100)}%`, backgroundColor: "#16a34a" }} />
+                    <td className="px-4 py-3 min-w-[115px]">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-bold leading-none" style={{ color: getPctColor(item.pct) }}>{item.pct.toFixed(1)}%</span>
+                        <div className="bg-muted rounded-full h-1 overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(item.pct, 100)}%`, backgroundColor: getPctColor(item.pct) }} />
                         </div>
-                        <span className={`text-xs font-bold w-12 text-right ${stCfg.cls.split(" ").find(c => c.startsWith("text-"))}`}>{item.pct.toFixed(1)}%</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                      <div className="flex gap-1">
-                        <button onClick={() => { setEditingItem(item); setShowItemModal(true); }} className="text-muted-foreground hover:text-blue-600 p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => deleteItem.mutate(item.id)} className="text-muted-foreground hover:text-red-500 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
-                      </div>
+                    <td className="px-4 py-3">
+                      <RowActions
+                        onView={() => setSelectedItem(item)}
+                        onEdit={() => { setEditingItem(item); setShowItemModal(true); }}
+                        onDelete={() => deleteItem.mutate(item.id)}
+                        deleteDescription={`${item.descricao || "Este item"} será excluído permanentemente.`}
+                      />
                     </td>
                   </tr>
                 );
@@ -546,10 +736,23 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                 <tr className="bg-muted/60 border-t-2 border-border font-semibold text-sm">
                   <td className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wide" colSpan={4}>Totais ({filtered.length} itens)</td>
                   <td className="px-4 py-3 text-right">{totals.qtd_contrato.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">{totals.qtd_takeoff.toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-3 text-right text-blue-500 dark:text-blue-400">{totals.qtd_takeoff.toLocaleString("pt-BR")}</td>
                   <td className="px-4 py-3 text-right text-status-positive">{totals.realizado.toLocaleString("pt-BR")}</td>
-                  <td className={`px-4 py-3 text-right ${totals.saldo >= 0 ? "text-status-positive" : "text-status-critical"}`}>{totals.saldo.toLocaleString("pt-BR")}</td>
-                  <td colSpan={2} />
+                  <td className="px-4 py-3 text-right text-status-critical">{totals.saldo.toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-3 min-w-[115px]">
+                    {(() => {
+                      const pct = totals.qtd_contrato > 0 ? (totals.realizado / totals.qtd_contrato) * 100 : 0;
+                      return (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-bold leading-none" style={{ color: getPctColor(pct) }}>{pct.toFixed(1)}%</span>
+                          <div className="bg-muted rounded-full h-1 overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: getPctColor(pct) }} />
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  <td />
                 </tr>
               </tfoot>
             )}
@@ -561,30 +764,42 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
       {filtered.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-card rounded-xl border border-border shadow-sm p-5">
-            <h3 className="font-semibold mb-4 text-foreground text-sm">Realizado vs Contrato — por Unidade de Medida</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground text-sm">Contrato · Take-Off · Realizado — por Unidade de Medida</h3>
+            </div>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartByUnidade} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
+              <BarChart
+                data={chartByUnidade}
+                margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+              >
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Contrato"  fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Contrato"  fill="#374151" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Take-Off"  fill="#93c5fd" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Realizado" fill="#16a34a" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="bg-card rounded-xl border border-border shadow-sm p-5">
-            <h3 className="font-semibold mb-4 text-foreground text-sm">Realizado vs Contrato — por Disciplina</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground text-sm">Contrato · Take-Off · Realizado — por Disciplina</h3>
+            </div>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartByDisciplina} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={45} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
+              <BarChart
+                data={chartByDisciplina}
+                margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+              >
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={45} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
+                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Contrato"  fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Contrato"  fill="#374151" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Take-Off"  fill="#93c5fd" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Realizado" fill="#16a34a" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -597,7 +812,15 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
         <ItemModal
           item={editingItem}
           totalItems={items.length}
+          lancamentos={editingItem ? todosLancamentos.filter(l => l.commodity_id === editingItem.id) : []}
+          projetoId={selectedProjectId}
           onSave={(d) => editingItem ? updateItem.mutate({ id: editingItem.id, data: d }) : createItem.mutate(d)}
+          onSaveLancamento={(d, editingId) =>
+            editingId
+              ? updateLanc.mutate({ id: editingId, data: d })
+              : createLanc.mutate(d)
+          }
+          onDeleteLancamento={(id) => deleteLanc.mutate(id)}
           onClose={() => { setShowItemModal(false); setEditingItem(null); }}
         />
       )}

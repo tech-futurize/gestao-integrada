@@ -221,17 +221,12 @@ export default function RDOModule({
                       : <span className="text-muted-foreground/50 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      <button onClick={() => setViewRDO(rdo)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => { setEditRDO(rdo); setShowForm(true); }} className="p-1.5 text-muted-foreground hover:bg-muted rounded">
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => deleteMut.mutate(rdo.id)} className="p-1.5 text-red-400 hover:bg-red-50 rounded">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <RowActions
+                      onView={() => setViewRDO(rdo)}
+                      onEdit={() => { setEditRDO(rdo); setShowForm(true); }}
+                      onDelete={() => deleteMut.mutate(rdo.id)}
+                      deleteDescription="O RDO será excluído permanentemente."
+                    />
                   </td>
                 </tr>
               );
