@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRightLeft, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Check, Search } from "lucide-react";
+import { formatDate } from "@/lib/dateUtils";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
 import { useSortTable } from "@/hooks/useSortTable";
@@ -235,7 +236,7 @@ export default function GestaoMudancas() {
                 <tr key={m.id} className={`border-b border-border hover:bg-muted/40 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
                   <td className="px-4 py-3 max-w-xs">
                     <div className="font-medium text-foreground line-clamp-1">{m.titulo}</div>
-                    {m.data_ocorrencia && <div className="text-xs text-muted-foreground">{m.data_ocorrencia}</div>}
+                    {m.data_ocorrencia && <div className="text-xs text-muted-foreground">{formatDate(m.data_ocorrencia)}</div>}
                   </td>
                   <td className="px-4 py-3">
                     {m.origem && (

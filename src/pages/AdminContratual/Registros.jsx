@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, AlertTriangle, Search, Edit, Trash2, Paperclip, Link2 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDate } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -342,9 +341,7 @@ export default function Registros() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {filtered.map((inc) => {
-              const dataFormatada = inc.data_hora
-                ? format(new Date(inc.data_hora), "dd/MM/yyyy", { locale: ptBR })
-                : "—";
+              const dataFormatada = formatDate(inc.data_hora) || "—";
               const tipoClass = TIPO_COLORS[inc.tipo_registro] || "bg-muted text-muted-foreground";
 
               return (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Settings, Plus, CheckCircle, Clock, PauseCircle } from "lucide-react";
+import { formatDate } from "@/lib/dateUtils";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
 import PageHeader from "@/components/ui/PageHeader";
@@ -145,8 +146,8 @@ export default function GerenciarProjeto() {
                 </div>
                 {p.descricao && <p className="text-sm text-muted-foreground line-clamp-2">{p.descricao}</p>}
                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  {p.data_inicio && <div><span className="font-medium">Início:</span> {p.data_inicio}</div>}
-                  {p.data_prevista_termino && <div><span className="font-medium">Fim Prev.:</span> {p.data_prevista_termino}</div>}
+                  {p.data_inicio && <div><span className="font-medium">Início:</span> {formatDate(p.data_inicio)}</div>}
+                  {p.data_prevista_termino && <div><span className="font-medium">Fim Prev.:</span> {formatDate(p.data_prevista_termino)}</div>}
                   {p.responsavel_geral && <div className="col-span-2"><span className="font-medium">Resp.:</span> {p.responsavel_geral}</div>}
                   {p.valor_contrato && <div className="col-span-2"><span className="font-medium">Contrato:</span> {fmt(p.valor_contrato)}</div>}
                 </div>

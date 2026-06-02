@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useSortTable } from "@/hooks/useSortTable";
 import { usePermissions } from "@/hooks/usePermissions";
+import { formatDate } from "@/lib/dateUtils";
 import PageHeader from "@/components/ui/PageHeader";
 import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
@@ -15,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -415,7 +415,6 @@ export default function Documentos() {
                   const aprovado = doc.etapa === "Aprovado";
                   const vencido = !aprovado && doc.data_projetada && doc.data_projetada < today;
                   const atrasadoCron = !aprovado && !vencido && doc.data_projetada && doc.data_cronograma && doc.data_projetada > doc.data_cronograma;
-                  const fmtDate = (d) => d ? d.split("-").reverse().join("/").slice(0, 10) : "—";
                   return (
                     <tr key={doc.id} className={`border-b border-border transition-colors ${i % 2 === 0 ? "bg-card" : "bg-muted/20"}`}>
                       <td className="px-3 py-2.5 font-bold text-xs whitespace-nowrap text-foreground">{doc.tag_id}</td>
@@ -427,13 +426,13 @@ export default function Documentos() {
                       </td>
                       <td className="px-3 py-2.5 text-xs text-muted-foreground">{doc.revisao_atual || "—"}</td>
                       <td className="px-3 py-2.5 text-xs text-muted-foreground">{tarefaLabel(doc.id_cronograma)}</td>
-                      <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{fmtDate(doc.data_cronograma)}</td>
+                      <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatDate(doc.data_cronograma) || "—"}</td>
                       <td className={`px-3 py-2.5 text-xs whitespace-nowrap font-medium ${vencido ? "text-red-600 font-bold" : atrasadoCron ? "text-yellow-600 font-bold" : "text-muted-foreground"}`}>
                         {vencido && <AlertCircle className="w-3 h-3 inline mr-1" />}
                         {atrasadoCron && <AlertTriangle className="w-3 h-3 inline mr-1" />}
-                        {fmtDate(doc.data_projetada)}
+                        {formatDate(doc.data_projetada) || "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{fmtDate(doc.data_real)}</td>
+                      <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatDate(doc.data_real) || "—"}</td>
                       <td className="px-3 py-2.5"><ProgressBar pct={doc.progresso || 0} /></td>
                       <td className="px-3 py-2.5">
                         <span className="text-xs font-semibold rounded-full px-2 py-0.5 whitespace-nowrap" style={{ backgroundColor: stEtapa.bg, color: stEtapa.text }}>{doc.etapa}</span>
@@ -640,23 +639,24 @@ export default function Documentos() {
         </DialogContent>
       </Dialog>
 
-      {/* AlertDialog Excluir */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir documento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir <strong>{deleteTarget?.tag_id} — {deleteTarget?.titulo}</strong>? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {viewItem && (
+        <DetailDialog
+          open={!!viewItem}
+          onOpenChange={(o) => !o && setViewItem(null)}
+          title={`${viewItem.tag_id || ""} — ${viewItem.titulo || ""}`}
+          sections={[
+            { label: "TAG / ID", value: viewItem.tag_id },
+            { label: "Disciplina", value: viewItem.disciplina },
+            { label: "Etapa", value: viewItem.etapa },
+            { label: "Progresso", value: viewItem.progresso != null ? `${viewItem.progresso}%` : null },
+            { label: "Fornecedor", value: viewItem.fornecedor },
+            { label: "Nº Folhas", value: viewItem.num_folhas },
+            { label: "Data prevista", value: viewItem.data_projetada },
+            { label: "Data real", value: viewItem.data_real },
+            { label: "Título", value: viewItem.titulo, full: true },
+          ]}
+        />
+      )}
 
       {/* Import/Export */}
       <ImportExportDialog
