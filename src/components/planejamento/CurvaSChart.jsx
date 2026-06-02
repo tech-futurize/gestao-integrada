@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 
@@ -35,10 +34,13 @@ export default function CurvaSChart({
   showProj,
   valueFormatter,
   title,
+  yLeftDomain,
+  yRightDomain,
+  yTickFormatter,
 }) {
   if (!data || data.length === 0) return null;
 
-  const fmt = valueFormatter ?? ((v) => (typeof v === "number" ? v.toFixed(1) : v));
+  const fmt = valueFormatter ?? ((v) => (typeof v === "number" ? v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v));
 
   return (
     <div className="bg-card rounded-xl border border-border shadow-sm p-5">
@@ -51,20 +53,29 @@ export default function CurvaSChart({
             minWidth: "100%",
           }}
         >
-          <ResponsiveContainer width="100%" height={280}>
+          <ResponsiveContainer width="100%" height={192}>
             <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+              <YAxis
+                yAxisId="left"
+                tick={{ fontSize: 11 }}
+                {...(yLeftDomain ? { domain: yLeftDomain } : {})}
+                {...(yTickFormatter ? { tickFormatter: yTickFormatter } : {})}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tick={{ fontSize: 11 }}
+                {...(yRightDomain ? { domain: yRightDomain } : {})}
+                {...(yTickFormatter ? { tickFormatter: yTickFormatter } : {})}
+              />
               <Tooltip
                 formatter={(v, name) => [
                   typeof v === "number" ? fmt(v) : v,
                   name,
                 ]}
               />
-              <Legend />
-
               {/* Barras mensais / semanais */}
               {showPrev && (
                 <Bar
