@@ -334,7 +334,7 @@ export default function Documentos() {
           { label: "Total Docs", value: docs.length, sub: `${docs.filter(d => d.etapa === "Aprovado").length} aprovados`, color: "#26405d", icon: FileText },
           { label: "Total de Folhas", value: totalSheets >= 1000 ? `${(totalSheets / 1000).toFixed(1)}k A4` : `${totalSheets} A4`, sub: "folhas equivalentes", color: "#2563eb", icon: FileText },
           { label: "Progresso Geral", value: `${progGeral}%`, sub: <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden"><div className="h-full rounded-full bg-green-500" style={{ width: `${progGeral}%` }} /></div>, color: "#16a34a", icon: TrendingUp },
-          { label: "Vencidos", value: overdue.length, sub: overdue.length > 0 ? "⚠ documentos vencidos" : "Nenhum vencido", color: overdue.length > 0 ? "#dc2626" : "#16a34a", icon: AlertTriangle },
+          { label: "Atrasados", value: overdue.length, sub: overdue.length > 0 ? "⚠ documentos atrasados" : "Nenhum atrasado", color: overdue.length > 0 ? "#dc2626" : "#16a34a", icon: AlertTriangle },
         ].map(({ label, value, sub, color, icon: Icon }) => (
           <Card key={label} className="bg-card shadow-sm">
             <CardContent className="p-4 flex items-start gap-3">
@@ -428,7 +428,7 @@ export default function Documentos() {
                       <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">{formatDate(doc.data_real) || "—"}</td>
                       <td className="px-3 py-2.5"><ProgressBar pct={doc.progresso || 0} /></td>
                       <td className="px-3 py-2.5">
-                        <span className="text-xs font-semibold rounded-full px-2 py-0.5 whitespace-nowrap" style={{ backgroundColor: stEtapa.bg, color: stEtapa.text }}>{doc.etapa}</span>
+                        <span className="text-xs font-semibold rounded-full px-2 py-0.5 whitespace-nowrap border" style={{ borderColor: stEtapa.text, color: stEtapa.text }}>{doc.etapa}</span>
                       </td>
                       <td className="px-3 py-2.5">
                         <RowActions

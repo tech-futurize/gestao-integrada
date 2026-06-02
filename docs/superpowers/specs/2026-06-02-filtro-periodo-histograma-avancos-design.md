@@ -98,7 +98,7 @@ const monthsFiltrados = useMemo(() => {
 }, [monthPeriods, periodFilter]);
 ```
 
-`chartData` é derivado dos períodos, portanto o filtro afeta automaticamente o gráfico Curva S.
+`chartData` e os cards KPI são derivados dos períodos via `computeAvancoSeries(periods, ...)`, portanto o filtro afeta automaticamente o gráfico Curva S e os cards de KPI (os acumulados passam a refletir apenas o intervalo visível).
 
 ---
 

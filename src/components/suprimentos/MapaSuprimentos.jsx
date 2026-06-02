@@ -497,7 +497,7 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
                       ) : "—"}
                     </td>
                     <td className="py-3 px-2 text-center">
-                      <StatusBadge status={item.status} />
+                      <StatusBadge status={item.status} className="px-1.5 py-px text-[10px]" />
                     </td>
                     <td className="py-3 px-2">
                       <RowActions

@@ -21,12 +21,13 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, c
   const fmt = formatValue ?? ((v) => Number(v).toFixed(2).replace(".", ","));
 
   const handleSave = () => {
-    if (!cancelRef.current) {
-      // Aceita vírgula ou ponto como separador decimal (padrão pt-BR)
-      const numVal = Number(inputVal.replace(",", "."));
-      onSave(campo, isNaN(numVal) ? 0 : numVal);
+    if (cancelRef.current) { cancelRef.current = false; return; }
+    const numVal = Number(inputVal.replace(",", "."));
+    const parsed = isNaN(numVal) ? 0 : numVal;
+    const original = registro?.[campo] ?? 0;
+    if (parsed !== original) {
+      onSave(campo, parsed);
     }
-    cancelRef.current = false;
   };
 
   // Campo de texto (sem setas de incremento) — padrão pt-BR com vírgula decimal
@@ -209,6 +210,7 @@ export default function AvancoTabela({
                 headerCls,
                 acumValue,
                 isRealRow,
+                blockWhenField,
               }) => (
                 <tr
                   key={campo}
@@ -229,8 +231,9 @@ export default function AvancoTabela({
                   {/* Células de dados por período */}
                   {periods.map((p) => {
                     const pk = periodKey(p);
+                    const rec = dataMap.get(pk) ?? null;
                     if (readOnly) {
-                      const valor = dataMap.get(pk)?.[campo] ?? 0;
+                      const valor = rec?.[campo] ?? 0;
                       return (
                         <td
                           key={pk + "-" + campo}
@@ -240,12 +243,16 @@ export default function AvancoTabela({
                         </td>
                       );
                     }
+                    // Bloqueia projetado quando o campo real foi explicitamente preenchido (incluindo zero)
+                    const blockedByReal = blockWhenField
+                      ? rec !== null && rec[blockWhenField] !== null && rec[blockWhenField] !== undefined
+                      : false;
                     return (
                       <CelulaEditavelAvanco
                         key={pk + "-" + campo}
-                        registro={dataMap.get(pk) ?? null}
+                        registro={rec}
                         campo={campo}
-                        blocked={isRealRow && isBlocked ? isBlocked(p) : false}
+                        blocked={(isRealRow && isBlocked ? isBlocked(p) : false) || blockedByReal}
                         onSave={(c, v) => onSave(pk, c, v)}
                         formatValue={formatValue}
                         cellWidth={cellWidth}

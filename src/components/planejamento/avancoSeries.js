@@ -48,6 +48,12 @@ export function computeAvancoSeries({
   const totalReal = cReal;
   const lastRealPeriod = lastRealIdx >= 0 ? periods[lastRealIdx] : null;
 
+  // ── lastProjIdx: último período (>= lastRealIdx) com proj > 0 ─────────────
+  const lastProjIdx = periods.reduce(
+    (last, p, i) => (i >= lastRealIdx && (dataMap.get(periodKey(p))?.[fProj] ?? 0) > 0 ? i : last),
+    -1
+  );
+
   // ── chartData com lógica de truncamento idêntica ao Histograma ─────────────
   let runPrev = 0, runReal = 0, projDelta = 0;
   const chartData = periods.map((p, i) => {
@@ -59,9 +65,9 @@ export function computeAvancoSeries({
     runPrev += prev;
     runReal += real;
 
-    // projAcum começa no lastRealIdx e cresce somando os projetados futuros
+    // projAcum: começa no lastRealIdx, termina no lastProjIdx (truncado como realAcum)
     let projAcum = null;
-    if (lastRealIdx >= 0 && i >= lastRealIdx) {
+    if (lastRealIdx >= 0 && lastProjIdx >= 0 && i >= lastRealIdx && i <= lastProjIdx) {
       projDelta += proj;
       projAcum = totalReal + projDelta;
     }

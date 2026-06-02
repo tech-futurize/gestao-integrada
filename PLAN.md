@@ -20,6 +20,19 @@
 
 ---
 
+## Próximo Milestone — Reestruturação Faturamento × Medição de Subcontrato *(spec 2026-06-02)*
+
+> **Spec:** [docs/superpowers/specs/2026-06-02-faturamento-projeto-reestruturacao-design.md](docs/superpowers/specs/2026-06-02-faturamento-projeto-reestruturacao-design.md) · **ADR:** [docs/adrs/ADR-0001](docs/adrs/ADR-0001-medicao-subcontrato-vs-faturamento-projeto.md) · **Status:** aguardando aprovação do PO
+
+Separar os dois conceitos de medição hoje misturados em `Adm. Contratual`:
+
+- **Faturamento** (novo item em **Planejamento**, `/planejamento/faturamento`) — medição do projeto pela construtora; alimenta o **Avanço Financeiro real** por derivação (single source).
+- **Medições** — vira aba de medição de **subcontrato dentro do Contrato**; item standalone `/admin-contratual/medicoes` **removido** (drop L007).
+
+Trazer do SGP **apenas**: PQP/EAP hierárquica (JSONB), importação de PQP, lançamento + cálculos via componente reutilizável `PqpEditor`. **Fora:** evidências/RDO, central de aprovações, IA, retenção. Mudanças de rota previstas (após implementação): `+ /planejamento/faturamento`, `− /admin-contratual/medicoes`.
+
+---
+
 ## Referência: Mapa de Rotas Ativo
 
 | Módulo | Submódulo | URL |

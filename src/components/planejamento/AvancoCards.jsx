@@ -61,12 +61,12 @@ export default function AvancoCards({
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {cards.map(({ label, value, sub, color }) => (
-        <div key={label} className="bg-card border border-border rounded-xl p-4">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+        <div key={label} className="bg-card border border-border rounded-xl px-3 py-2">
+          <div className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">
             {label}
           </div>
-          <div className={`text-2xl font-bold ${color}`}>{value}</div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>
+          <div className={`text-base font-bold ${color}`}>{value}</div>
+          <div className="text-[9px] text-muted-foreground">{sub}</div>
         </div>
       ))}
     </div>

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Area, AreaChart, BarChart, Bar, Legend
+  Area, AreaChart, BarChart, Bar
 } from "recharts";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import FilterBar from "@/components/ui/FilterBar";
@@ -79,6 +79,9 @@ const STATUS_CFG = {
   "Crítico":  { cls: "bg-status-critical/15 text-status-critical" },
   "Excedido": { cls: "bg-purple-100/80 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
 };
+
+const fmtQtd = (v) => (v ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtPct = (v) => `${(v ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 
 function Field({ label, children }) {
   return (
@@ -178,8 +181,8 @@ function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSave
                   {UNIDADE_SIGLAS.map(u => <option key={u}>{u}</option>)}
                 </select>
               </Field>
-              <Field label="Qtd. Contrato *"><input type="number" className={inputCls} value={form.qtd_contrato} onChange={e => set("qtd_contrato", e.target.value)} /></Field>
-              <Field label="Qtd. Take-Off"><input type="number" className={inputCls} value={form.qtd_takeoff} onChange={e => set("qtd_takeoff", e.target.value)} /></Field>
+              <Field label="Qtd. Contrato *"><input type="number" step="0.01" className={inputCls} value={form.qtd_contrato} onChange={e => set("qtd_contrato", e.target.value)} /></Field>
+              <Field label="Qtd. Take-Off"><input type="number" step="0.01" className={inputCls} value={form.qtd_takeoff} onChange={e => set("qtd_takeoff", e.target.value)} /></Field>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={onClose}>Cancelar</Button>
@@ -203,7 +206,7 @@ function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSave
                     <input className={inputCls} value={lancForm.semana_iso} onChange={e => setLancForm(f => ({ ...f, semana_iso: e.target.value }))} placeholder="2026-W22" />
                   </Field>
                   <Field label="Quantidade *">
-                    <input type="number" className={inputCls} value={lancForm.quantidade} onChange={e => setLancForm(f => ({ ...f, quantidade: e.target.value }))} />
+                    <input type="number" step="0.01" className={inputCls} value={lancForm.quantidade} onChange={e => setLancForm(f => ({ ...f, quantidade: e.target.value }))} />
                   </Field>
                 </div>
                 <Field label="Observação">
@@ -235,8 +238,8 @@ function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSave
                   {sortedLanc.map((l, i) => (
                     <tr key={l.id} className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
                       <td className="px-4 py-2 font-bold text-xs text-foreground">{l.semana_iso || l.semana || "—"}</td>
-                      <td className="px-4 py-2 font-semibold">{l.quantidade.toLocaleString("pt-BR")}</td>
-                      <td className="px-4 py-2 text-foreground">{l.acumulado.toLocaleString("pt-BR")}</td>
+                      <td className="px-4 py-2 font-semibold">{fmtQtd(l.quantidade)}</td>
+                      <td className="px-4 py-2 text-foreground">{fmtQtd(l.acumulado)}</td>
                       <td className="px-4 py-2">
                         <RowActions
                           onView={() => setViewLanc(l)}
@@ -262,8 +265,8 @@ function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSave
         title={`Lançamento — Semana ${viewLanc.semana_iso || viewLanc.semana || "—"}`}
         sections={[
           { label: "Semana", value: viewLanc.semana_iso || viewLanc.semana },
-          { label: "Quantidade", value: viewLanc.quantidade },
-          { label: "Acumulado", value: viewLanc.acumulado },
+          { label: "Quantidade", value: fmtQtd(viewLanc.quantidade) },
+          { label: "Acumulado", value: fmtQtd(viewLanc.acumulado) },
           { label: "Observação", value: viewLanc.observacao, full: true },
         ]}
       />
@@ -307,7 +310,7 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose }
               pattern="\d{4}-W\d{2}"
             />
           </Field>
-          <Field label="Quantidade *"><input type="number" className={inputCls} value={form.quantidade} onChange={e => set("quantidade", e.target.value)} /></Field>
+          <Field label="Quantidade *"><input type="number" step="0.01" className={inputCls} value={form.quantidade} onChange={e => set("quantidade", e.target.value)} /></Field>
           <Field label="Observação"><input className={inputCls} value={form.observacao} onChange={e => set("observacao", e.target.value)} /></Field>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
@@ -335,7 +338,7 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
 
   const realizado = lancamentos.reduce((s, l) => s + l.quantidade, 0);
   const saldo     = item.qtd_contrato - realizado;
-  const pct       = item.qtd_contrato > 0 ? ((realizado / item.qtd_contrato) * 100).toFixed(1) : 0;
+  const pct       = item.qtd_contrato > 0 ? (realizado / item.qtd_contrato) * 100 : 0;
   const status    = calcStatus(realizado, item.qtd_contrato);
   const stCfg     = STATUS_CFG[status];
 
@@ -369,11 +372,11 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
           {[
-            { label: "Qtd. Contrato", value: item.qtd_contrato?.toLocaleString("pt-BR"),           colorCls: "text-foreground" },
-            { label: "Qtd. Take-Off", value: item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—", colorCls: "text-muted-foreground" },
-            { label: "Qtd. Realizado", value: realizado.toLocaleString("pt-BR"),                   colorCls: "text-status-positive" },
-            { label: "Saldo",          value: saldo.toLocaleString("pt-BR"),                        colorCls: saldo >= 0 ? "text-status-positive" : "text-status-critical" },
-            { label: "% Avanço",       value: `${pct}%`,                                            colorCls: stCfg.cls.split(" ").find(c => c.startsWith("text-")) },
+            { label: "Qtd. Contrato", value: fmtQtd(item.qtd_contrato),           colorCls: "text-foreground" },
+            { label: "Qtd. Take-Off", value: item.qtd_takeoff != null ? fmtQtd(item.qtd_takeoff) : "—", colorCls: "text-muted-foreground" },
+            { label: "Qtd. Realizado", value: fmtQtd(realizado),                   colorCls: "text-status-positive" },
+            { label: "Saldo",          value: fmtQtd(saldo),                        colorCls: saldo >= 0 ? "text-status-positive" : "text-status-critical" },
+            { label: "% Avanço",       value: fmtPct(pct),                                            colorCls: stCfg.cls.split(" ").find(c => c.startsWith("text-")) },
           ].map(({ label, value, colorCls }) => (
             <div key={label} className="bg-muted rounded-lg p-3 text-center">
               <div className="text-xs text-muted-foreground mb-1">{label}</div>
@@ -383,7 +386,7 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
         </div>
 
         <div className="mt-4">
-          <div className="flex justify-between text-xs text-muted-foreground mb-1"><span>Progresso</span><span>{pct}%</span></div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1"><span>Progresso</span><span>{fmtPct(pct)}</span></div>
           <div className="h-3 bg-muted rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: "#16a34a" }} />
           </div>
@@ -434,8 +437,8 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
               {lancSorted.map((l, i) => (
                 <tr key={l.id} className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
                   <td className="px-4 py-2 font-bold text-xs text-ocre">{l.semana_iso || l.semana || "—"}</td>
-                  <td className="px-4 py-2 font-semibold">{l.quantidade.toLocaleString("pt-BR")} <span className="text-xs text-muted-foreground">{item.unidade}</span></td>
-                  <td className="px-4 py-2 font-semibold text-foreground">{l.acumulado.toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-2 font-semibold">{fmtQtd(l.quantidade)} <span className="text-xs text-muted-foreground">{item.unidade}</span></td>
+                  <td className="px-4 py-2 font-semibold text-foreground">{fmtQtd(l.acumulado)}</td>
                   <td className="px-4 py-2">
                     <RowActions
                       onView={() => setViewLanc(l)}
@@ -458,8 +461,8 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
         title={`Lançamento — Semana ${viewLanc.semana_iso || viewLanc.semana || "—"}`}
         sections={[
           { label: "Semana", value: viewLanc.semana_iso || viewLanc.semana },
-          { label: "Quantidade", value: `${viewLanc.quantidade} ${item.unidade}` },
-          { label: "Acumulado", value: viewLanc.acumulado },
+          { label: "Quantidade", value: `${fmtQtd(viewLanc.quantidade)} ${item.unidade}` },
+          { label: "Acumulado", value: fmtQtd(viewLanc.acumulado) },
           { label: "Observação", value: viewLanc.observacao, full: true },
         ]}
       />
@@ -690,8 +693,7 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
-                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
                 <Bar dataKey="Contrato"  fill={filtroUnidade ? "#9ca3af66" : "#9ca3af"} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Take-Off"  fill={filtroUnidade ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Realizado" fill={filtroUnidade ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
@@ -713,8 +715,7 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={45} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
-                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
                 <Bar dataKey="Contrato"  fill={filtroDisciplina ? "#9ca3af66" : "#9ca3af"} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Take-Off"  fill={filtroDisciplina ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Realizado" fill={filtroDisciplina ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
@@ -764,13 +765,13 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                     <td className="px-4 py-3 w-44 max-w-[176px] font-medium text-foreground truncate">{item.descricao}</td>
                     <td className="px-4 py-3 text-sm text-foreground">{item.disciplina}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.unidade}</td>
-                    <td className="px-4 py-3 text-right font-medium">{item.qtd_contrato?.toLocaleString("pt-BR")}</td>
-                    <td className="px-4 py-3 text-right text-blue-500 dark:text-blue-400 font-medium">{item.qtd_takeoff ? item.qtd_takeoff.toLocaleString("pt-BR") : "—"}</td>
-                    <td className="px-4 py-3 text-right font-medium text-status-positive">{item.realizado.toLocaleString("pt-BR")}</td>
-                    <td className={`px-4 py-3 text-right font-semibold ${item.saldo >= 0 ? "text-status-positive" : "text-status-critical"}`}>{item.saldo.toLocaleString("pt-BR")}</td>
+                    <td className="px-4 py-3 text-right font-medium">{fmtQtd(item.qtd_contrato)}</td>
+                    <td className="px-4 py-3 text-right text-blue-500 dark:text-blue-400 font-medium">{item.qtd_takeoff != null ? fmtQtd(item.qtd_takeoff) : "—"}</td>
+                    <td className="px-4 py-3 text-right font-medium text-status-positive">{fmtQtd(item.realizado)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-status-critical">{fmtQtd(item.saldo)}</td>
                     <td className="px-4 py-3 min-w-[90px]">
                       <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold leading-none" style={{ color: getPctColor(item.pct) }}>{item.pct.toFixed(1)}%</span>
+                        <span className="text-xs font-bold leading-none" style={{ color: getPctColor(item.pct) }}>{fmtPct(item.pct)}</span>
                         <div className="bg-muted rounded-full h-1 overflow-hidden">
                           <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(item.pct, 100)}%`, backgroundColor: getPctColor(item.pct) }} />
                         </div>
@@ -791,16 +792,16 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
               <tfoot>
                 <tr className="bg-muted/60 border-t-2 border-border font-semibold text-sm">
                   <td className="px-4 py-3 text-xs text-muted-foreground uppercase tracking-wide" colSpan={4}>Totais ({filtered.length} itens)</td>
-                  <td className="px-4 py-3 text-right">{totals.qtd_contrato.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-3 text-right text-blue-500 dark:text-blue-400">{totals.qtd_takeoff.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-3 text-right text-status-positive">{totals.realizado.toLocaleString("pt-BR")}</td>
-                  <td className="px-4 py-3 text-right text-status-critical">{totals.saldo.toLocaleString("pt-BR")}</td>
+                  <td className="px-4 py-3 text-right">{fmtQtd(totals.qtd_contrato)}</td>
+                  <td className="px-4 py-3 text-right text-blue-500 dark:text-blue-400">{fmtQtd(totals.qtd_takeoff)}</td>
+                  <td className="px-4 py-3 text-right text-status-positive">{fmtQtd(totals.realizado)}</td>
+                  <td className="px-4 py-3 text-right text-status-critical">{fmtQtd(totals.saldo)}</td>
                   <td className="px-4 py-3 min-w-[90px]">
                     {(() => {
                       const pct = totals.qtd_contrato > 0 ? (totals.realizado / totals.qtd_contrato) * 100 : 0;
                       return (
                         <div className="flex flex-col gap-1">
-                          <span className="text-xs font-bold leading-none" style={{ color: getPctColor(pct) }}>{pct.toFixed(1)}%</span>
+                          <span className="text-xs font-bold leading-none" style={{ color: getPctColor(pct) }}>{fmtPct(pct)}</span>
                           <div className="bg-muted rounded-full h-1 overflow-hidden">
                             <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: getPctColor(pct) }} />
                           </div>

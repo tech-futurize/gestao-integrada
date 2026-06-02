@@ -1,4 +1,4 @@
-import { LogOut, ChevronRight } from "lucide-react";
+import { LogOut, ChevronRight, KeyRound } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { AnimatedThemeToggler } from "@/components/ui/AnimatedThemeToggler";
 import { useAuth } from "@/lib/AuthContext";
@@ -49,12 +49,6 @@ export default function SidebarUserMenu({ collapsed }) {
           sideOffset={8}
           className="w-64 p-0 bg-sidebar border-sidebar-border text-sidebar-foreground"
         >
-          {/* Cabeçalho com dados do usuário */}
-          <div className="px-4 py-3 border-b border-sidebar-border">
-            <p className="text-sm font-semibold truncate">{name}</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">{email}</p>
-          </div>
-
           {/* Toggle de tema */}
           <div className="px-4 py-2.5 flex items-center justify-between border-b border-sidebar-border">
             <span className="text-sm text-sidebar-foreground/80">Tema</span>
@@ -64,6 +58,21 @@ export default function SidebarUserMenu({ collapsed }) {
               className="w-8 h-8 flex items-center justify-center rounded-lg border border-sidebar-border bg-sidebar hover:bg-sidebar-accent text-sidebar-foreground transition-colors"
             />
           </div>
+
+          {/* Dados do usuário */}
+          <div className="px-4 py-3 border-b border-sidebar-border">
+            <p className="text-sm font-semibold truncate">{name}</p>
+            <p className="text-xs text-sidebar-foreground/60 truncate">{email}</p>
+          </div>
+
+          {/* Trocar senha */}
+          <button
+            disabled
+            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors border-b border-sidebar-border opacity-50 cursor-not-allowed"
+          >
+            <KeyRound className="w-4 h-4" />
+            Trocar senha
+          </button>
 
           {/* Logout */}
           <button
