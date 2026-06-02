@@ -35,7 +35,7 @@ export default function RDOModule({
   const [filterKey, setFilterKey] = useState(0);
   const FILTROS_KEY = "rdo-filtros";
 
-  const { data: rdos = [], isLoading } = useQuery({
+  const { data: rdos = [], isLoading, isError } = useQuery({
     queryKey: ["rdos", selectedProjectId],
     queryFn: () => entities.Rdo.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -172,7 +172,10 @@ export default function RDOModule({
             {isLoading && (
               <tr><td colSpan={10} className="py-12 text-center text-muted-foreground">Carregando...</td></tr>
             )}
-            {!isLoading && filtered.length === 0 && (
+            {isError && (
+              <tr><td colSpan={10} className="py-12 text-center text-sm text-status-critical">Erro ao carregar RDOs. Verifique sua conexão e tente novamente.</td></tr>
+            )}
+            {!isLoading && !isError && filtered.length === 0 && (
               <tr>
                 <td colSpan={10} className="py-16 text-center">
                   <FileText className="w-10 h-10 mx-auto text-muted-foreground/30 mb-3" />
