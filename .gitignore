@@ -43,3 +43,4 @@ docs/temp/
 *.duckdb
 *.duckdb.wal
 output.txt
+.mcp.json
