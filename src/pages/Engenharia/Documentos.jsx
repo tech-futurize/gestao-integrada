@@ -244,13 +244,6 @@ export default function Documentos() {
     }
   };
 
-  const handleConfirmDelete = () => {
-    if (deleteTarget) {
-      deleteMut.mutate(deleteTarget.id);
-      setDeleteTarget(null);
-    }
-  };
-
   const fornecedorOptions = useMemo(
     () => [...new Set((docs || []).map(d => d.fornecedor).filter(Boolean))].sort(),
     [docs]

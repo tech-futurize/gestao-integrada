@@ -186,7 +186,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-card rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto">
+      <div className="bg-card rounded-xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto border border-border">
 
         {/* Header */}
         <div className="sticky top-0 bg-card z-10 flex items-start justify-between gap-3 px-6 py-4 border-b border-border shrink-0">
