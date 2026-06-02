@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useDarkMode } from "@/hooks/useDarkMode";
 import { Link, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabaseClient";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +28,9 @@ export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [openModule, setOpenModule] = useState(null);
+  const [flyoutGroup, setFlyoutGroup] = useState(null);
+  const [flyoutY, setFlyoutY] = useState(0);
+  const isDark = useDarkMode();
   const { selectedProjectId, setSelectedProjectId } = useProject();
   const { permissoes, isAdmin } = usePermissionsMap();
 
@@ -52,6 +56,7 @@ export default function Layout({ children }) {
   }, [projetosDB, selectedProjectId, setSelectedProjectId]);
 
   useEffect(() => {
+    setFlyoutGroup(null);
     const activeGroup = navigationGroups.find(
       (g) => g.children?.some((c) => c.path === location.pathname)
     );
@@ -64,6 +69,14 @@ export default function Layout({ children }) {
     setSelectedProjectId(null);
     setDialogOpen(false);
   };
+
+  function openFlyout(e, group) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const PANEL_ESTIMATED_HEIGHT = group.children.length * 36 + 40;
+    const maxTop = window.innerHeight - PANEL_ESTIMATED_HEIGHT - 8;
+    setFlyoutY(Math.min(rect.top, maxTop));
+    setFlyoutGroup(flyoutGroup?.title === group.title ? null : group);
+  }
 
   const sidebarW = collapsed ? "w-16" : "w-60";
 
@@ -118,7 +131,7 @@ export default function Layout({ children }) {
                 <button
                   onClick={() => setDialogOpen(true)}
                   className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg border border-sidebar-primary bg-sidebar-primary/10 text-sidebar-foreground transition-all hover:bg-sidebar-primary/20"
-                  style={{ boxShadow: "0 0 8px rgba(38,255,255,0.2)" }}
+                  style={isDark ? { boxShadow: "0 0 8px rgba(38,255,255,0.2)" } : undefined}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Layers className="w-4 h-4 flex-shrink-0 text-sidebar-primary" />
@@ -155,7 +168,7 @@ export default function Layout({ children }) {
                       ? "bg-sidebar-primary text-sidebar-primary-foreground font-bold"
                       : "text-sidebar-foreground hover:bg-sidebar-accent"
                     }`}
-                    style={isActive ? { boxShadow: "0 0 12px rgba(38,255,255,0.4)" } : undefined}
+                    style={isActive && isDark ? { boxShadow: "0 0 12px rgba(38,255,255,0.4)" } : undefined}
                   >
                     <group.icon className={`flex-shrink-0 ${collapsed ? "w-5 h-5" : "w-4 h-4"}`} />
                     {!collapsed && <span className="font-semibold text-sm truncate">{group.title}</span>}
@@ -168,14 +181,20 @@ export default function Layout({ children }) {
               return (
                 <div key={group.title}>
                   <button
-                    onClick={() => {
-                      if (!collapsed) setOpenModule(isOpen ? null : group.title);
+                    onClick={(e) => {
+                      if (collapsed) {
+                        openFlyout(e, group);
+                      } else {
+                        setOpenModule(isOpen ? null : group.title);
+                      }
                     }}
                     title={collapsed ? group.title : undefined}
                     className={`w-full flex items-center rounded-lg transition-all duration-200 ${
                       collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-2.5 py-2"
                     } ${isParentActive
-                      ? "bg-sidebar-accent/30 text-sidebar-foreground"
+                      ? collapsed
+                        ? "bg-sidebar-accent/30 text-sidebar-primary"
+                        : "bg-sidebar-accent/30 text-sidebar-foreground"
                       : "text-sidebar-foreground hover:bg-sidebar-accent"
                     }`}
                   >
@@ -203,7 +222,7 @@ export default function Layout({ children }) {
                                 ? "bg-sidebar-primary text-sidebar-primary-foreground font-bold"
                                 : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                             }`}
-                            style={isActive ? { boxShadow: "0 0 8px rgba(38,255,255,0.3)" } : undefined}
+                            style={isActive && isDark ? { boxShadow: "0 0 8px rgba(38,255,255,0.3)" } : undefined}
                           >
                             <span className="truncate">{child.title}</span>
                           </Link>
@@ -258,13 +277,13 @@ export default function Layout({ children }) {
                         setDialogOpen(false);
                       }}
                       className={`relative rounded-xl overflow-hidden border-2 transition-all hover:scale-[1.02] text-left ${
-                        isSelected ? "border-cobalt" : "border-border"
+                        isSelected ? "border-primary" : "border-border"
                       }`}
                     >
-                      <div className="relative h-24 flex items-center justify-center bg-cobalt">
+                      <div className="relative h-24 flex items-center justify-center bg-primary dark:bg-cobalt">
                         {isSelected && (
-                          <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center bg-cyan-electric">
-                            <CheckCircle2 className="w-4 h-4 text-navy" />
+                          <div className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center bg-primary text-primary-foreground">
+                            <CheckCircle2 className="w-4 h-4" />
                           </div>
                         )}
                         <div className="p-4 w-full">
@@ -279,6 +298,43 @@ export default function Layout({ children }) {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Flyout navegação (sidebar recolhida) */}
+        {flyoutGroup && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setFlyoutGroup(null)}
+            />
+            <div
+              className="fixed z-50 bg-sidebar border border-sidebar-border rounded-lg shadow-xl min-w-[180px] py-1"
+              style={{ left: 64, top: flyoutY }}
+            >
+              <p className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-sidebar-foreground/50 border-b border-sidebar-border">
+                {flyoutGroup.title}
+              </p>
+              {flyoutGroup.children.map((child) => {
+                const isActive = location.pathname === child.path;
+                return (
+                  <Link
+                    key={child.path}
+                    to={child.path}
+                    onClick={() => setFlyoutGroup(null)}
+                    className={`flex items-center px-3 py-1.5 text-sm rounded-md mx-1 my-0.5 transition-all duration-200 ${
+                      isActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground font-bold"
+                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    }`}
+                    style={isActive ? { boxShadow: "0 0 8px rgba(38,255,255,0.3)" } : undefined}
+                  >
+                    {child.title}
+                  </Link>
+                );
+              })}
+            </div>
+          </>
+        )}
+
       </div>
     </>
   );
