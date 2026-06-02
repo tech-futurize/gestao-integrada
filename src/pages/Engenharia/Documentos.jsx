@@ -644,8 +644,8 @@ export default function Documentos() {
             { label: "Progresso", value: viewItem.progresso != null ? `${viewItem.progresso}%` : null },
             { label: "Fornecedor", value: viewItem.fornecedor },
             { label: "Nº Folhas", value: viewItem.num_folhas },
-            { label: "Data prevista", value: viewItem.data_projetada },
-            { label: "Data real", value: viewItem.data_real },
+            { label: "Data prevista", value: formatDate(viewItem.data_projetada) },
+            { label: "Data real", value: formatDate(viewItem.data_real) },
             { label: "Título", value: viewItem.titulo, full: true },
           ]}
         />

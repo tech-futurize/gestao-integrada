@@ -51,6 +51,7 @@ const GerenciarProjeto     = lazy(() => import('./pages/Configuracoes/GerenciarP
 const AgenteConfig         = lazy(() => import('./pages/Configuracoes/AgenteConfig'));
 const Usuarios             = lazy(() => import('./pages/Configuracoes/Usuarios'));
 const UnidadesMedida       = lazy(() => import('./pages/Configuracoes/UnidadesMedida'));
+const Disciplinas          = lazy(() => import('./pages/Configuracoes/Disciplinas'));
 
 // Acesso restrito
 const SemPermissao         = lazy(() => import('./pages/SemPermissao'));
@@ -145,6 +146,7 @@ const AuthenticatedApp = () => (
     <Route path="/configuracoes/agente-config" element={wrap(AgenteConfig, 'Configurações')} />
     <Route path="/configuracoes/usuarios" element={wrap(Usuarios, 'Configurações')} />
     <Route path="/configuracoes/unidades-medida" element={wrap(UnidadesMedida, 'Configurações')} />
+    <Route path="/configuracoes/disciplinas" element={wrap(Disciplinas, 'Configurações')} />
 
     {/* Sem permissão — sem modulo, acessível a qualquer autenticado */}
     <Route path="/sem-permissao" element={wrap(SemPermissao)} />

@@ -346,8 +346,8 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
           { label: "Responsável", value: viewItem.tarefa?.responsavel },
           { label: "Avanço previsto", value: viewItem.tarefa?.avanco_previsto != null ? `${viewItem.tarefa.avanco_previsto}%` : null },
           { label: "Avanço realizado", value: viewItem.tarefa?.avanco_realizado != null ? `${viewItem.tarefa.avanco_realizado}%` : null },
-          { label: "Início planejado", value: viewItem.tarefa?.data_inicio_planejada },
-          { label: "Fim planejado", value: viewItem.tarefa?.data_fim_planejada },
+          { label: "Início planejado", value: fmtDateStr(viewItem.tarefa?.data_inicio_planejada) },
+          { label: "Fim planejado", value: fmtDateStr(viewItem.tarefa?.data_fim_planejada) },
           { label: "Observação", value: viewItem.observacao, full: true },
         ]}
       />

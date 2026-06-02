@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Plus, CheckCircle, Clock, PauseCircle } from "lucide-react";
+import { Settings, Plus, CheckCircle, Clock, PauseCircle, XCircle } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
@@ -17,16 +17,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useProject } from "@/lib/ProjectContext";
 
-const STATUS_OPTIONS = ["Ativo", "Em Pausa", "Encerrado"];
+const STATUS_OPTIONS = ["Planejamento", "Em Andamento", "Pausado", "Concluído", "Cancelado"];
 
 const STATUS_CFG = {
-  Ativo: { icon: CheckCircle, color: "#16a34a", bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
-  "Em Pausa": { icon: PauseCircle, color: "#d97706", bg: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
-  Encerrado: { icon: Clock, color: "#6b7280", bg: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400" },
+  Planejamento: { icon: Clock, color: "#3b82f6", bg: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
+  "Em Andamento": { icon: CheckCircle, color: "#16a34a", bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
+  Pausado: { icon: PauseCircle, color: "#d97706", bg: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300" },
+  Concluído: { icon: CheckCircle, color: "#6b7280", bg: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400" },
+  Cancelado: { icon: XCircle, color: "#ef4444", bg: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" },
 };
 
 const EMPTY_FORM = {
-  nome: "", descricao: "", status: "Ativo", data_inicio: "", data_fim_prevista: "",
+  nome: "", descricao: "", status: "Planejamento", data_inicio: "", data_fim_prevista: "",
   cliente: "", responsavel: "", contrato_numero: "", valor_contrato: "",
 };
 
@@ -77,7 +79,7 @@ export default function GerenciarProjeto() {
     setForm({
       nome: projeto.nome || "",
       descricao: projeto.descricao || "",
-      status: projeto.status || "Ativo",
+      status: projeto.status || "Planejamento",
       data_inicio: projeto.data_inicio || "",
       data_fim_prevista: projeto.data_prevista_termino || "",
       cliente: projeto.cliente || "",
@@ -89,13 +91,21 @@ export default function GerenciarProjeto() {
   };
 
   const handleSubmit = () => {
+    if (!form.nome.trim()) {
+      toast({ title: "Campo obrigatório", description: "Informe o nome do projeto.", variant: "destructive" });
+      return;
+    }
+    if (!form.cliente.trim()) {
+      toast({ title: "Campo obrigatório", description: "Informe o cliente do projeto.", variant: "destructive" });
+      return;
+    }
     const payload = {
-      nome: form.nome,
+      nome: form.nome.trim(),
       descricao: form.descricao,
       status: form.status,
       data_inicio: form.data_inicio || null,
       data_prevista_termino: form.data_fim_prevista || null,
-      cliente: form.cliente,
+      cliente: form.cliente.trim(),
       responsavel_geral: form.responsavel,
       contrato_numero: form.contrato_numero,
       valor_contrato: parseFloat(form.valor_contrato) || 0,
@@ -105,8 +115,7 @@ export default function GerenciarProjeto() {
   };
 
   const handleSelect = (projetoId) => {
-    localStorage.setItem("selectedProjectId", projetoId);
-    if (setSelectedProjectId) setSelectedProjectId(projetoId);
+    setSelectedProjectId(projetoId);
     toast({ variant: "success", description: "Projeto selecionado com sucesso." });
   };
 
@@ -131,7 +140,7 @@ export default function GerenciarProjeto() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {projetos.map(p => {
-            const cfg = STATUS_CFG[p.status] || STATUS_CFG.Ativo;
+            const cfg = STATUS_CFG[p.status] || STATUS_CFG.Planejamento;
             const _StatusIcon = cfg.icon;
             return (
               <div key={p.id} className="bg-card rounded-xl border border-border p-5 space-y-3 hover:shadow-md transition-shadow">
@@ -201,7 +210,7 @@ export default function GerenciarProjeto() {
               <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} />
             </div>
             <div className="space-y-1">
-              <Label>Cliente</Label>
+              <Label>Cliente *</Label>
               <Input value={form.cliente} onChange={e => setForm(f => ({ ...f, cliente: e.target.value }))} />
             </div>
             <div className="space-y-1">
@@ -244,8 +253,8 @@ export default function GerenciarProjeto() {
             { label: "Status", value: viewItem.status },
             { label: "Cliente", value: viewItem.cliente },
             { label: "Responsável", value: viewItem.responsavel_geral },
-            { label: "Início", value: viewItem.data_inicio },
-            { label: "Fim previsto", value: viewItem.data_prevista_termino },
+            { label: "Início", value: formatDate(viewItem.data_inicio) },
+            { label: "Fim previsto", value: formatDate(viewItem.data_prevista_termino) },
             { label: "Descrição", value: viewItem.descricao, full: true },
           ]}
         />

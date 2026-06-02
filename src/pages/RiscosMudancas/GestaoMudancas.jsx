@@ -296,7 +296,7 @@ export default function GestaoMudancas() {
             { label: "Origem", value: viewItem.origem },
             { label: "Status", value: viewItem.status },
             { label: "Responsável", value: viewItem.responsavel },
-            { label: "Data ocorrência", value: viewItem.data_ocorrencia },
+            { label: "Data ocorrência", value: formatDate(viewItem.data_ocorrencia) },
             { label: "Impacto custo", value: viewItem.impacto_custo != null ? `R$ ${viewItem.impacto_custo}` : null },
             { label: "Impacto prazo", value: viewItem.impacto_prazo_dias != null ? `${viewItem.impacto_prazo_dias > 0 ? "+" : ""}${viewItem.impacto_prazo_dias}d` : null },
             { label: "Descrição", value: viewItem.descricao, full: true },

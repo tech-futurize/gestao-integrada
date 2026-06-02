@@ -361,8 +361,8 @@ export default function PlanoAcao({ projectId }) {
             { label: "Formato de tratativa", value: viewItem.formato_tratativa },
             { label: "Responsável", value: viewItem.responsavel },
             { label: "Status", value: viewItem.status },
-            { label: "Previsão início", value: viewItem.data_inicio_prevista },
-            { label: "Previsão fim", value: viewItem.data_fim_prevista },
+            { label: "Previsão início", value: formatDate(viewItem.data_inicio_prevista) },
+            { label: "Previsão fim", value: formatDate(viewItem.data_fim_prevista) },
             { label: "Descrição", value: viewItem.descricao, full: true },
             { label: "Observações", value: viewItem.observacoes, full: true },
           ]}

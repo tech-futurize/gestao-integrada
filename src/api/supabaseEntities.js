@@ -22,6 +22,8 @@ const TABLE_MAP = {
   Usuario: 'usuarios',
   PermissaoUsuario: 'permissoes_usuario',
   Rdo: 'rdo',
+  UnidadeMedida: 'unidades_medida',
+  Disciplina: 'disciplinas',
 };
 
 function createEntityClient(tableName) {

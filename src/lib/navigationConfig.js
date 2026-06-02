@@ -71,6 +71,7 @@ export const navigationGroups = [
       { title: "Gerenciar Projeto", path: "/configuracoes/gerenciar-projeto" },
       { title: "Config. Agentes", path: "/configuracoes/agente-config" },
       { title: "Unidades de Medida", path: "/configuracoes/unidades-medida" },
+      { title: "Disciplinas", path: "/configuracoes/disciplinas" },
     ],
   },
 ];

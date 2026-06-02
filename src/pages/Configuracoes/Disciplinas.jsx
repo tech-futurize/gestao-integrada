@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Ruler, Plus, Pencil, Trash2 } from "lucide-react";
+import { Layers, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/FormDialog";
 import PageHeader from "@/components/ui/PageHeader";
 import { entities } from "@/api/supabaseEntities";
 
-const EMPTY = { sigla: "", nome: "" };
+const PALETTE = [
+  "#3b82f6", "#8b5cf6", "#f59e0b", "#06b6d4",
+  "#10b981", "#ef4444", "#6366f1", "#ec4899",
+  "#84cc16", "#f97316", "#14b8a6", "#6b7280",
+];
 
-export default function UnidadesMedida() {
+const EMPTY = { codigo: "", nome: "", cor: "#3b82f6" };
+
+export default function Disciplinas() {
   const qc = useQueryClient();
   const [dialog, setDialog] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -16,38 +22,41 @@ export default function UnidadesMedida() {
   const [showInativos, setShowInativos] = useState(false);
 
   const { data: all = [], isPending, isError } = useQuery({
-    queryKey: ["unidades_medida"],
-    queryFn: () => entities.UnidadeMedida.list(),
+    queryKey: ["disciplinas"],
+    queryFn: () => entities.Disciplina.list(),
   });
 
-  const unidades = showInativos ? all : all.filter((u) => u.ativo !== false);
+  const disciplinas = showInativos ? all : all.filter((d) => d.ativo !== false);
 
   const saveMut = useMutation({
     mutationFn: async (values) => {
-      if (dialog?.item?.id) return entities.UnidadeMedida.update(dialog.item.id, values);
-      return entities.UnidadeMedida.create(values);
+      if (dialog?.item?.id) return entities.Disciplina.update(dialog.item.id, values);
+      return entities.Disciplina.create(values);
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["unidades_medida"] }); setDialog(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["disciplinas"] }); setDialog(null); },
   });
 
   const toggleMut = useMutation({
-    mutationFn: ({ id, ativo }) => entities.UnidadeMedida.update(id, { ativo }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["unidades_medida"] }),
+    mutationFn: ({ id, ativo }) => entities.Disciplina.update(id, { ativo }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["disciplinas"] }),
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id) => entities.UnidadeMedida.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["unidades_medida"] }); setDeleting(null); },
+    mutationFn: (id) => entities.Disciplina.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["disciplinas"] }); setDeleting(null); },
   });
 
   const openCreate = () => { setForm(EMPTY); setDialog({ mode: "create" }); };
-  const openEdit   = (item) => { setForm({ sigla: item.sigla, nome: item.nome }); setDialog({ mode: "edit", item }); };
+  const openEdit   = (item) => {
+    setForm({ codigo: item.codigo, nome: item.nome, cor: item.cor || "#6b7280" });
+    setDialog({ mode: "edit", item });
+  };
   const handleSave = () => {
-    if (!form.sigla.trim() || !form.nome.trim()) return;
-    saveMut.mutate({ sigla: form.sigla.trim(), nome: form.nome.trim() });
+    if (!form.codigo.trim() || !form.nome.trim()) return;
+    saveMut.mutate({ codigo: form.codigo.trim().toUpperCase(), nome: form.nome.trim(), cor: form.cor });
   };
 
-  const inativos = all.filter((u) => u.ativo === false).length;
+  const inativos = all.filter((d) => d.ativo === false).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -58,12 +67,12 @@ export default function UnidadesMedida() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Ruler className="w-5 h-5 text-primary" />
+              <Layers className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">Unidades de Medida</p>
+              <p className="text-sm font-bold text-foreground">Disciplinas</p>
               <p className="text-xs text-muted-foreground">
-                {all.filter((u) => u.ativo !== false).length} ativa{all.filter((u) => u.ativo !== false).length !== 1 ? "s" : ""}
+                {all.filter((d) => d.ativo !== false).length} ativa{all.filter((d) => d.ativo !== false).length !== 1 ? "s" : ""}
                 {inativos > 0 && ` · ${inativos} inativa${inativos !== 1 ? "s" : ""}`}
               </p>
             </div>
@@ -78,7 +87,7 @@ export default function UnidadesMedida() {
               </button>
             )}
             <Button size="sm" onClick={openCreate} className="gap-1.5 text-xs">
-              <Plus className="w-4 h-4" /> Nova Unidade
+              <Plus className="w-4 h-4" /> Nova Disciplina
             </Button>
           </div>
         </div>
@@ -89,46 +98,53 @@ export default function UnidadesMedida() {
             <div className="p-8 text-center text-sm text-muted-foreground">Carregando...</div>
           )}
           {isError && (
-            <div className="p-8 text-center text-sm text-destructive">Erro ao carregar unidades.</div>
+            <div className="p-8 text-center text-sm text-destructive">Erro ao carregar disciplinas.</div>
           )}
           {!isPending && !isError && (
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted border-b border-border">
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-28">Sigla</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-10">Cor</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-24">Código</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nome</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-24">Status</th>
                   <th className="px-5 py-3 w-28" />
                 </tr>
               </thead>
               <tbody>
-                {unidades.length === 0 && (
+                {disciplinas.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                      Nenhuma unidade cadastrada.
+                    <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                      Nenhuma disciplina cadastrada.
                     </td>
                   </tr>
                 )}
-                {unidades.map((u, i) => {
-                  const inativo = u.ativo === false;
+                {disciplinas.map((d, i) => {
+                  const inativo = d.ativo === false;
                   return (
                     <tr
-                      key={u.id}
+                      key={d.id}
                       className={`border-b border-border/50 transition-colors ${
                         inativo ? "opacity-50" : i % 2 === 0 ? "bg-card" : "bg-muted/20"
                       }`}
                     >
                       <td className="px-5 py-3">
+                        <div
+                          className="w-5 h-5 rounded-full border border-white/20 shadow-sm"
+                          style={{ backgroundColor: inativo ? "#9ca3af" : (d.cor || "#6b7280") }}
+                        />
+                      </td>
+                      <td className="px-5 py-3">
                         <span className={`inline-block font-mono text-xs font-bold rounded px-2 py-0.5 ${inativo ? "bg-muted/50 text-muted-foreground line-through" : "bg-muted text-foreground"}`}>
-                          {u.sigla}
+                          {d.codigo}
                         </span>
                       </td>
                       <td className={`px-5 py-3 text-sm ${inativo ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                        {u.nome}
+                        {d.nome}
                       </td>
                       <td className="px-5 py-3">
                         <button
-                          onClick={() => toggleMut.mutate({ id: u.id, ativo: !u.ativo })}
+                          onClick={() => toggleMut.mutate({ id: d.id, ativo: !d.ativo })}
                           disabled={toggleMut.isPending}
                           className="flex items-center gap-2 group"
                           title={inativo ? "Ativar" : "Desativar"}
@@ -148,14 +164,14 @@ export default function UnidadesMedida() {
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-1 justify-end">
                           <button
-                            onClick={() => openEdit(u)}
+                            onClick={() => openEdit(d)}
                             className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                             title="Editar"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => setDeleting(u)}
+                            onClick={() => setDeleting(d)}
                             className="p-1.5 rounded hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
                             title="Excluir permanentemente"
                           >
@@ -177,27 +193,27 @@ export default function UnidadesMedida() {
         <FormDialog
           open={!!dialog}
           onOpenChange={(v) => !v && setDialog(null)}
-          icon={Ruler}
-          title={dialog.mode === "create" ? "Nova Unidade de Medida" : "Editar Unidade de Medida"}
-          subtitle={dialog.mode === "edit" ? `Editando: ${dialog.item.sigla}` : "Preencha sigla e nome"}
+          icon={Layers}
+          title={dialog.mode === "create" ? "Nova Disciplina" : "Editar Disciplina"}
+          subtitle={dialog.mode === "edit" ? `Editando: ${dialog.item.codigo}` : "Preencha código, nome e cor"}
           maxWidth="max-w-sm"
           mode="edit"
           onClose={() => setDialog(null)}
           onSave={handleSave}
           saving={saveMut.isPending}
-          saveDisabled={!form.sigla.trim() || !form.nome.trim()}
+          saveDisabled={!form.codigo.trim() || !form.nome.trim()}
         >
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
-                Sigla <span className="text-destructive">*</span>
+                Código <span className="text-destructive">*</span>
               </label>
               <input
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
-                value={form.sigla}
-                onChange={(e) => setForm((f) => ({ ...f, sigla: e.target.value }))}
-                placeholder="ex: m², kg, hr"
-                maxLength={10}
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono uppercase"
+                value={form.codigo}
+                onChange={(e) => setForm((f) => ({ ...f, codigo: e.target.value }))}
+                placeholder="ex: MEC, CIV, ELE"
+                maxLength={8}
                 autoFocus
               />
             </div>
@@ -209,9 +225,40 @@ export default function UnidadesMedida() {
                 className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                 value={form.nome}
                 onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-                placeholder="ex: Metro quadrado"
+                placeholder="ex: Mecânica, Civil, Elétrica"
                 maxLength={60}
               />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">
+                Cor de identificação
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {PALETTE.map((cor) => (
+                  <button
+                    key={cor}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, cor }))}
+                    className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
+                    style={{
+                      backgroundColor: cor,
+                      borderColor: form.cor === cor ? "white" : "transparent",
+                      boxShadow: form.cor === cor ? `0 0 0 2px ${cor}` : "none",
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center gap-2 mt-3">
+                <div className="w-7 h-7 rounded-full border border-border shrink-0" style={{ backgroundColor: form.cor }} />
+                <input
+                  type="text"
+                  className="flex-1 border border-border rounded-lg px-3 py-1.5 text-xs font-mono bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  value={form.cor}
+                  onChange={(e) => setForm((f) => ({ ...f, cor: e.target.value }))}
+                  placeholder="#3b82f6"
+                  maxLength={7}
+                />
+              </div>
             </div>
           </div>
         </FormDialog>
@@ -223,8 +270,8 @@ export default function UnidadesMedida() {
           open={!!deleting}
           onOpenChange={(v) => !v && setDeleting(null)}
           icon={Trash2}
-          title="Excluir Unidade de Medida"
-          subtitle={`"${deleting.sigla} — ${deleting.nome}"`}
+          title="Excluir Disciplina"
+          subtitle={`"${deleting.codigo} — ${deleting.nome}"`}
           maxWidth="max-w-sm"
           mode="edit"
           onClose={() => setDeleting(null)}
@@ -243,7 +290,7 @@ export default function UnidadesMedida() {
           }
         >
           <p className="text-sm text-muted-foreground">
-            Esta ação não pode ser desfeita. A unidade será removida permanentemente.
+            Esta ação não pode ser desfeita. A disciplina será removida permanentemente.
             Considere <strong>desativar</strong> em vez de excluir para preservar o histórico.
           </p>
         </FormDialog>
