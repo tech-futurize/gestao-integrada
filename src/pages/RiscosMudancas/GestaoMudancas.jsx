@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightLeft, Plus, Edit, Trash2, Upload } from "lucide-react";
+import { ArrowRightLeft, Plus, Edit, Trash2, Upload, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -9,6 +10,7 @@ import MudancaForm from "@/components/mudancas/MudancaForm";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterToolbar from "@/components/ui/FilterToolbar";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
@@ -49,7 +51,9 @@ export default function GestaoMudancas() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [filtros, setFiltros] = useState({});
+  const [filterKey, setFilterKey] = useState(0);
   const [deleteId, setDeleteId] = useState(null);
+  const FILTROS_KEY = "mudancas-filtros";
 
   const { data: mudancas = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["mudancas_contratuais", selectedProjectId],
@@ -98,6 +102,8 @@ export default function GestaoMudancas() {
     return r;
   }, [mudancas, filtros]);
 
+  const { sortedData: mudancasSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "titulo" });
+
   const handleSubmit = (data) => {
     const payload = { ...data, projeto_id: selectedProjectId };
     if (editing) updateMut.mutate({ id: editing.id, data: payload });
@@ -108,6 +114,13 @@ export default function GestaoMudancas() {
     setEditing(mudanca);
     setShowForm(true);
   };
+
+  function SortIcon({ col }) {
+    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 inline ml-1 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+    return sortDir === "asc"
+      ? <ArrowUp className="w-3 h-3 inline ml-1 text-primary" />
+      : <ArrowDown className="w-3 h-3 inline ml-1 text-primary" />
+  }
 
   if (!selectedProjectId) {
     return (
@@ -135,18 +148,24 @@ export default function GestaoMudancas() {
       />
       <div className="flex-1 overflow-auto p-6 space-y-6">
 
+      {/* Filtros */}
+      <FilterToolbar
+        active={Object.values(filtros).some(a => a?.length > 0)}
+        onClearAll={() => { setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+      >
+        <FilterBar
+          key={filterKey}
+          storageKey={FILTROS_KEY}
+          filters={[
+            { key: "status", label: "Status", options: STATUS_OPTIONS },
+            { key: "origem", label: "Origem", options: ["Contratada", "Contratante"] },
+          ]}
+          onChange={setFiltros}
+        />
+      </FilterToolbar>
+
       {/* Dashboard Executivo (KPIs) */}
       {mudancas.length > 0 && <DashboardExecutivo mudancas={mudancas} />}
-
-      {/* Filtros */}
-      <FilterBar
-        storageKey="mudancas-filtros"
-        filters={[
-          { key: "status", label: "Status", options: STATUS_OPTIONS },
-          { key: "origem", label: "Origem", options: ["Contratada", "Contratante"] },
-        ]}
-        onChange={setFiltros}
-      />
 
       {/* Formulário */}
       {showForm && (
@@ -165,13 +184,13 @@ export default function GestaoMudancas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Título</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Origem</th>
+                <th onClick={() => handleSort("titulo")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Título<SortIcon col="titulo" /></th>
+                <th onClick={() => handleSort("origem")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Origem<SortIcon col="origem" /></th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Categorias</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Impacto Custo</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">Impacto Prazo</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Responsável</th>
+                <th onClick={() => handleSort("impacto_custo")} className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Impacto Custo<SortIcon col="impacto_custo" /></th>
+                <th onClick={() => handleSort("impacto_prazo_dias")} className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Impacto Prazo<SortIcon col="impacto_prazo_dias" /></th>
+                <th onClick={() => handleSort("status")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Status<SortIcon col="status" /></th>
+                <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Responsável<SortIcon col="responsavel" /></th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -181,7 +200,7 @@ export default function GestaoMudancas() {
               {!isLoading && !isError && filtered.length === 0 && (
                 <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">Nenhuma mudança encontrada</td></tr>
               )}
-              {filtered.map((m, i) => (
+              {mudancasSorted.map((m, i) => (
                 <tr key={m.id} className={`border-b border-border hover:bg-muted/40 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
                   <td className="px-4 py-3 max-w-xs">
                     <div className="font-medium text-foreground line-clamp-1">{m.titulo}</div>
