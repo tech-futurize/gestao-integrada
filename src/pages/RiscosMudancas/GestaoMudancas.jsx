@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightLeft, Plus, Edit, Trash2, Upload, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowRightLeft, Plus, Edit, Trash2, Upload, ArrowUpDown, ArrowUp, ArrowDown, Check, Search } from "lucide-react";
 import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
@@ -53,6 +54,8 @@ export default function GestaoMudancas() {
   const [filtros, setFiltros] = useState({});
   const [filterKey, setFilterKey] = useState(0);
   const [deleteId, setDeleteId] = useState(null);
+  const [busca, setBusca] = useState("");
+  const [periodo, setPeriodo] = useState(null);
   const FILTROS_KEY = "mudancas-filtros";
 
   const { data: mudancas = [], isPending: isLoading, isError } = useQuery({
@@ -97,10 +100,22 @@ export default function GestaoMudancas() {
     const st = filtros.status || [];
     const or = filtros.origem || [];
     let r = mudancas;
+    if (busca) {
+      const b = busca.toLowerCase();
+      r = r.filter(m => m.titulo?.toLowerCase().includes(b) || m.descricao?.toLowerCase().includes(b));
+    }
     if (st.length > 0) r = r.filter(m => st.includes(m.status));
     if (or.length > 0) r = r.filter(m => or.includes(m.origem));
+    if (periodo?.from) {
+      const fromStr = periodo.from.toISOString().split("T")[0];
+      r = r.filter(m => m.data_ocorrencia && m.data_ocorrencia >= fromStr);
+    }
+    if (periodo?.to) {
+      const toStr = periodo.to.toISOString().split("T")[0];
+      r = r.filter(m => m.data_ocorrencia && m.data_ocorrencia <= toStr);
+    }
     return r;
-  }, [mudancas, filtros]);
+  }, [mudancas, busca, filtros, periodo]);
 
   const { sortedData: mudancasSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "titulo" });
 
@@ -150,9 +165,18 @@ export default function GestaoMudancas() {
 
       {/* Filtros */}
       <FilterToolbar
-        active={Object.values(filtros).some(a => a?.length > 0)}
-        onClearAll={() => { setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+        active={!!busca || !!periodo?.from || Object.values(filtros).some(a => a?.length > 0)}
+        onClearAll={() => { setBusca(""); setPeriodo(null); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
       >
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
+            placeholder="Buscar por título..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+          />
+        </div>
         <FilterBar
           key={filterKey}
           storageKey={FILTROS_KEY}
@@ -161,6 +185,12 @@ export default function GestaoMudancas() {
             { key: "origem", label: "Origem", options: ["Contratada", "Contratante"] },
           ]}
           onChange={setFiltros}
+        />
+        <DateRangePicker
+          label="Data Registro"
+          value={periodo}
+          onChange={setPeriodo}
+          onClear={() => setPeriodo(null)}
         />
       </FilterToolbar>
 
