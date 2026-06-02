@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRightLeft, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Check, Search } from "lucide-react";
+import { ArrowRightLeft, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
@@ -25,7 +25,7 @@ const ORIGEM_COLORS = {
   "Contratante": "bg-amber-50 text-amber-700 border border-amber-200",
 };
 
-const STATUS_OPTIONS = ["Identificada", "Em Análise", "Em Negociação", "Aprovada", "Rejeitada"];
+const STATUS_OPTIONS = ["Identificada", "Em Análise", "Aprovada", "Rejeitada", "Implementada"];
 
 const MUDANCA_COLUMNS = [
   { key: "titulo",             label: "Título",              type: "string", required: true },

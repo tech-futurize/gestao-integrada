@@ -164,9 +164,9 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
                   <SelectContent>
                     <SelectItem value="Identificada">Identificada</SelectItem>
                     <SelectItem value="Em Análise">Em Análise</SelectItem>
-                    <SelectItem value="Em Negociação">Em Negociação</SelectItem>
                     <SelectItem value="Aprovada">Aprovada</SelectItem>
                     <SelectItem value="Rejeitada">Rejeitada</SelectItem>
+                    <SelectItem value="Implementada">Implementada</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

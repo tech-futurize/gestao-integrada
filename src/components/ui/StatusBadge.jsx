@@ -30,6 +30,7 @@ const STATUS_MAP = {
   "Executado":         "positive",
   "Assinado":          "positive",
   "Mitigado":          "positive",
+  "Implementada":      "positive",
   // critical (magenta) — cancelado / bloqueado / atrasado
   "Cancelado":         "critical",
   "Cancelada":         "critical",

@@ -14,9 +14,9 @@ import {
 const STATUS_COLORS = {
   "Identificada": "#9ca3af",
   "Em Análise": "#f59e0b",
-  "Em Negociação": "#3b82f6",
   "Aprovada": "#22c55e",
   "Rejeitada": "#ef4444",
+  "Implementada": "#10b981",
 };
 
 function KpiCard({ icon: Icon, label, value, sub, color, breakdown }) {
