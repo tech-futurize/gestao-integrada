@@ -143,6 +143,9 @@ export default function SixWLATable({ items, restricoes = [], isLoading, discipl
               const isOdd = i % 2 !== 0;
               // Células sticky precisam de fundo sólido para não mostrar conteúdo em rolagem
               const stickyBg = "bg-card";
+              const discCor = item.tarefa?.disciplina
+                ? (disciplinaMap[item.tarefa.disciplina.toLowerCase()] ?? "#6b7280")
+                : null;
               return (
                 <tr
                   key={item.id}
@@ -217,41 +220,45 @@ export default function SixWLATable({ items, restricoes = [], isLoading, discipl
                           <Eye className="w-4 h-4" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-52 p-3" side="right" align="start">
-                        <div className="space-y-1 text-xs">
+                      <PopoverContent className="w-60 p-3" side="right" align="start">
+                        <div className="space-y-2 text-xs">
+                          {/* Área */}
                           <div className="flex gap-2">
-                            <span className="text-muted-foreground w-16 shrink-0">Área</span>
+                            <span className="text-muted-foreground w-10 shrink-0">Área</span>
                             <span className="font-medium text-foreground">{item.tarefa?.area || "—"}</span>
                           </div>
-                          <div className="flex gap-2">
-                            <span className="text-muted-foreground w-16 shrink-0">Disciplina</span>
-                            <span className="font-medium text-foreground">{item.tarefa?.disciplina || "—"}</span>
-                          </div>
-                          <div className="border-t border-border pt-2 mt-2 space-y-1">
-                            <div className="flex gap-2">
-                              <span className="text-muted-foreground w-16 shrink-0">BL Ini</span>
-                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_inicio_baseline)}</span>
+                          {/* Disciplina mini-card */}
+                          {discCor ? (
+                            <div
+                              className="rounded px-2.5 py-1.5 text-xs font-semibold"
+                              style={{
+                                borderLeft: `3px solid ${discCor}`,
+                                background: `${discCor}18`,
+                                color: discCor,
+                              }}
+                            >
+                              {item.tarefa.disciplina}
                             </div>
+                          ) : (
                             <div className="flex gap-2">
-                              <span className="text-muted-foreground w-16 shrink-0">BL Fim</span>
-                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_fim_baseline)}</span>
+                              <span className="text-muted-foreground w-10 shrink-0">Disc.</span>
+                              <span className="font-medium text-foreground">—</span>
                             </div>
-                            <div className="flex gap-2">
-                              <span className="text-muted-foreground w-16 shrink-0">Real Ini</span>
-                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_inicio_real)}</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <span className="text-muted-foreground w-16 shrink-0">Real Fim</span>
-                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_fim_real)}</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <span className="text-muted-foreground w-16 shrink-0">Proj Ini</span>
-                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.inicio_previsto)}</span>
-                            </div>
-                            <div className="flex gap-2">
-                              <span className="text-muted-foreground w-16 shrink-0">Proj Fim</span>
-                              <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.termino_previsto)}</span>
-                            </div>
+                          )}
+                          {/* Datas em grid 3×3: label | Início | Fim */}
+                          <div className="grid grid-cols-3 gap-x-3 gap-y-1 border-t border-border pt-2 mt-1">
+                            <div />
+                            <span className="text-muted-foreground font-medium">Início</span>
+                            <span className="text-muted-foreground font-medium">Fim</span>
+                            <span className="text-muted-foreground">BL</span>
+                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_inicio_baseline)}</span>
+                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_fim_baseline)}</span>
+                            <span className="text-muted-foreground">Real</span>
+                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_inicio_real)}</span>
+                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_fim_real)}</span>
+                            <span className="text-muted-foreground">Proj</span>
+                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.inicio_previsto)}</span>
+                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.termino_previsto)}</span>
                           </div>
                         </div>
                       </PopoverContent>
