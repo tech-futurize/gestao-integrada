@@ -207,7 +207,7 @@ export default function HistogramaTabela({ tipo }) {
 
   // Derived data: resources grouped by name with totals and running sums
   const recursos = useMemo(() => {
-    const nomes = [...new Set(histogramas.map((h) => h.nome_recurso))].sort();
+    const nomes = [...new Set(histogramas.map((h) => h.nome_recurso))].filter(Boolean).sort();
     return nomes.map((nome) => {
       const registros = [...histogramas.filter((h) => h.nome_recurso === nome)].sort(
         (a, b) => (a.mes_referencia ?? "").localeCompare(b.mes_referencia ?? "")
