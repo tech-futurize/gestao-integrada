@@ -172,7 +172,7 @@ export default function HistogramaTabela({ tipo }) {
   const [showReal, setShowReal] = useState(true);
   const [showProj, setShowProj] = useState(true);
   const [showTotals, setShowTotals] = useState(false);
-  const [filterSubtipo, setFilterSubtipo] = useState(null);
+  const [activeSubtipos, setActiveSubtipos] = useState(() => new Set(["MOD", "MOI"]));
   const [showNovoDialog, setShowNovoDialog] = useState(false);
   const [novoNome, setNovoNome] = useState("");
   const [novoSubtipo, setNovoSubtipo] = useState("MOD");
@@ -270,8 +270,8 @@ export default function HistogramaTabela({ tipo }) {
 
   // Chart data: monthly totals + running accumulation
   const chartData = useMemo(() => {
-    const filtH = (tipo === "MO" && filterSubtipo)
-      ? histogramas.filter(h => h.subtipo_mo === filterSubtipo)
+    const filtH = (tipo === "MO" && activeSubtipos.size > 0)
+      ? histogramas.filter(h => !h.subtipo_mo || activeSubtipos.has(h.subtipo_mo))
       : histogramas;
 
     const monthsWithReal = new Set(
@@ -308,12 +308,16 @@ export default function HistogramaTabela({ tipo }) {
         projAcum,
       };
     });
-  }, [histogramas, projectMonths, filterSubtipo, tipo]);
+  }, [histogramas, projectMonths, activeSubtipos, tipo]);
 
-  // Derived: filtered resources + dynamic sticky total columns
-  const recursosFiltrados = (tipo === "MO" && filterSubtipo)
-    ? recursos.filter(r => r.subtipo_mo === filterSubtipo)
-    : recursos;
+  // Derived: filtered + sorted resources + dynamic sticky total columns
+  const recursosFiltrados = (() => {
+    if (tipo !== "MO" || activeSubtipos.size === 0) return recursos;
+    const SUB_ORDER = { MOD: 0, MOI: 1 };
+    return [...recursos]
+      .filter(r => !r.subtipo_mo || activeSubtipos.has(r.subtipo_mo))
+      .sort((a, b) => (SUB_ORDER[a.subtipo_mo] ?? 99) - (SUB_ORDER[b.subtipo_mo] ?? 99));
+  })();
 
   const stickyTotalCols = (() => {
     if (!showTotals) return [];
@@ -395,15 +399,19 @@ export default function HistogramaTabela({ tipo }) {
           {["MOD", "MOI"].map((sub) => (
             <button
               key={sub}
-              onClick={() => setFilterSubtipo(prev => prev === sub ? null : sub)}
+              onClick={() => setActiveSubtipos(prev => {
+                const next = new Set(prev);
+                if (next.has(sub)) next.delete(sub); else next.add(sub);
+                return next;
+              })}
               className={`px-3 py-1 rounded-full border text-xs font-semibold transition-colors
-                ${filterSubtipo === sub
+                ${activeSubtipos.has(sub)
                   ? sub === "MOD"
                     ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300"
                     : "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300"
-                  : "bg-muted text-muted-foreground border-border opacity-60"}`}
+                  : "bg-muted text-muted-foreground border-border opacity-50"}`}
             >
-              {filterSubtipo === sub ? "●" : "○"} {sub}
+              {activeSubtipos.has(sub) ? "●" : "○"} {sub}
             </button>
           ))}
         </>}
@@ -511,14 +519,40 @@ export default function HistogramaTabela({ tipo }) {
               {recursosFiltrados.length === 0 && (
                 <tr>
                   <td colSpan={99} className="py-12 text-center text-muted-foreground text-sm">
-                    {filterSubtipo
-                      ? `Nenhum ${tipo === "MO" ? "função" : "equipamento"} do tipo ${filterSubtipo}.`
-                      : `Nenhum ${tipo === "MO" ? "função" : "equipamento"} cadastrado.`}
+                    {tipo === "MO" && activeSubtipos.size < 2
+                    ? `Nenhuma função do tipo ${[...activeSubtipos].join("/") || "selecionado"}.`
+                    : `Nenhum ${tipo === "MO" ? "função" : "equipamento"} cadastrado.`}
                   </td>
                 </tr>
               )}
-              {recursosFiltrados.map((recurso, idx) => (
-                <tr key={recurso.nome}
+              {(() => {
+                const hasGroups = tipo === "MO" &&
+                  recursosFiltrados.some(r => r.subtipo_mo === "MOD") &&
+                  recursosFiltrados.some(r => r.subtipo_mo === "MOI");
+                return recursosFiltrados.map((recurso, idx) => {
+                  const prevSub = idx > 0 ? recursosFiltrados[idx - 1].subtipo_mo : "__start__";
+                  const isGroupStart = hasGroups && recurso.subtipo_mo && recurso.subtipo_mo !== prevSub;
+                  return (
+                    <React.Fragment key={recurso.nome}>
+                      {isGroupStart && (
+                        <tr>
+                          <td
+                            colSpan={999}
+                            className={`px-3 py-1 ${idx > 0 ? "border-t-2 border-border" : ""} ${
+                              recurso.subtipo_mo === "MOD"
+                                ? "bg-blue-50/40 dark:bg-blue-950/20"
+                                : "bg-orange-50/40 dark:bg-orange-950/20"
+                            }`}
+                          >
+                            <span className={`text-[10px] font-bold ${
+                              recurso.subtipo_mo === "MOD"
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-orange-600 dark:text-orange-400"
+                            }`}>{recurso.subtipo_mo}</span>
+                          </td>
+                        </tr>
+                      )}
+                <tr
                   className={`border-b border-border hover:bg-muted/30 transition-colors ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
                   {/* Nome + badge subtipo (sem botão — botão só no header) */}
                   <td
@@ -574,7 +608,10 @@ export default function HistogramaTabela({ tipo }) {
                     />
                   </td>
                 </tr>
-              ))}
+                    </React.Fragment>
+                  );
+                });
+              })()}
             </tbody>
 
             {recursosFiltrados.length > 0 && (
@@ -604,7 +641,7 @@ export default function HistogramaTabela({ tipo }) {
                     const mk = mesKey(m);
                     const linhas = histogramas.filter((h) =>
                       h.mes_referencia?.startsWith(mk) &&
-                      (tipo !== "MO" || !filterSubtipo || h.subtipo_mo === filterSubtipo)
+                      (tipo !== "MO" || activeSubtipos.size === 0 || !h.subtipo_mo || activeSubtipos.has(h.subtipo_mo))
                     );
                     const tPrev = linhas.reduce((s, h) => s + (h.quantidade_prevista_mensal ?? 0), 0);
                     const tReal = linhas.reduce((s, h) => s + (h.quantidade_realizada_mensal ?? 0), 0);
