@@ -482,6 +482,8 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
   const [showLancModal, setShowLancModal] = useState(false);
   const [editingLanc, setEditingLanc]     = useState(null);
   const [filtros, setFiltros]   = useState({});
+  const [filtroUnidade, setFiltroUnidade]       = useState("");
+  const [filtroDisciplina, setFiltroDisciplina] = useState("");
   const [filterKey, setFilterKey] = useState(0);
   const [busca, setBusca]       = useState("");
   const FILTROS_KEY = "takeoff-filtros";
@@ -766,20 +768,23 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
           <div className="bg-card rounded-xl border border-border shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground text-sm">Contrato · Take-Off · Realizado — por Unidade de Medida</h3>
+              {filtroUnidade && <button className="text-xs text-blue-500 hover:underline" onClick={() => setFiltroUnidade("")}>Limpar filtro</button>}
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={chartByUnidade}
                 margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+                style={{ cursor: "pointer" }}
+                onClick={(d) => d?.activeLabel && setFiltroUnidade(prev => prev === d.activeLabel ? "" : d.activeLabel)}
               >
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Contrato"  fill="#374151" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Take-Off"  fill="#93c5fd" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Realizado" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Contrato"  fill={filtroUnidade ? "#37415166" : "#374151"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Take-Off"  fill={filtroUnidade ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Realizado" fill={filtroUnidade ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -787,20 +792,23 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
           <div className="bg-card rounded-xl border border-border shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground text-sm">Contrato · Take-Off · Realizado — por Disciplina</h3>
+              {filtroDisciplina && <button className="text-xs text-blue-500 hover:underline" onClick={() => setFiltroDisciplina("")}>Limpar filtro</button>}
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart
                 data={chartByDisciplina}
                 margin={{ top: 4, right: 8, left: 0, bottom: 4 }}
+                style={{ cursor: "pointer" }}
+                onClick={(d) => d?.activeLabel && setFiltroDisciplina(prev => prev === d.activeLabel ? "" : d.activeLabel)}
               >
                 <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeOpacity={0.6} strokeDasharray="4 4" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={45} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Contrato"  fill="#374151" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Take-Off"  fill="#93c5fd" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Realizado" fill="#16a34a" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Contrato"  fill={filtroDisciplina ? "#37415166" : "#374151"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Take-Off"  fill={filtroDisciplina ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Realizado" fill={filtroDisciplina ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
