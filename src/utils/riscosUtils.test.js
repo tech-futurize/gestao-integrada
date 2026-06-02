@@ -71,6 +71,6 @@ describe("constantes de domínio", () => {
     expect(PROBABILIDADE_OPTIONS).toHaveLength(5);
     expect(IMPACTO_OPTIONS).toHaveLength(5);
     expect(STATUS_RISCO).toContain("Ativo");
-    expect(STATUS_RISCO).toContain("Monitoramento");
+    expect(STATUS_RISCO).toContain("Mitigado");
   });
 });

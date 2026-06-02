@@ -17,19 +17,7 @@
 - **Auditoria de Organização** *(2026-05-27)* — Limpeza geral do repositório: 4 SQLs aplicados removidos da raiz, componentes órfãos dropados (rotinas/relacionamentos/ruídos), `Agents Mastra/` renomeado para `agents-mastra/` (sem espaço), `docs/skills/` removido, `.gitignore` corrigido (`.env.example` agora versionado), links quebrados de CONTRIBUTING.md corrigidos, `docs/temp/` removida, artefatos brainstorm ignorados.
 - **Login Page Redesign** *(2026-05-27)* — `Login.jsx` reescrito com split-screen (hero slideshow de obras industriais + painel de formulário); slideshow automático de 6 imagens com transição suave; branding FuturizeNow (logo mark + nome); cards de módulos do sistema; CSS animations em `index.css`; responsivo (hero oculto em `< 980px`).
 - **Backlog 2026-Q2 — Onda 2** *(2026-05-29)* — 15 módulos entregues e auditados (≥ 9/10): M0 Layout, M2 Engenharia, M3–M12 Suprimentos/Planejamento/Adm. Contratual/RDO/Registros/Mapa Impacto, **M13 Riscos & Mudanças** (impactos JSONB, PlanoAção, DashboardExecutivo), **M13-C Design Standardization** (StatusBadge/KPICard/SectionTitle criados; 30 divergências eliminadas), **M14 Permissões** (matriz módulo×ação, 7 perfis, `usePermissions`), **M15 IAs** (remark-gfm, prompts refinados). M1 Dashboard adiado por decisão do PO. Ciclo fechado com `git commit bc48e9d` *(2026-06-02)*.
-
----
-
-## Próximo Milestone — Reestruturação Faturamento × Medição de Subcontrato *(spec 2026-06-02)*
-
-> **Spec:** [docs/superpowers/specs/2026-06-02-faturamento-projeto-reestruturacao-design.md](docs/superpowers/specs/2026-06-02-faturamento-projeto-reestruturacao-design.md) · **ADR:** [docs/adrs/ADR-0001](docs/adrs/ADR-0001-medicao-subcontrato-vs-faturamento-projeto.md) · **Status:** aguardando aprovação do PO
-
-Separar os dois conceitos de medição hoje misturados em `Adm. Contratual`:
-
-- **Faturamento** (novo item em **Planejamento**, `/planejamento/faturamento`) — medição do projeto pela construtora; alimenta o **Avanço Financeiro real** por derivação (single source).
-- **Medições** — vira aba de medição de **subcontrato dentro do Contrato**; item standalone `/admin-contratual/medicoes` **removido** (drop L007).
-
-Trazer do SGP **apenas**: PQP/EAP hierárquica (JSONB), importação de PQP, lançamento + cálculos via componente reutilizável `PqpEditor`. **Fora:** evidências/RDO, central de aprovações, IA, retenção. Mudanças de rota previstas (após implementação): `+ /planejamento/faturamento`, `− /admin-contratual/medicoes`.
+- **Reestruturação Faturamento × Medição de Subcontrato** *(2026-06-02)* — Migration M16 (`faturamentos` + `modalidade`/`origem`/`itens` em `contratos`); componente reutilizável `PqpEditor` (PQP/EAP hierárquica JSONB, modos definição/medição, importação Excel/CSV) com `pqpUtils` testado (vitest). Novo módulo **Faturamento** em Planejamento (`/planejamento/faturamento`) alimentando o **Avanço Financeiro real por derivação** (linha read-only, single source). Detalhe do Contrato reestruturado em **4 abas** (Visão Geral/PQP/Medições/Aditivos), KPIs gerais somem no detalhe, exportação do contrato em 4 abas (XLSX/CSV). Módulo Medições standalone removido (drop L007). Spec/ADR-0001/plano em `docs/superpowers/`. **Fora de escopo:** evidências/RDO, central de aprovações, IA, retenção.
 
 ---
 
@@ -45,8 +33,8 @@ Trazer do SGP **apenas**: PQP/EAP hierárquica (JSONB), importação de PQP, lan
 | Planejamento | Take-Off | `/planejamento/take-off` |
 | Planejamento | Histogramas | `/planejamento/histograma` |
 | Planejamento | Avanços | `/planejamento/avancos` |
+| Planejamento | Faturamento | `/planejamento/faturamento` |
 | Adm. Contratual | Contratos | `/admin-contratual/contratos` |
-| Adm. Contratual | Medições | `/admin-contratual/medicoes` |
 | Adm. Contratual | RDOs | `/admin-contratual/rdos` |
 | Adm. Contratual | Registros | `/admin-contratual/registros` |
 | Adm. Contratual | Pleitos | `/admin-contratual/pleitos` |
