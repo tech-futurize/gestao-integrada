@@ -115,6 +115,8 @@ export default function GestaoRiscos() {
   const [tab, setTab] = useState("riscos");
   const [deleteId, setDeleteId] = useState(null);
   const [viewItem, setViewItem] = useState(null);
+  const [hoveredRisco, setHoveredRisco] = useState(null);
+  const hoverTimeoutRef = useRef(null);
   const FILTROS_KEY = "riscos-filtros";
 
   const { data: riscos = [], isPending: isLoading, isError } = useQuery({
@@ -175,12 +177,12 @@ export default function GestaoRiscos() {
 
   const { sortedData: riscosSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "codigo" })
 
-  // Matriz 5×5 — conta riscos por célula (chave por peso numérico derivado do texto)
-  const matrixData = useMemo(() => {
+  const matrixCells = useMemo(() => {
     const grid = {};
     riscos.forEach(r => {
       const key = `${pesoProbabilidade(r.probabilidade)}-${pesoImpacto(r.impacto)}`;
-      grid[key] = (grid[key] || 0) + 1;
+      if (!grid[key]) grid[key] = [];
+      grid[key].push(r);
     });
     return grid;
   }, [riscos]);
