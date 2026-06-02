@@ -62,23 +62,25 @@ const EXPORT_COLUMNS = [
   { key: "faturamento_projetado",         label: "Projetado (R$)",       type: "number" },
 ];
 
-/** Formatador compacto para células (ex: R$ 1,2M, R$ 500k) */
+/** Formatador compacto para células (ex: R$ 1,23M, R$ 500,00 mil) — 2 casas decimais */
 const formatCellBRL = (v) => {
-  if (v === 0) return "0";
+  if (v === 0) return "R$ 0,00";
   return new Intl.NumberFormat("pt-BR", {
     notation: "compact",
     style: "currency",
     currency: "BRL",
-    maximumFractionDigits: 1,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(v);
 };
 
-/** Formatador completo para cards (ex: R$ 1.234.567) */
+/** Formatador completo para cards (ex: R$ 1.234.567,89) */
 const formatCardBRL = (v) => {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(v);
 };
 
@@ -361,7 +363,7 @@ export default function AvancoFinanceiroPanel() {
         formatValue={formatCellBRL}
         isBlocked={(d) => !isCurrentOrPastMonth(d)}
         onSave={handleSave}
-        inputConfig={{ step: 1000, min: 0 }}
+        cellWidth="w-28"
       />
 
       {/* Import/Export */}

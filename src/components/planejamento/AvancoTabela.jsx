@@ -10,29 +10,31 @@ import { ptBR } from "date-fns/locale";
  * @param {string}      campo        – nome do campo a editar
  * @param {boolean}     blocked      – período futuro (só aplicável à linha Real)
  * @param {function}    onSave       – (campo, valor) => void
- * @param {function}    [formatValue]– (number) => string para exibição
- * @param {object}      [inputConfig]– { step, min, max } para o <input>
+ * @param {function}    [formatValue]– (number) => string para exibição (com vírgula como decimal)
+ * @param {string}      [cellWidth]  – classe Tailwind de largura da célula (ex: "w-14", "w-28")
  */
-function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, inputConfig }) {
+function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, cellWidth = "w-14" }) {
   const [editing, setEditing] = React.useState(false);
   const [inputVal, setInputVal] = React.useState("");
   const cancelRef = React.useRef(false);
 
-  const { step = 0.1, min = 0, max } = inputConfig ?? {};
-  const fmt = formatValue ?? ((v) => Number(v).toFixed(1));
+  const fmt = formatValue ?? ((v) => Number(v).toFixed(2).replace(".", ","));
 
   const handleSave = () => {
-    if (!cancelRef.current) onSave(campo, Number(inputVal));
+    if (!cancelRef.current) {
+      // Aceita vírgula ou ponto como separador decimal (padrão pt-BR)
+      const numVal = Number(inputVal.replace(",", "."));
+      onSave(campo, isNaN(numVal) ? 0 : numVal);
+    }
     cancelRef.current = false;
   };
 
+  // Campo de texto (sem setas de incremento) — padrão pt-BR com vírgula decimal
   const inputEl = (
     <input
       autoFocus
-      type="number"
-      step={step}
-      min={min}
-      {...(max != null ? { max } : {})}
+      type="text"
+      inputMode="decimal"
       value={inputVal}
       onChange={(e) => setInputVal(e.target.value)}
       onBlur={() => {
@@ -42,17 +44,15 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, i
       onKeyDown={(e) => {
         if (e.key === "Enter") { cancelRef.current = false; e.target.blur(); }
         if (e.key === "Escape") { cancelRef.current = true; setEditing(false); }
-        if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
       }}
-      onWheel={(e) => e.target.blur()}
-      className="w-full text-center border rounded text-xs p-0"
+      className="w-full text-center border rounded text-xs p-0 bg-background text-foreground"
     />
   );
 
   if (blocked) {
     return (
       <td
-        className="px-2 py-1 text-center bg-muted text-muted-foreground text-xs w-14 cursor-not-allowed"
+        className={`px-2 py-1 text-center bg-muted text-muted-foreground text-xs ${cellWidth} cursor-not-allowed`}
         title="Período futuro — edição de Real bloqueada"
       >
         —
@@ -62,11 +62,11 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, i
 
   if (!registro) {
     return editing ? (
-      <td className="px-1 py-1 text-center w-14">{inputEl}</td>
+      <td className={`px-1 py-1 text-center ${cellWidth}`}>{inputEl}</td>
     ) : (
       <td
-        className="px-2 py-1 text-center cursor-pointer hover:bg-muted/40 text-muted-foreground text-xs w-14"
-        onClick={() => { setInputVal("0"); setEditing(true); }}
+        className={`px-2 py-1 text-center cursor-pointer hover:bg-muted/40 text-muted-foreground text-xs ${cellWidth}`}
+        onClick={() => { setInputVal("0,00"); setEditing(true); }}
       >
         {fmt(0)}
       </td>
@@ -77,8 +77,14 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, i
 
   return (
     <td
-      className="px-2 py-1 text-center cursor-pointer hover:bg-muted/40 w-14"
-      onClick={() => { if (!editing) { setInputVal(String(valor)); setEditing(true); } }}
+      className={`px-2 py-1 text-center cursor-pointer hover:bg-muted/40 ${cellWidth}`}
+      onClick={() => {
+        if (!editing) {
+          // Inicializa o campo com vírgula (padrão pt-BR)
+          setInputVal(Number(valor).toFixed(2).replace(".", ","));
+          setEditing(true);
+        }
+      }}
     >
       {editing ? inputEl : <span className="text-xs">{fmt(valor)}</span>}
     </td>
@@ -102,7 +108,7 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, i
  * @param {function}   formatValue   – (number) => string para células e acum no header da linha
  * @param {function}   isBlocked     – (Date) => boolean (aplicado somente à linha Real)
  * @param {function}   onSave        – (periodKey, campo, valor) => void
- * @param {object}     inputConfig   – { step, min, max } passado para CelulaEditavelAvanco
+ * @param {string}     [cellWidth]   – classe Tailwind de largura das células de dados (default "w-14")
  */
 export default function AvancoTabela({
   periods,
@@ -114,7 +120,7 @@ export default function AvancoTabela({
   formatValue,
   isBlocked,
   onSave,
-  inputConfig,
+  cellWidth = "w-14",
 }) {
   // Agrupamento por mês para o header de 2 níveis (usado quando groupByMonth=true)
   const monthGroups = useMemo(() => {
@@ -228,7 +234,7 @@ export default function AvancoTabela({
                         blocked={isRealRow && isBlocked ? isBlocked(p) : false}
                         onSave={(c, v) => onSave(pk, c, v)}
                         formatValue={formatValue}
-                        inputConfig={inputConfig}
+                        cellWidth={cellWidth}
                       />
                     );
                   })}

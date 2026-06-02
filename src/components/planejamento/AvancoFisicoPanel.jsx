@@ -59,7 +59,7 @@ const EXPORT_COLUMNS = [
   { key: "avanco_projetado",        label: "Projetado (%)", type: "number" },
 ];
 
-const formatPct = (v) => `${Number(v).toFixed(1)}%`;
+const formatPct = (v) => `${Number(v).toFixed(2).replace(".", ",")}%`;
 
 // Definição das linhas da tabela (Previsto / Real / Projetado) — recebe acumValues dinâmicos
 function buildRows(cards) {
@@ -312,10 +312,9 @@ export default function AvancoFisicoPanel() {
         columnLabel={(d) => format(d, "dd/MM")}
         groupByMonth={true}
         rows={tableRows}
-        formatValue={(v) => Number(v).toFixed(1)}
+        formatValue={(v) => Number(v).toFixed(2).replace(".", ",")}
         isBlocked={(d) => !isCurrentOrPastWeek(d)}
         onSave={handleSave}
-        inputConfig={{ step: 0.1, min: 0, max: 100 }}
       />
 
       {/* Import/Export */}
