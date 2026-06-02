@@ -45,7 +45,10 @@ function ScoreBadge({ score }) {
   const cfg = SCORE_COLORS[level];
   const label = level === "high" ? "Alto" : level === "medium" ? "Médio" : "Baixo";
   return (
-    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.bg}`}>
+    <span
+      className="text-xs font-bold px-2 py-0.5 rounded-full border"
+      style={{ color: cfg.color, borderColor: `${cfg.color}55` }}
+    >
       {label} ({score || 0})
     </span>
   );
@@ -472,11 +475,10 @@ export default function GestaoRiscos() {
                     <td className="px-4 py-3 font-bold text-xs text-foreground whitespace-nowrap">{r.codigo || "—"}</td>
                     <td className="px-4 py-3 max-w-xs">
                       <div className="font-medium text-foreground text-sm line-clamp-2">{r.descricao}</div>
-                      {r.plano_resposta && <div className="text-xs text-muted-foreground truncate mt-0.5">{r.plano_resposta}</div>}
                     </td>
                     <td className="px-4 py-3">
                       {r.categoria && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: CAT_COLORS[r.categoria] || "#6b7280" }}>
+                        <span className="text-xs font-medium" style={{ color: CAT_COLORS[r.categoria] || "#6b7280" }}>
                           {r.categoria}
                         </span>
                       )}
@@ -491,7 +493,7 @@ export default function GestaoRiscos() {
                           };
                           const c = dimColors[dim] || { bg: "bg-muted", text: "text-muted-foreground", border: "border-border" };
                           return (
-                            <span key={dim} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${c.bg} ${c.text} ${c.border}`}>
+                            <span key={dim} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${c.text} ${c.border}`}>
                               {dim}
                             </span>
                           );
