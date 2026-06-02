@@ -30,13 +30,13 @@ const PROB_PESO    = { "Muito Baixa": 1, "Baixa": 2, "Média": 3, "Alta": 4, "Mu
 const IMPACTO_PESO = { "Muito Baixo": 1, "Baixo": 2, "Médio": 3, "Alto": 4, "Muito Alto": 5 };
 
 // Status de risco — alinhado aos valores reais persistidos no banco (texto livre, sem CHECK).
-export const STATUS_RISCO = ["Ativo", "Monitoramento", "Mitigado", "Encerrado"];
+export const STATUS_RISCO = ["Ativo", "Mitigado", "Encerrado", "Cancelado"];
 
 export const STATUS_RISCO_COLORS = {
-  "Ativo":         "text-amber-600",
-  "Monitoramento": "text-blue-600",
-  "Mitigado":      "text-indigo-600",
-  "Encerrado":     "text-green-600",
+  "Ativo":     "text-amber-600",
+  "Mitigado":  "text-indigo-600",
+  "Encerrado": "text-green-600",
+  "Cancelado": "text-muted-foreground",
 };
 
 /**

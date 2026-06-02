@@ -2,7 +2,6 @@ import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ShieldAlert, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
-import DetailDialog from "@/components/ui/DetailDialog";
 import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
@@ -114,7 +113,6 @@ export default function GestaoRiscos() {
   const [busca, setBusca] = useState("");
   const [tab, setTab] = useState("riscos");
   const [deleteId, setDeleteId] = useState(null);
-  const [viewItem, setViewItem] = useState(null);
   const [hoveredRisco, setHoveredRisco] = useState(null);
   const hoverTimeoutRef = useRef(null);
   const FILTROS_KEY = "riscos-filtros";
@@ -486,11 +484,19 @@ export default function GestaoRiscos() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1 flex-wrap">
-                        {(Array.isArray(r.impactos) ? r.impactos : []).map(dim => (
-                          <span key={dim} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-medium">
-                            {dim}
-                          </span>
-                        ))}
+                        {(Array.isArray(r.impactos) ? r.impactos : []).map(dim => {
+                          const dimColors = {
+                            "Escopo": { bg: "bg-blue-500/10", text: "text-blue-600", border: "border-blue-500/20" },
+                            "Prazo":  { bg: "bg-orange-500/10", text: "text-orange-600", border: "border-orange-500/20" },
+                            "Valor":  { bg: "bg-emerald-500/10", text: "text-emerald-600", border: "border-emerald-500/20" },
+                          };
+                          const c = dimColors[dim] || { bg: "bg-muted", text: "text-muted-foreground", border: "border-border" };
+                          return (
+                            <span key={dim} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${c.bg} ${c.text} ${c.border}`}>
+                              {dim}
+                            </span>
+                          );
+                        })}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center font-bold text-foreground">{r.probabilidade}</td>
@@ -502,7 +508,6 @@ export default function GestaoRiscos() {
                     </td>
                     <td className="px-4 py-3">
                       <RowActions
-                        onView={() => setViewItem(r)}
                         onEdit={() => handleEdit(r)}
                         onDelete={() => deleteMut.mutate(r.id)}
                         deleteDescription="O risco será excluído permanentemente."
@@ -586,10 +591,6 @@ export default function GestaoRiscos() {
               <Label>Responsável</Label>
               <Input value={form.responsavel} onChange={e => setForm(f => ({ ...f, responsavel: e.target.value }))} />
             </div>
-            <div className="space-y-1 col-span-2">
-              <Label>Plano de Resposta</Label>
-              <Textarea value={form.plano_resposta} onChange={e => setForm(f => ({ ...f, plano_resposta: e.target.value }))} rows={2} placeholder="Ações de mitigação..." />
-            </div>
           </div>
 
           <SectionDivider label="Impactos no Projeto" />
@@ -670,24 +671,6 @@ export default function GestaoRiscos() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {viewItem && (
-        <DetailDialog
-          open={!!viewItem}
-          onOpenChange={(o) => !o && setViewItem(null)}
-          title={`Risco ${viewItem.codigo || ""}`}
-          sections={[
-            { label: "Código", value: viewItem.codigo },
-            { label: "Categoria", value: viewItem.categoria },
-            { label: "Status", value: viewItem.status },
-            { label: "Probabilidade", value: viewItem.probabilidade },
-            { label: "Impacto", value: viewItem.impacto },
-            { label: "Responsável", value: viewItem.responsavel },
-            { label: "Descrição", value: viewItem.descricao, full: true },
-            { label: "Plano de resposta", value: viewItem.plano_resposta, full: true },
-          ]}
-        />
-      )}
     </div>
   );
 }
