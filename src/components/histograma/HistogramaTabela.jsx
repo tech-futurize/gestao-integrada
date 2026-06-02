@@ -50,30 +50,36 @@ function mesLabel(date) {
 }
 
 // ── CelulaEditavel — defined OUTSIDE main component to prevent remount ────────
-function CelulaEditavel({ registro, campo, onSave }) {
+function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
   const [editing, setEditing] = useState(false);
   const [inputVal, setInputVal] = useState("");
   const cancelRef = React.useRef(false);
 
+  const borderClass = isFirstInMonth ? "border-l-2 border-border" : "border-l border-border/40";
+
   if (!registro) {
     return (
-      <td className="px-2 py-1 text-center text-muted-foreground text-xs w-12">—</td>
+      <td className={`px-2 py-1 text-center text-muted-foreground text-xs w-12 ${borderClass}`}>—</td>
     );
   }
 
-  const disabled =
-    campo === "quantidade_realizada_mensal" &&
-    isFutureMonth(registro.mes_referencia);
+  const hasReal = (registro.quantidade_realizada_mensal ?? 0) > 0;
 
-  if (disabled)
+  const disabled =
+    (campo === "quantidade_realizada_mensal" && isFutureMonth(registro.mes_referencia)) ||
+    (campo === "qtd_projetado" && hasReal);
+
+  if (disabled) {
+    const valorBloqueado = registro[campo] ?? 0;
     return (
       <td
-        className="px-2 py-1 text-center bg-muted text-muted-foreground text-xs w-12 cursor-not-allowed"
-        title="Mês futuro — edição de Real bloqueada"
+        className={`px-2 py-1 text-center ${borderClass} bg-slate-100/80 dark:bg-slate-700/25 text-muted-foreground/60 text-xs w-12 cursor-not-allowed`}
+        title={campo === "qtd_projetado" ? "Mês com real preenchido — projetado congelado" : "Mês futuro — edição de Real bloqueada"}
       >
-        —
+        {valorBloqueado > 0 ? valorBloqueado : "—"}
       </td>
     );
+  }
 
   const valor = registro[campo] ?? 0;
 
@@ -88,7 +94,7 @@ function CelulaEditavel({ registro, campo, onSave }) {
 
   return (
     <td
-      className="px-2 py-1 text-center cursor-pointer hover:bg-accent w-12"
+      className={`px-2 py-1 text-center cursor-pointer hover:bg-accent w-12 ${borderClass}`}
       onClick={() => {
         if (!editing) {
           setInputVal(String(valor));
@@ -105,17 +111,19 @@ function CelulaEditavel({ registro, campo, onSave }) {
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           onBlur={handleBlur}
+          onWheel={(e) => e.currentTarget.blur()}
           onKeyDown={(e) => {
+            if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
             if (e.key === "Enter") {
               cancelRef.current = false;
-              e.target.blur(); // triggers onBlur naturally, which calls handleBlur once
+              e.target.blur();
             }
             if (e.key === "Escape") {
               cancelRef.current = true;
               setEditing(false);
             }
           }}
-          className="w-10 text-center border rounded text-xs p-0"
+          className="w-10 text-center border rounded text-xs p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       ) : (
         <span className="text-xs">{valor}</span>
@@ -220,9 +228,10 @@ export default function HistogramaTabela({ tipo }) {
         projAcum += r.qtd_projetado ?? 0;
         byMes[r.mes_referencia?.slice(0, 7) ?? ""] = r;
       });
+      const projFinal = realAcum + projAcum;
       const pctReal = prevAcum > 0 ? Math.round((realAcum / prevAcum) * 100) : 0;
-      const pctProj = prevAcum > 0 ? Math.round((projAcum / prevAcum) * 100) : 0;
-      return { nome, byMes, totalPrev: prevAcum, totalReal: realAcum, totalProj: projAcum, pctReal, pctProj };
+      const pctProj = prevAcum > 0 ? Math.round((projFinal / prevAcum) * 100) : 0;
+      return { nome, byMes, totalPrev: prevAcum, totalReal: realAcum, totalProj: projFinal, pctReal, pctProj };
     });
   }, [histogramas]);
 
@@ -374,10 +383,10 @@ export default function HistogramaTabela({ tipo }) {
                 {projectMonths.flatMap((m) => {
                   const mk = mesKey(m);
                   const cols = [];
-                  if (showPrev) cols.push(<th key={`${mk}-prev`} className="px-2 py-1 text-center text-[10px] font-medium text-blue-600 border-l border-border whitespace-nowrap">Prev</th>);
-                  if (showReal) cols.push(<th key={`${mk}-real`} className="px-2 py-1 text-center text-[10px] font-medium text-green-600 border-l border-border whitespace-nowrap">Real</th>);
-                  if (showProj) cols.push(<th key={`${mk}-proj`} className="px-2 py-1 text-center text-[10px] font-medium text-yellow-600 border-l border-border whitespace-nowrap">Proj</th>);
-                  if (cols.length === 0) cols.push(<th key={`${mk}-empty`} className="px-2 py-1 border-l border-border" />);
+                  if (showPrev) cols.push(<th key={`${mk}-prev`} className="px-2 py-1 text-center text-[10px] font-medium text-blue-600 border-l-2 border-border whitespace-nowrap">Prev</th>);
+                  if (showReal) cols.push(<th key={`${mk}-real`} className={`px-2 py-1 text-center text-[10px] font-medium text-green-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap`}>Real</th>);
+                  if (showProj) cols.push(<th key={`${mk}-proj`} className={`px-2 py-1 text-center text-[10px] font-medium text-yellow-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap`}>Proj</th>);
+                  if (cols.length === 0) cols.push(<th key={`${mk}-empty`} className="px-2 py-1 border-l-2 border-border" />);
                   return cols;
                 })}
               </tr>
@@ -401,35 +410,17 @@ export default function HistogramaTabela({ tipo }) {
                     const mk = mesKey(m);
                     const reg = recurso.byMes[mk];
                     const cells = [];
-                    // NOTE: CelulaEditavel returns <td> directly — no wrapper needed
                     if (showPrev) cells.push(
-                      <CelulaEditavel
-                        key={`${mk}-prev`}
-                        registro={reg}
-                        campo="quantidade_prevista_mensal"
-                        onSave={updateCelula}
-                      />
+                      <CelulaEditavel key={`${mk}-prev`} registro={reg} campo="quantidade_prevista_mensal" onSave={updateCelula} isFirstInMonth={true} />
                     );
                     if (showReal) cells.push(
-                      <CelulaEditavel
-                        key={`${mk}-real`}
-                        registro={reg}
-                        campo="quantidade_realizada_mensal"
-                        onSave={updateCelula}
-                      />
+                      <CelulaEditavel key={`${mk}-real`} registro={reg} campo="quantidade_realizada_mensal" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
                     );
                     if (showProj) cells.push(
-                      <CelulaEditavel
-                        key={`${mk}-proj`}
-                        registro={reg}
-                        campo="qtd_projetado"
-                        onSave={updateCelula}
-                      />
+                      <CelulaEditavel key={`${mk}-proj`} registro={reg} campo="qtd_projetado" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
                     );
                     if (cells.length === 0) {
-                      cells.push(
-                        <td key={`${mk}-empty`} className="px-2 py-2 border-l border-border w-12" />
-                      );
+                      cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
                     }
                     return cells;
                   })}
@@ -463,13 +454,11 @@ export default function HistogramaTabela({ tipo }) {
                     const tReal = linhas.reduce((s, h) => s + (h.quantidade_realizada_mensal ?? 0), 0);
                     const tProj = linhas.reduce((s, h) => s + (h.qtd_projetado ?? 0), 0);
                     const cells = [];
-                    if (showPrev) cells.push(<td key={`${mk}-prev`} className="px-2 py-2 text-center text-blue-700 dark:text-blue-300 border-l border-border">{tPrev || "·"}</td>);
-                    if (showReal) cells.push(<td key={`${mk}-real`} className="px-2 py-2 text-center text-green-700 dark:text-green-300 border-l border-border">{tReal || "·"}</td>);
-                    if (showProj) cells.push(<td key={`${mk}-proj`} className="px-2 py-2 text-center text-yellow-700 dark:text-yellow-300 border-l border-border">{tProj || "·"}</td>);
+                    if (showPrev) cells.push(<td key={`${mk}-prev`} className="px-2 py-2 text-center text-blue-700 dark:text-blue-300 border-l-2 border-border">{tPrev || "·"}</td>);
+                    if (showReal) cells.push(<td key={`${mk}-real`} className={`px-2 py-2 text-center text-green-700 dark:text-green-300 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border`}>{tReal || "·"}</td>);
+                    if (showProj) cells.push(<td key={`${mk}-proj`} className={`px-2 py-2 text-center text-yellow-700 dark:text-yellow-300 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border`}>{tProj || "·"}</td>);
                     if (cells.length === 0) {
-                      cells.push(
-                        <td key={`${mk}-empty`} className="px-2 py-2 border-l border-border w-12" />
-                      );
+                      cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
                     }
                     return cells;
                   })}
