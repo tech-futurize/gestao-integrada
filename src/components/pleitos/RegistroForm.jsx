@@ -107,8 +107,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
 
       // Deletar arquivos removidos do storage
       if (removedPaths.length > 0) {
-        const { error: deleteError } = await supabase.storage.from("registros-anexos").remove(removedPaths);
-        if (deleteError) console.warn("Storage delete parcial:", deleteError.message);
+        await supabase.storage.from("registros-anexos").remove(removedPaths);
       }
 
       onSubmit({

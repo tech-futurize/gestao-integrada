@@ -234,7 +234,7 @@ export default function Registros() {
                 storageKey={FILTROS_KEY}
                 filters={[
                   { key: "tipo", label: "Tipo", options: ["Ata de Reunião", "E-mail", "Notificação"] },
-                  { key: "status", label: "Status", options: ["Registrado", "Em Análise", "Resolvido"] },
+                  { key: "status", label: "Status", options: ["Registrado", "Em Análise", "Resolvido", "Fechado"] },
                   { key: "responsabilidade", label: "Responsabilidade", options: ["Contratada", "Contratante"] },
                 ]}
                 onChange={setFiltros}

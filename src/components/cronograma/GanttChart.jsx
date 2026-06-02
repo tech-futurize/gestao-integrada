@@ -4,6 +4,7 @@ import { ChevronRight, ChevronDown, AlertTriangle, Calendar } from "lucide-react
 import RowActions from "@/components/ui/RowActions";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDate } from "@/lib/dateUtils";
 
 // ── Date utilities ────────────────────────────────────────────────────────────
 
@@ -15,12 +16,6 @@ function parseDate(str) {
 
 function diffDays(a, b) {
   return Math.round((b - a) / (1000 * 60 * 60 * 24));
-}
-
-function fmtDate(str) {
-  if (!str) return "—";
-  const d = new Date(str + "T00:00:00");
-  return isNaN(d) ? "—" : d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 
 function calcStatus(t) {
@@ -133,7 +128,7 @@ function ExtraCell({ col, t, bg }) {
   if (col.key.startsWith("data_")) {
     return (
       <div className={`${baseClass} justify-center`} style={baseStyle}>
-        <span className="text-xs text-muted-foreground">{fmtDate(t[col.key])}</span>
+        <span className="text-xs text-muted-foreground">{formatDate(t[col.key]) || "—"}</span>
       </div>
     );
   }

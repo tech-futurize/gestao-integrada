@@ -111,7 +111,7 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
                   </div>
                   <div className="ml-1 mr-4 min-w-32 flex-shrink-0">
                     <div className="text-xs font-semibold" style={{ color: cfg.text }}>{ev.etapa}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{ev.data}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{formatDate(ev.data)}</div>
                     {ev.usuario && <div className="text-xs text-muted-foreground">{ev.usuario}</div>}
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
               {doc.historico_revisoes.map((r, i) => (
                 <tr key={i} className="border-b border-border/50">
                   <td className="px-3 py-2 font-bold text-xs" style={{ color: "#c35e1e" }}>{r.revisao}</td>
-                  <td className="px-3 py-2 text-xs text-muted-foreground">{r.data}</td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">{formatDate(r.data)}</td>
                   <td className="px-3 py-2 text-xs text-foreground">{r.etapa}</td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">{r.observacao || "—"}</td>
                 </tr>
