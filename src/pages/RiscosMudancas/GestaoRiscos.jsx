@@ -313,7 +313,7 @@ export default function GestaoRiscos() {
       </div>
 
       {/* Seção principal: Matriz 72% + Distribuição 28% */}
-      <div className="flex gap-4 items-start">
+      <div className="flex gap-4 items-stretch">
 
         {/* Coluna esquerda — Matriz 5×5 interativa */}
         <Card className="border shadow-sm" style={{ flex: "0 0 72%" }}>
@@ -385,20 +385,6 @@ export default function GestaoRiscos() {
               </div>
             </div>
 
-            {/* Legenda na base */}
-            <div className="flex gap-4 mt-4 pt-3 border-t border-border flex-wrap">
-              {[
-                { label: "Crítico (≥12)",  bg: "bg-red-500/80"    },
-                { label: "Alto (6–11)",    bg: "bg-amber-500/80"  },
-                { label: "Moderado (4–5)", bg: "bg-yellow-400/80" },
-                { label: "Baixo (1–3)",   bg: "bg-green-500/80"  },
-              ].map(l => (
-                <div key={l.label} className="flex items-center gap-1.5">
-                  <div className={`w-3 h-3 rounded ${l.bg}`} />
-                  <span className="text-xs text-muted-foreground">{l.label}</span>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
 
@@ -428,6 +414,20 @@ export default function GestaoRiscos() {
               </div>
             );
           })}
+          {/* Legenda de severidade */}
+          <div className="flex flex-col gap-1.5 mt-auto pt-3 border-t border-border">
+            {[
+              { label: "Crítico (≥12)",  bg: "bg-red-500/80"    },
+              { label: "Alto (6–11)",    bg: "bg-amber-500/80"  },
+              { label: "Moderado (4–5)", bg: "bg-yellow-400/80" },
+              { label: "Baixo (1–3)",   bg: "bg-green-500/80"  },
+            ].map(l => (
+              <div key={l.label} className="flex items-center gap-1.5">
+                <div className={`w-3 h-3 rounded shrink-0 ${l.bg}`} />
+                <span className="text-xs text-muted-foreground">{l.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
