@@ -280,7 +280,7 @@ export default function HistogramaTabela({ tipo }) {
       return {
         mes: mesLabel(m), prev, real, proj,
         prevAcum: prevAcum > 0 ? prevAcum : null,
-        realAcum: real > 0 ? realAcum : null,
+        realAcum: i <= lastRealIdx ? realAcum : null,
         projAcum,
       };
     });
