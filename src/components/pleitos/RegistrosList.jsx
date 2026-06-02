@@ -4,8 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDateTime } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
@@ -43,7 +42,7 @@ export default function RegistrosList({ incidentes, casos, isLoading, onEdit, on
     );
   }
 
-  const fmtDate = (d) => d ? format(new Date(d), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "—";
+  const fmtDate = (d) => formatDateTime(d) || "—";
 
   return (
     <>

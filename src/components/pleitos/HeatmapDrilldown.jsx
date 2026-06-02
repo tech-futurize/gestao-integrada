@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDateTime } from "@/lib/dateUtils";
 import { X, ArrowLeft, FileText, Calendar, User, AlertTriangle, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -40,7 +39,7 @@ function RegistroDetalhe({ registro, onBack }) {
             <div>
               <p className="text-xs text-muted-foreground">Data / Hora</p>
               <p className="text-sm font-medium text-foreground">
-                {format(new Date(registro.data_hora), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                {formatDateTime(registro.data_hora)}
               </p>
             </div>
           </div>

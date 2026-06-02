@@ -123,7 +123,7 @@ export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
                           <div className="flex-1">
                             <p className="font-medium text-foreground">{incidente.descricao}</p>
                             <p className="text-sm text-muted-foreground mt-1">
-                              {incidente.data_hora && format(new Date(incidente.data_hora), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              {formatDateTime(incidente.data_hora)}
                             </p>
                           </div>
                           <div className="flex gap-2">

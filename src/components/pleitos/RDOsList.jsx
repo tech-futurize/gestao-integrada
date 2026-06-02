@@ -5,8 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Plus, Cloud, Sun } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDate } from "@/lib/dateUtils";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
 
@@ -50,7 +49,7 @@ export default function RDOsList({ rdos, casos, isLoading, onEdit, onDelete, onC
       : <span className="inline-flex items-center gap-1 text-blue-600 text-xs font-medium"><Cloud className="w-3 h-3" />Imprat.</span>;
   };
 
-  const fmtDate = (d) => d ? format(new Date(d), "dd/MM/yyyy", { locale: ptBR }) : "—";
+  const fmtDate = (d) => formatDate(d) || "—";
 
   return (
     <>
