@@ -459,21 +459,20 @@ export default function GestaoRiscos() {
                 <th onClick={() => handleSort("impacto")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">I<SortIcon col="impacto" /></th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Score</th>
                 <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Responsável<SortIcon col="responsavel" /></th>
-                <th onClick={() => handleSort("status")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Status<SortIcon col="status" /></th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
-              {isLoading && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
-              {isError && <tr><td colSpan={10} className="py-10 text-center text-status-critical text-sm">Erro ao carregar riscos. Verifique sua conexão e tente novamente.</td></tr>}
-              {!isLoading && !isError && riscosSorted.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
+              {isLoading && <tr><td colSpan={9} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
+              {isError && <tr><td colSpan={9} className="py-10 text-center text-status-critical text-sm">Erro ao carregar riscos. Verifique sua conexão e tente novamente.</td></tr>}
+              {!isLoading && !isError && riscosSorted.length === 0 && <tr><td colSpan={9} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
               {riscosSorted.map((r, i) => {
                 const score = r.score || calcScoreRisco(r.probabilidade, r.impacto);
                 const statusColor = STATUS_RISCO_COLORS[r.status] || "";
                 return (
                   <tr key={r.id} className={`border-b border-border hover:bg-muted/40 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
                     <td className="px-4 py-3 font-bold text-xs text-foreground whitespace-nowrap">{r.codigo || "—"}</td>
-                    <td className="px-4 py-3 max-w-xs">
+                    <td className="px-4 py-3 w-full max-w-sm">
                       <div className="font-medium text-foreground text-sm line-clamp-2">{r.descricao}</div>
                     </td>
                     <td className="px-4 py-3">
@@ -504,9 +503,6 @@ export default function GestaoRiscos() {
                     <td className="px-4 py-3 text-center font-bold text-foreground">{r.impacto}</td>
                     <td className="px-4 py-3 text-center"><ScoreBadge score={score} /></td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{r.responsavel || "—"}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-semibold ${statusColor}`}>{r.status}</span>
-                    </td>
                     <td className="px-4 py-3">
                       <RowActions
                         onEdit={() => handleEdit(r)}
