@@ -310,6 +310,22 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L017 — Novas tabelas criadas sem `created_at`/`updated_at` quebram o shim genérico de dados
+
+- **Data:** 2026-06-02
+- **Agente:** Tester
+- **Milestone:** QA Geral módulo a módulo (Onda 3)
+- **Categoria:** Banco / Arquitetura
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** Módulo Cadastros (Pacotes e Disciplinas) em produção falhava em `list` e `update` silenciosamente.
+- **Erro observado:** `entities.PacoteSuprimento.list()` tentava `.order('created_at', { ascending: false })` numa tabela sem a coluna → erro Supabase. `entities.PacoteSuprimento.update()` e `entities.Disciplina.update()` injetavam `updated_at: new Date().toISOString()` em colunas inexistentes → erro no `UPDATE`. A tabela `pacotes_suprimento` não tinha `created_at` nem `updated_at`; `disciplinas` não tinha `updated_at`.
+- **Causa raiz:** O shim `createEntityClient` em `supabaseEntities.js` assume que toda tabela tem `created_at` (para ordenação no `list`) e `updated_at` (injetado no `update`). Quando uma nova tabela é criada no banco sem essas colunas, todos os métodos de leitura e escrita falham.
+- **Correção aplicada:** Migration `add_timestamps_to_pacotes_suprimento_and_disciplinas` adicionou `created_at TIMESTAMPTZ DEFAULT now()` e `updated_at TIMESTAMPTZ DEFAULT now()` às tabelas faltantes.
+- **Como evitar em projetos futuros:** Toda tabela gerenciada pelo shim de `supabaseEntities.js` **deve** ter as colunas `id`, `created_at` e `updated_at`. Ao criar uma nova tabela/entidade no banco, incluir essas três colunas como pré-requisito antes de adicionar ao `TABLE_MAP`. Verificar com `list_tables --verbose` via MCP após cada migration.
+- **Referências:** `src/api/supabaseEntities.js`, tabelas `pacotes_suprimento` e `disciplinas`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:

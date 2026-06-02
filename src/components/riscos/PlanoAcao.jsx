@@ -8,11 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, CheckCircle2, Clock, X, Save } from "lucide-react";
+import { Plus, CheckCircle2, Clock, X, Save } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/lib/dateUtils";
 

@@ -43,7 +43,7 @@ export default function GerenciarProjeto() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewItem, setViewItem] = useState(null);
 
-  const { data: projetos = [], isLoading, isError } = useQuery({
+  const { data: projetos = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["projetos"],
     queryFn: () => entities.Projeto.list(),
   });

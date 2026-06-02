@@ -93,7 +93,7 @@ export default function Documentos() {
   const FILTROS_KEY = "documentos-filtros";
   const [page, setPage] = useState(1);
 
-  const { data: docs = [], isLoading, isError } = useQuery({
+  const { data: docs = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["documentos_engenharia", selectedProjectId],
     queryFn: () => entities.DocumentoEngenharia.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,

@@ -51,8 +51,8 @@ const GerenciarProjeto     = lazy(() => import('./pages/Configuracoes/GerenciarP
 const AgenteConfig         = lazy(() => import('./pages/Configuracoes/AgenteConfig'));
 const Usuarios             = lazy(() => import('./pages/Configuracoes/Usuarios'));
 const Cadastros            = lazy(() => import('./pages/Configuracoes/Cadastros'));
-const UnidadesMedida       = lazy(() => import('./pages/Configuracoes/UnidadesMedida'));
-const Disciplinas          = lazy(() => import('./pages/Configuracoes/Disciplinas'));
+// UnidadesMedida e Disciplinas são acessadas como abas dentro de Cadastros (via prop asTab)
+// As rotas legadas (/configuracoes/unidades-medida, /configuracoes/disciplinas) redirecionam para /configuracoes/cadastros
 
 // Acesso restrito
 const SemPermissao         = lazy(() => import('./pages/SemPermissao'));

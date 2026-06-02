@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
-import { Button } from "@/components/ui/button";
 import { FileText, Search, Sun, CloudRain, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
 import { useSortTable } from "@/hooks/useSortTable";

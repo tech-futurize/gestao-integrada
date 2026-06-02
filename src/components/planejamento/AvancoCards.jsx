@@ -1,4 +1,3 @@
-import React from "react";
 
 /**
  * 4 KPI cards para os painéis de Avanço (Físico e Financeiro).

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { BookOpen } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import UnidadesMedida from "./UnidadesMedida";
 import Disciplinas from "./Disciplinas";

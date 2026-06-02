@@ -258,7 +258,7 @@ export default function MapaRegistroImpacto({ incidentes }) {
   );
 }
 
-function RadarAngleTick({ x, y, payload, cx, cy }) {
+function RadarAngleTick({ x, y, payload, cx, cy: _cy }) {
   const words = payload.value.split(/\s+/);
   const lineHeight = 11;
   const totalHeight = words.length * lineHeight;

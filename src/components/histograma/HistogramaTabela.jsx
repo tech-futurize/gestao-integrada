@@ -542,7 +542,7 @@ export default function HistogramaTabela({ tipo }) {
                         const stickyBg = isMOD ? "bg-blue-50 dark:bg-card" : "bg-orange-50 dark:bg-card";
                         const rowBg = isMOD ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-orange-50/40 dark:bg-orange-950/20";
                         const labelCls = isMOD ? "text-blue-700 dark:text-blue-300" : "text-orange-700 dark:text-orange-300";
-                        const colCount = [showPrev, showReal, showProj].filter(Boolean).length || 1;
+                        const _colCount = [showPrev, showReal, showProj].filter(Boolean).length || 1;
                         return (
                           <tr className={`${rowBg} ${idx > 0 ? "border-t-2 border-border" : ""} text-xs font-bold`}>
                             <td style={{ position: "sticky", left: 0, zIndex: 10, width: 180, minWidth: 180 }}

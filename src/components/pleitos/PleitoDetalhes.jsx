@@ -9,7 +9,7 @@ import { formatDate, formatDateTime } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
-  const { data: incidentes = [] } = useQuery({
+  const { data: incidentes = [], isPending: incidentesPending, isError: incidentesError } = useQuery({
     queryKey: ["registros-por-pleito", pleito.id],
     queryFn: () => entities.Registro.filter({ pleito_id: pleito.id }),
     enabled: !!pleito.id,
@@ -113,7 +113,11 @@ export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {incidentes.length === 0 ? (
+                {incidentesPending ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">Carregando registros...</div>
+                ) : incidentesError ? (
+                  <div className="text-center py-8 text-destructive text-sm">Erro ao carregar registros associados.</div>
+                ) : incidentes.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">Nenhum registro associado a este pleito</div>
                 ) : (
                   <div className="space-y-3">

@@ -127,7 +127,7 @@ export default function Contratos() {
   });
 
   const deleteAditivo = useMutation({
-    mutationFn: ({ id, contratoId }) => entities.Aditivo.delete(id),
+    mutationFn: ({ id, contratoId: _contratoId }) => entities.Aditivo.delete(id),
     onSuccess: (_, variables) => queryClient.invalidateQueries({ queryKey: ["aditivos", variables.contratoId] }),
     onError: onErr,
   });
