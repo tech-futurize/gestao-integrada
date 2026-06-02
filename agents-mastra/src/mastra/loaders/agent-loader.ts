@@ -30,8 +30,17 @@ type AgentRow = {
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error('SUPABASE_URL e SUPABASE_SERVICE_KEY não definidos no .env');
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url) {
+    throw new Error('[agent-loader] SUPABASE_URL não definida. Configure em agents-mastra/.env.local');
+  }
+  if (!key) {
+    throw new Error(
+      '[agent-loader] SUPABASE_SERVICE_KEY obrigatória — a anon key não tem permissão ' +
+      'para ler agentes (RLS exige role authenticated com perfil Admin). ' +
+      'Configure SUPABASE_SERVICE_KEY em agents-mastra/.env.local'
+    );
+  }
   return createClient(url, key);
 }
 
