@@ -325,7 +325,7 @@ export default function Layout({ children }) {
                         ? "bg-sidebar-primary text-sidebar-primary-foreground font-bold"
                         : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     }`}
-                    style={isActive ? { boxShadow: "0 0 8px rgba(38,255,255,0.3)" } : undefined}
+                    style={isActive && isDark ? { boxShadow: "0 0 8px rgba(38,255,255,0.3)" } : undefined}
                   >
                     {child.title}
                   </Link>
