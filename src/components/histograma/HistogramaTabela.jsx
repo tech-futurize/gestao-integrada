@@ -172,8 +172,10 @@ export default function HistogramaTabela({ tipo }) {
   const [showReal, setShowReal] = useState(true);
   const [showProj, setShowProj] = useState(true);
   const [showTotals, setShowTotals] = useState(false);
+  const [filterSubtipo, setFilterSubtipo] = useState(null);
   const [showNovoDialog, setShowNovoDialog] = useState(false);
   const [novoNome, setNovoNome] = useState("");
+  const [novoSubtipo, setNovoSubtipo] = useState("MOD");
   const [similarWarning, setSimilarWarning] = useState(null);
 
   // Data queries
@@ -229,6 +231,7 @@ export default function HistogramaTabela({ tipo }) {
           quantidade_prevista_mensal: 0,
           quantidade_realizada_mensal: 0,
           qtd_projetado: 0,
+          ...(tipo === "MO" ? { subtipo_mo: novoSubtipo } : {}),
         });
       }
     },
@@ -236,6 +239,8 @@ export default function HistogramaTabela({ tipo }) {
       queryClient.invalidateQueries({ queryKey: ["histogramas", selectedProjectId, tipo] });
       setShowNovoDialog(false);
       setNovoNome("");
+      setNovoSubtipo("MOD");
+      setSimilarWarning(null);
     },
     onError: onErr,
   });
@@ -258,29 +263,32 @@ export default function HistogramaTabela({ tipo }) {
       const projFinal = realAcum + projAcum;
       const pctReal = prevAcum > 0 ? Math.round((realAcum / prevAcum) * 100) : 0;
       const pctProj = prevAcum > 0 ? Math.round((projFinal / prevAcum) * 100) : 0;
-      return { nome, byMes, totalPrev: prevAcum, totalReal: realAcum, totalProj: projFinal, pctReal, pctProj };
+      const subtipo_mo = registros[0]?.subtipo_mo ?? null;
+      return { nome, subtipo_mo, byMes, totalPrev: prevAcum, totalReal: realAcum, totalProj: projFinal, pctReal, pctProj };
     });
   }, [histogramas]);
 
   // Chart data: monthly totals + running accumulation
   const chartData = useMemo(() => {
-    // Identify last month with real data and total real accumulated
+    const filtH = (tipo === "MO" && filterSubtipo)
+      ? histogramas.filter(h => h.subtipo_mo === filterSubtipo)
+      : histogramas;
+
     const monthsWithReal = new Set(
-      histogramas
-        .filter(h => (h.quantidade_realizada_mensal ?? 0) > 0)
+      filtH.filter(h => (h.quantidade_realizada_mensal ?? 0) > 0)
         .map(h => h.mes_referencia?.slice(0, 7))
     );
     const lastRealIdx = projectMonths.reduce(
       (last, m, i) => (monthsWithReal.has(mesKey(m)) ? i : last), -1
     );
-    const totalReal = histogramas.reduce(
+    const totalReal = filtH.reduce(
       (s, h) => s + (h.quantidade_realizada_mensal ?? 0), 0
     );
 
     let prevAcum = 0, realAcum = 0, projAcumDelta = 0;
     return projectMonths.map((m, i) => {
       const mk = mesKey(m);
-      const linhas = histogramas.filter((h) => h.mes_referencia?.startsWith(mk));
+      const linhas = filtH.filter((h) => h.mes_referencia?.startsWith(mk));
       const prev = linhas.reduce((s, h) => s + (h.quantidade_prevista_mensal ?? 0), 0);
       const real = linhas.reduce((s, h) => s + (h.quantidade_realizada_mensal ?? 0), 0);
       const proj = linhas.reduce((s, h) => s + (h.qtd_projetado ?? 0), 0);
@@ -300,7 +308,25 @@ export default function HistogramaTabela({ tipo }) {
         projAcum,
       };
     });
-  }, [histogramas, projectMonths]);
+  }, [histogramas, projectMonths, filterSubtipo, tipo]);
+
+  // Derived: filtered resources + dynamic sticky total columns
+  const recursosFiltrados = (tipo === "MO" && filterSubtipo)
+    ? recursos.filter(r => r.subtipo_mo === filterSubtipo)
+    : recursos;
+
+  const stickyTotalCols = (() => {
+    if (!showTotals) return [];
+    const cols = [];
+    const W = 52;
+    let off = 180;
+    if (showPrev) { cols.push({ key: "totalPrev", label: "T.Prev", left: off, cls: "text-blue-700 dark:text-blue-300" }); off += W; }
+    if (showReal) { cols.push({ key: "totalReal", label: "T.Real", left: off, cls: "text-green-700 dark:text-green-300" }); off += W; }
+    if (showProj) { cols.push({ key: "totalProj", label: "T.Proj", left: off, cls: "text-amber-600 dark:text-amber-400" }); off += W; }
+    if (showReal) { cols.push({ key: "pctReal",   label: "%Real",  left: off, cls: "text-green-700 dark:text-green-300", pct: true }); off += W; }
+    if (showProj) { cols.push({ key: "pctProj",   label: "%Proj",  left: off, cls: "text-amber-600 dark:text-amber-400", pct: true }); }
+    return cols;
+  })();
 
   if (!selectedProjectId) {
     return (
@@ -364,6 +390,23 @@ export default function HistogramaTabela({ tipo }) {
             {active ? "●" : "○"} {label}
           </button>
         ))}
+        {tipo === "MO" && <>
+          <div className="h-5 w-px bg-border mx-1" />
+          {["MOD", "MOI"].map((sub) => (
+            <button
+              key={sub}
+              onClick={() => setFilterSubtipo(prev => prev === sub ? null : sub)}
+              className={`px-3 py-1 rounded-full border text-xs font-semibold transition-colors
+                ${filterSubtipo === sub
+                  ? sub === "MOD"
+                    ? "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300"
+                    : "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300"
+                  : "bg-muted text-muted-foreground border-border opacity-60"}`}
+            >
+              {filterSubtipo === sub ? "●" : "○"} {sub}
+            </button>
+          ))}
+        </>}
         <Button size="sm" variant="outline" className="ml-auto" onClick={() => setShowNovoDialog(true)}>
           <Plus className="w-3.5 h-3.5 mr-1" />
           Novo {tipo === "MO" ? "Função" : "Equipamento"}
@@ -414,7 +457,7 @@ export default function HistogramaTabela({ tipo }) {
           <table className="text-sm border-collapse w-max min-w-full">
             <thead>
               <tr className="bg-muted border-b border-border">
-                {/* Nome + botão expandir */}
+                {/* Nome + botão expandir (APENAS NO HEADER) */}
                 <th
                   rowSpan={2}
                   style={{ position: "sticky", left: 0, zIndex: 30, width: 180, minWidth: 180 }}
@@ -431,19 +474,14 @@ export default function HistogramaTabela({ tipo }) {
                     </button>
                   </div>
                 </th>
-                {/* Totais sticky (expandido) */}
-                {showTotals && <>
-                  <th rowSpan={2} style={{ position: "sticky", left: 180, zIndex: 30 }}
-                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">T.Prev</th>
-                  <th rowSpan={2} style={{ position: "sticky", left: 232, zIndex: 30 }}
-                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">T.Real</th>
-                  <th rowSpan={2} style={{ position: "sticky", left: 284, zIndex: 30 }}
-                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">T.Proj</th>
-                  <th rowSpan={2} style={{ position: "sticky", left: 336, zIndex: 30 }}
-                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">%Real</th>
-                  <th rowSpan={2} style={{ position: "sticky", left: 388, zIndex: 30 }}
-                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">%Proj</th>
-                </>}
+                {/* Totais sticky dinâmicos (expandido, condicionais ao chip) */}
+                {stickyTotalCols.map(col => (
+                  <th key={col.key} rowSpan={2}
+                      style={{ position: "sticky", left: col.left, zIndex: 30 }}
+                      className="bg-muted px-2 py-3 text-center text-xs font-semibold text-muted-foreground border-l border-border w-[52px] whitespace-nowrap">
+                    {col.label}
+                  </th>
+                ))}
                 {/* Meses */}
                 {projectMonths.map((m) => {
                   const colCount = [showPrev, showReal, showProj].filter(Boolean).length || 1;
@@ -456,133 +494,118 @@ export default function HistogramaTabela({ tipo }) {
                 })}
                 <th rowSpan={2} className="px-2 py-3" />
               </tr>
-              <tr className="bg-muted/50 border-b border-border">
+              <tr className="bg-muted border-b border-border">
                 {projectMonths.flatMap((m) => {
                   const mk = mesKey(m);
                   const cols = [];
-                  if (showPrev) cols.push(<th key={`${mk}-prev`} className="px-2 py-1 text-center text-[10px] font-medium text-blue-600 border-l-2 border-border whitespace-nowrap">Prev</th>);
-                  if (showReal) cols.push(<th key={`${mk}-real`} className={`px-2 py-1 text-center text-[10px] font-medium text-green-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap`}>Real</th>);
-                  if (showProj) cols.push(<th key={`${mk}-proj`} className={`px-2 py-1 text-center text-[10px] font-medium text-amber-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap`}>Proj</th>);
-                  if (cols.length === 0) cols.push(<th key={`${mk}-empty`} className="px-2 py-1 border-l-2 border-border" />);
+                  if (showPrev) cols.push(<th key={`${mk}-prev`} className="px-2 py-1 text-center text-[10px] font-medium text-blue-600 border-l-2 border-border whitespace-nowrap bg-muted">Prev</th>);
+                  if (showReal) cols.push(<th key={`${mk}-real`} className={`px-2 py-1 text-center text-[10px] font-medium text-green-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap bg-muted`}>Real</th>);
+                  if (showProj) cols.push(<th key={`${mk}-proj`} className={`px-2 py-1 text-center text-[10px] font-medium text-amber-600 ${cols.length === 0 ? "border-l-2" : "border-l"} border-border whitespace-nowrap bg-muted`}>Proj</th>);
+                  if (cols.length === 0) cols.push(<th key={`${mk}-empty`} className="px-2 py-1 border-l-2 border-border bg-muted" />);
                   return cols;
                 })}
               </tr>
             </thead>
 
             <tbody>
-              {recursos.length === 0 && (
+              {recursosFiltrados.length === 0 && (
                 <tr>
                   <td colSpan={99} className="py-12 text-center text-muted-foreground text-sm">
-                    Nenhum {tipo === "MO" ? "função" : "equipamento"} cadastrado.
+                    {filterSubtipo
+                      ? `Nenhum ${tipo === "MO" ? "função" : "equipamento"} do tipo ${filterSubtipo}.`
+                      : `Nenhum ${tipo === "MO" ? "função" : "equipamento"} cadastrado.`}
                   </td>
                 </tr>
               )}
-              {recursos.map((recurso, idx) => {
-                const rowBg = idx % 2 === 1 ? "bg-muted/10" : "bg-card";
-                return (
-                  <tr key={recurso.nome}
-                    className={`border-b border-border hover:bg-muted/30 transition-colors ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
-                    {/* Nome + botão */}
-                    <td
-                      style={{ position: "sticky", left: 0, zIndex: 10, width: 180, minWidth: 180 }}
-                      className={`${rowBg} px-3 py-2 font-medium text-foreground`}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="truncate whitespace-nowrap">{recurso.nome}</span>
-                        <button
-                          onClick={() => setShowTotals(v => !v)}
-                          title={showTotals ? "Recolher totais" : "Expandir totais"}
-                          className="flex-shrink-0 w-4 h-4 rounded border border-border flex items-center justify-center hover:bg-muted/60 text-muted-foreground"
-                        >
-                          {showTotals ? <Minus className="w-2.5 h-2.5" /> : <Plus className="w-2.5 h-2.5" />}
-                        </button>
-                      </div>
+              {recursosFiltrados.map((recurso, idx) => (
+                <tr key={recurso.nome}
+                  className={`border-b border-border hover:bg-muted/30 transition-colors ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
+                  {/* Nome + badge subtipo (sem botão — botão só no header) */}
+                  <td
+                    style={{ position: "sticky", left: 0, zIndex: 10, width: 180, minWidth: 180 }}
+                    className="bg-card px-3 py-2 font-medium text-foreground"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="truncate text-xs">{recurso.nome}</span>
+                      {tipo === "MO" && recurso.subtipo_mo && (
+                        <span className={`flex-shrink-0 text-[9px] font-bold px-1 py-0.5 rounded leading-tight ${
+                          recurso.subtipo_mo === "MOD"
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+                            : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"
+                        }`}>
+                          {recurso.subtipo_mo}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  {/* Totais sticky dinâmicos */}
+                  {stickyTotalCols.map(col => (
+                    <td key={col.key}
+                        style={{ position: "sticky", left: col.left, zIndex: 10 }}
+                        className={`bg-card px-2 py-2 text-center text-xs font-semibold ${col.cls} border-l border-border w-[52px]`}>
+                      {col.pct ? `${recurso[col.key]}%` : recurso[col.key]}
                     </td>
-                    {/* Totais sticky (expandido) */}
-                    {showTotals && <>
-                      <td style={{ position: "sticky", left: 180, zIndex: 10 }}
-                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-blue-700 dark:text-blue-300 border-l border-border w-[52px]`}>
-                        {recurso.totalPrev}
-                      </td>
-                      <td style={{ position: "sticky", left: 232, zIndex: 10 }}
-                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-green-700 dark:text-green-300 border-l border-border w-[52px]`}>
-                        {recurso.totalReal}
-                      </td>
-                      <td style={{ position: "sticky", left: 284, zIndex: 10 }}
-                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-amber-600 dark:text-amber-400 border-l border-border w-[52px]`}>
-                        {recurso.totalProj}
-                      </td>
-                      <td style={{ position: "sticky", left: 336, zIndex: 10 }}
-                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-green-700 dark:text-green-300 border-l border-border w-[52px]`}>
-                        {recurso.pctReal}%
-                      </td>
-                      <td style={{ position: "sticky", left: 388, zIndex: 10 }}
-                          className={`${rowBg} px-2 py-2 text-center text-xs font-semibold text-amber-600 dark:text-amber-400 border-l border-border w-[52px]`}>
-                        {recurso.pctProj}%
-                      </td>
-                    </>}
-                    {/* Meses */}
-                    {projectMonths.flatMap((m) => {
-                      const mk = mesKey(m);
-                      const reg = recurso.byMes[mk];
-                      const cells = [];
-                      if (showPrev) cells.push(
-                        <CelulaEditavel key={`${mk}-prev`} registro={reg} campo="quantidade_prevista_mensal" onSave={updateCelula} isFirstInMonth={true} />
-                      );
-                      if (showReal) cells.push(
-                        <CelulaEditavel key={`${mk}-real`} registro={reg} campo="quantidade_realizada_mensal" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
-                      );
-                      if (showProj) cells.push(
-                        <CelulaEditavel key={`${mk}-proj`} registro={reg} campo="qtd_projetado" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
-                      );
-                      if (cells.length === 0) {
-                        cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
-                      }
-                      return cells;
-                    })}
-                    {/* Excluir */}
-                    <td className="px-2 py-2">
-                      <RowActions
-                        onDelete={() => deleteRecurso(recurso.nome)}
-                        deleteTitle={`Excluir "${recurso.nome}"?`}
-                        deleteDescription="Esta ação removerá todos os registros mensais e não pode ser desfeita."
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
+                  ))}
+                  {/* Meses */}
+                  {projectMonths.flatMap((m) => {
+                    const mk = mesKey(m);
+                    const reg = recurso.byMes[mk];
+                    const cells = [];
+                    if (showPrev) cells.push(
+                      <CelulaEditavel key={`${mk}-prev`} registro={reg} campo="quantidade_prevista_mensal" onSave={updateCelula} isFirstInMonth={true} />
+                    );
+                    if (showReal) cells.push(
+                      <CelulaEditavel key={`${mk}-real`} registro={reg} campo="quantidade_realizada_mensal" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
+                    );
+                    if (showProj) cells.push(
+                      <CelulaEditavel key={`${mk}-proj`} registro={reg} campo="qtd_projetado" onSave={updateCelula} isFirstInMonth={cells.length === 0} />
+                    );
+                    if (cells.length === 0) {
+                      cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
+                    }
+                    return cells;
+                  })}
+                  {/* Excluir */}
+                  <td className="px-2 py-2">
+                    <RowActions
+                      onDelete={() => deleteRecurso(recurso.nome)}
+                      deleteTitle={`Excluir "${recurso.nome}"?`}
+                      deleteDescription="Esta ação removerá todos os registros mensais e não pode ser desfeita."
+                    />
+                  </td>
+                </tr>
+              ))}
             </tbody>
 
-            {recursos.length > 0 && (
+            {recursosFiltrados.length > 0 && (
               <tfoot>
                 <tr className="border-t-2 border-border bg-muted font-bold text-xs">
                   <td style={{ position: "sticky", left: 0, zIndex: 20, width: 180, minWidth: 180 }}
                       className="bg-muted px-3 py-2 text-muted-foreground uppercase tracking-wide">TOTAL</td>
-                  {/* Grand totais sticky (expandido) */}
+                  {/* Grand totais dinâmicos (expandido) */}
                   {(() => {
                     if (!showTotals) return null;
-                    const gPrev = recursos.reduce((s, r) => s + r.totalPrev, 0);
-                    const gReal = recursos.reduce((s, r) => s + r.totalReal, 0);
-                    const gProj = recursos.reduce((s, r) => s + r.totalProj, 0);
+                    const gPrev = recursosFiltrados.reduce((s, r) => s + r.totalPrev, 0);
+                    const gReal = recursosFiltrados.reduce((s, r) => s + r.totalReal, 0);
+                    const gProj = recursosFiltrados.reduce((s, r) => s + r.totalProj, 0);
                     const gPctReal = gPrev > 0 ? Math.round((gReal / gPrev) * 100) : 0;
                     const gPctProj = gPrev > 0 ? Math.round((gProj / gPrev) * 100) : 0;
-                    return (<>
-                      <td style={{ position: "sticky", left: 180, zIndex: 20 }}
-                          className="bg-muted px-2 py-2 text-center text-blue-700 dark:text-blue-300 border-l border-border w-[52px]">{gPrev}</td>
-                      <td style={{ position: "sticky", left: 232, zIndex: 20 }}
-                          className="bg-muted px-2 py-2 text-center text-green-700 dark:text-green-300 border-l border-border w-[52px]">{gReal}</td>
-                      <td style={{ position: "sticky", left: 284, zIndex: 20 }}
-                          className="bg-muted px-2 py-2 text-center text-amber-600 dark:text-amber-400 border-l border-border w-[52px]">{gProj}</td>
-                      <td style={{ position: "sticky", left: 336, zIndex: 20 }}
-                          className="bg-muted px-2 py-2 text-center text-green-700 dark:text-green-300 border-l border-border w-[52px]">{gPctReal}%</td>
-                      <td style={{ position: "sticky", left: 388, zIndex: 20 }}
-                          className="bg-muted px-2 py-2 text-center text-amber-600 dark:text-amber-400 border-l border-border w-[52px]">{gPctProj}%</td>
-                    </>);
+                    const gt = { totalPrev: gPrev, totalReal: gReal, totalProj: gProj, pctReal: gPctReal, pctProj: gPctProj };
+                    return stickyTotalCols.map(col => (
+                      <td key={col.key}
+                          style={{ position: "sticky", left: col.left, zIndex: 20 }}
+                          className={`bg-muted px-2 py-2 text-center ${col.cls} border-l border-border w-[52px]`}>
+                        {col.pct ? `${gt[col.key]}%` : gt[col.key]}
+                      </td>
+                    ));
                   })()}
-                  {/* Totais por mês */}
+                  {/* Totais mensais (filtrados por subtipo) */}
                   {projectMonths.flatMap((m) => {
                     const mk = mesKey(m);
-                    const linhas = histogramas.filter((h) => h.mes_referencia?.startsWith(mk));
+                    const linhas = histogramas.filter((h) =>
+                      h.mes_referencia?.startsWith(mk) &&
+                      (tipo !== "MO" || !filterSubtipo || h.subtipo_mo === filterSubtipo)
+                    );
                     const tPrev = linhas.reduce((s, h) => s + (h.quantidade_prevista_mensal ?? 0), 0);
                     const tReal = linhas.reduce((s, h) => s + (h.quantidade_realizada_mensal ?? 0), 0);
                     const tProj = linhas.reduce((s, h) => s + (h.qtd_projetado ?? 0), 0);
@@ -590,9 +613,7 @@ export default function HistogramaTabela({ tipo }) {
                     if (showPrev) cells.push(<td key={`${mk}-prev`} className="px-2 py-2 text-center text-blue-700 dark:text-blue-300 border-l-2 border-border">{tPrev || "·"}</td>);
                     if (showReal) cells.push(<td key={`${mk}-real`} className={`px-2 py-2 text-center text-green-700 dark:text-green-300 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border`}>{tReal || "·"}</td>);
                     if (showProj) cells.push(<td key={`${mk}-proj`} className={`px-2 py-2 text-center text-amber-600 dark:text-amber-400 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border`}>{tProj || "·"}</td>);
-                    if (cells.length === 0) {
-                      cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
-                    }
+                    if (cells.length === 0) cells.push(<td key={`${mk}-empty`} className="px-2 py-2 border-l-2 border-border w-12" />);
                     return cells;
                   })}
                   <td />
@@ -604,7 +625,7 @@ export default function HistogramaTabela({ tipo }) {
       </div>
 
       {/* Dialog novo recurso */}
-      <Dialog open={showNovoDialog} onOpenChange={(open) => { setShowNovoDialog(open); if (!open) { setNovoNome(""); setSimilarWarning(null); } }}>
+      <Dialog open={showNovoDialog} onOpenChange={(open) => { setShowNovoDialog(open); if (!open) { setNovoNome(""); setNovoSubtipo("MOD"); setSimilarWarning(null); } }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Novo {tipo === "MO" ? "Função (MO)" : "Equipamento"}</DialogTitle>
@@ -631,6 +652,28 @@ export default function HistogramaTabela({ tipo }) {
             return (
               <>
                 <div className="py-2 space-y-3">
+                  {tipo === "MO" && (
+                    <div className="space-y-1">
+                      <Label>Tipo *</Label>
+                      <div className="flex gap-2">
+                        {["MOD", "MOI"].map((sub) => (
+                          <button
+                            key={sub}
+                            type="button"
+                            onClick={() => setNovoSubtipo(sub)}
+                            className={`flex-1 py-1.5 rounded-lg border text-xs font-semibold transition-colors
+                              ${novoSubtipo === sub
+                                ? sub === "MOD"
+                                  ? "bg-blue-100 border-blue-400 text-blue-700 dark:bg-blue-900/30 dark:border-blue-600 dark:text-blue-300"
+                                  : "bg-orange-100 border-orange-400 text-orange-700 dark:bg-orange-900/30 dark:border-orange-600 dark:text-orange-300"
+                                : "border-border text-muted-foreground hover:bg-muted/50"}`}
+                          >
+                            {sub}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-1">
                     <Label>{tipo === "MO" ? "Nome da função" : "Tipo de equipamento"} *</Label>
                     <Input
@@ -656,7 +699,7 @@ export default function HistogramaTabela({ tipo }) {
                   </p>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => { setShowNovoDialog(false); setNovoNome(""); setSimilarWarning(null); }}>
+                  <Button variant="outline" onClick={() => { setShowNovoDialog(false); setNovoNome(""); setNovoSubtipo("MOD"); setSimilarWarning(null); }}>
                     Cancelar
                   </Button>
                   <Button
