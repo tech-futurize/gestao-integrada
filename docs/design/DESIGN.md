@@ -593,6 +593,166 @@ import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
 
 ---
 
+## 13. Padrão de Datas (`dateUtils`)
+
+**Localização:** [src/lib/dateUtils.js](../../src/lib/dateUtils.js)
+
+Centraliza toda conversão e formatação de datas do sistema. **Nunca use `format()` do `date-fns` diretamente nos componentes** — importe as funções abaixo.
+
+### Funções disponíveis
+
+| Função | Entrada | Saída | Uso |
+|--------|---------|-------|-----|
+| `formatDate(val)` | ISO string ou `Date` | `"dd/MM/yy"` (ex: `02/06/25`) | Exibição de datas em tabelas e labels |
+| `formatDateTime(val)` | ISO string ou `Date` | `"dd/MM/yy HH:mm"` (ex: `02/06/25 14:30`) | Exibição de timestamps em logs e registros |
+| `toDateInput(val)` | ISO string ou `Date` | `"YYYY-MM-DD"` | Preencher `<input type="date">` |
+| `toDatetimeLocal(val)` | ISO string UTC | `"YYYY-MM-DDTHH:MM"` (hora local) | Preencher `<input type="datetime-local">` |
+| `toUtcIso(val)` | String local `"YYYY-MM-DDTHH:MM"` | ISO string UTC | Persistir no banco a partir de `datetime-local` |
+
+### Regras obrigatórias
+
+- **Exibição em tabelas:** sempre `formatDate` — nunca exibir ISO bruto (`2025-06-02T00:00:00.000Z`).
+- **Exibição com hora:** sempre `formatDateTime` — nunca `new Date(val).toLocaleString()`.
+- **Campos de formulário:**
+  - `<input type="date">` → usar `toDateInput(val)` no `value` e salvar a string `YYYY-MM-DD` diretamente.
+  - `<input type="datetime-local">` → usar `toDatetimeLocal(val)` no `value` e `toUtcIso(val)` ao persistir.
+- **Datas de data-only do banco** (`DATE`): o valor chega como `"YYYY-MM-DD"` — ao construir `new Date()`, sempre concatenar `T00:00:00` para evitar off-by-one de fuso. Isso já é feito internamente por `formatDate`.
+- **Nunca** usar `format(new Date(val), ...)` inline nos componentes — falha silenciosamente com datas sem hora.
+
+### Exemplo de uso
+
+```jsx
+import { formatDate, formatDateTime, toDateInput, toUtcIso } from "@/lib/dateUtils";
+
+// Tabela
+<TableCell>{formatDate(item.data_emissao)}</TableCell>
+<TableCell>{formatDateTime(item.created_at)}</TableCell>
+
+// Formulário (campo de data)
+<input
+  type="date"
+  value={toDateInput(form.data_inicio)}
+  onChange={e => setForm(f => ({ ...f, data_inicio: e.target.value }))}
+/>
+
+// Formulário (campo de data+hora)
+<input
+  type="datetime-local"
+  value={toDatetimeLocal(form.data_hora)}
+  onChange={e => setForm(f => ({ ...f, data_hora: toUtcIso(e.target.value) }))}
+/>
+```
+
+---
+
+## 14. Tabelas Ordenáveis (`useSortTable` + `SortableTableHead`)
+
+Todo módulo com tabela de listagem **deve** suportar ordenação por coluna. O padrão é composto por dois artefatos:
+
+### Hook `useSortTable`
+
+**Localização:** [src/hooks/useSortTable.js](../../src/hooks/useSortTable.js)
+
+Gerencia estado de ordenação e retorna os dados já ordenados via `useMemo`.
+
+```js
+import { useSortTable } from "@/hooks/useSortTable";
+
+const { sortedData, sortKey, sortDir, handleSort } = useSortTable(dados, {
+  defaultKey: "data_emissao", // coluna ativa por padrão (opcional)
+  defaultDir: "desc",         // "asc" | "desc" (padrão: "asc")
+});
+```
+
+| Retorno | Tipo | Descrição |
+|---------|------|-----------|
+| `sortedData` | `Array` | Cópia dos dados ordenada (memoizada) |
+| `sortKey` | `string \| null` | Coluna ativa |
+| `sortDir` | `"asc" \| "desc"` | Direção ativa |
+| `handleSort(key)` | `function` | Alterna direção se mesma coluna; seta `asc` se nova coluna |
+
+**Algoritmo de ordenação (`sortItems`):**
+- `null`/`undefined` sempre vão para o final.
+- Números: ordenação numérica natural.
+- Demais valores: `String().toLowerCase().localeCompare()` — suporte a caracteres acentuados.
+
+### Componente `SortableTableHead`
+
+**Localização:** [src/components/ui/SortableTableHead.jsx](../../src/components/ui/SortableTableHead.jsx)
+
+Substitui `<TableHead>` em colunas ordenáveis. Renderiza o label + ícone indicador de estado.
+
+```jsx
+import { SortableTableHead } from "@/components/ui/SortableTableHead";
+
+<SortableTableHead
+  columnKey="data_emissao"
+  sortKey={sortKey}
+  sortDir={sortDir}
+  onSort={handleSort}
+>
+  Data de Emissão
+</SortableTableHead>
+```
+
+| Prop | Tipo | Descrição |
+|------|------|-----------|
+| `columnKey` | `string` | Chave do campo no objeto de dados |
+| `sortKey` | `string \| null` | Coluna atualmente ativa (do hook) |
+| `sortDir` | `"asc" \| "desc"` | Direção atual (do hook) |
+| `onSort` | `function` | Callback `handleSort` do hook |
+| `children` | `ReactNode` | Label da coluna |
+| `className` | `string` | Classes adicionais (opcional) |
+
+**Comportamento dos ícones (Lucide):**
+
+| Estado | Ícone | Cor |
+|--------|-------|-----|
+| Inativo | `ArrowUpDown` | `text-muted-foreground/40` (aparece no hover) |
+| Ativo asc | `ArrowUp` | `text-primary` |
+| Ativo desc | `ArrowDown` | `text-primary` |
+
+### Receita completa para uma página
+
+```jsx
+import { useSortTable } from "@/hooks/useSortTable";
+import { SortableTableHead } from "@/components/ui/SortableTableHead";
+import { TableHead } from "@/components/ui/table";
+
+// 1. dentro do componente, após o useQuery:
+const { sortedData, sortKey, sortDir, handleSort } = useSortTable(data ?? []);
+
+// 2. no <TableHeader>:
+<TableRow>
+  <SortableTableHead columnKey="codigo" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
+    Código
+  </SortableTableHead>
+  <SortableTableHead columnKey="descricao" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>
+    Descrição
+  </SortableTableHead>
+  <TableHead>Ações</TableHead>  {/* coluna sem ordenação */}
+</TableRow>
+
+// 3. no <TableBody>, iterar sobre sortedData (não data):
+{sortedData.map(item => (
+  <TableRow key={item.id}>…</TableRow>
+))}
+```
+
+> **Regra:** colunas de ações (`RowActions`) e colunas de ícone/avatar nunca são ordenáveis — usar `<TableHead>` simples.
+
+### Módulos com sort aplicado (referência)
+
+| Módulo | Página / Componente |
+|--------|---------------------|
+| Engenharia — Documentos | `src/pages/Engenharia/Documentos.jsx` |
+| Gestão de Riscos | `src/pages/RiscosMudancas/GestaoRiscos.jsx` |
+| Gestão de Mudanças | `src/pages/RiscosMudancas/GestaoMudancas.jsx` |
+| Plano de Ação | `src/components/riscos/PlanoAcao.jsx` |
+| RDOs | `src/components/rdo/RDOModule.jsx` |
+
+---
+
 ## Documentos Relacionados
 
 | Precisa saber... | Leia |
