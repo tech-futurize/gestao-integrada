@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
 import React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { eachMonthOfInterval, format, parseISO, startOfMonth } from "date-fns";
+import { eachMonthOfInterval, format, parseISO, startOfMonth, endOfMonth, isBefore, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, Minus } from "lucide-react";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import RowActions from "@/components/ui/RowActions";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -62,20 +63,17 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
     );
   }
 
-  const hasReal = (registro.quantidade_realizada_mensal ?? 0) > 0;
-
   const disabled =
     (campo === "quantidade_realizada_mensal" && isFutureMonth(registro.mes_referencia)) ||
-    (campo === "qtd_projetado" && hasReal);
+    (campo === "qtd_projetado" && !isFutureMonth(registro.mes_referencia));
 
   if (disabled) {
-    const valorBloqueado = registro[campo] ?? 0;
     return (
       <td
         className={`px-2 py-1 text-center ${borderClass} bg-slate-100/80 dark:bg-slate-700/25 text-muted-foreground/60 text-xs w-12 cursor-not-allowed`}
-        title={campo === "qtd_projetado" ? "Mês com real preenchido — projetado congelado" : "Mês futuro — edição de Real bloqueada"}
+        title={campo === "qtd_projetado" ? "Mês passado/atual — projetado bloqueado" : "Mês futuro — edição de Real bloqueada"}
       >
-        {valorBloqueado > 0 ? valorBloqueado : "—"}
+        —
       </td>
     );
   }
@@ -83,12 +81,13 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
   const valor = registro[campo] ?? 0;
 
   const handleBlur = () => {
-    if (cancelRef.current) {
-      cancelRef.current = false;
-      return;
-    }
+    if (cancelRef.current) { cancelRef.current = false; setEditing(false); return; }
     const numVal = Number(inputVal);
-    onSave(registro, campo, isNaN(numVal) ? 0 : numVal);
+    const parsed = isNaN(numVal) ? 0 : numVal;
+    const original = registro[campo] ?? 0;
+    if (parsed !== original) {
+      onSave(registro, campo, parsed);
+    }
     setEditing(false);
   };
 
@@ -146,6 +145,7 @@ export default function HistogramaTabela({ tipo }) {
   const [activeSubtipos, setActiveSubtipos] = useState(() => new Set(["MOD", "MOI"]));
   const [showNovoDialog, setShowNovoDialog] = useState(false);
   const [novoFuncao, setNovoFuncao] = useState(null);
+  const [periodFilter, setPeriodFilter] = useState(null);
 
   // Data queries
   const { data: histogramas = [], isPending, isError } = useQuery({
@@ -171,6 +171,13 @@ export default function HistogramaTabela({ tipo }) {
     () => getProjectMonths(projeto?.data_inicio, projeto?.data_prevista_termino),
     [projeto]
   );
+
+  const mesesFiltrados = useMemo(() => {
+    if (!periodFilter) return projectMonths;
+    const from = startOfMonth(periodFilter.from);
+    const to   = endOfMonth(periodFilter.to);
+    return projectMonths.filter(m => !isBefore(m, from) && !isAfter(m, to));
+  }, [projectMonths, periodFilter]);
 
   // Mutations
   const updateMut = useMutation({
@@ -252,15 +259,23 @@ export default function HistogramaTabela({ tipo }) {
       filtH.filter(h => (h.quantidade_realizada_mensal ?? 0) > 0)
         .map(h => h.mes_referencia?.slice(0, 7))
     );
-    const lastRealIdx = projectMonths.reduce(
+    const lastRealIdx = mesesFiltrados.reduce(
       (last, m, i) => (monthsWithReal.has(mesKey(m)) ? i : last), -1
     );
     const totalReal = filtH.reduce(
       (s, h) => s + (h.quantidade_realizada_mensal ?? 0), 0
     );
 
+    // lastProjIdx: último mês (>= lastRealIdx) com qtd_projetado > 0
+    const lastProjIdx = mesesFiltrados.reduce((last, m, i) => {
+      if (i < lastRealIdx) return last;
+      const mk = mesKey(m);
+      const hasProj = filtH.some((h) => h.mes_referencia?.startsWith(mk) && (h.qtd_projetado ?? 0) > 0);
+      return hasProj ? i : last;
+    }, -1);
+
     let prevAcum = 0, realAcum = 0, projAcumDelta = 0;
-    return projectMonths.map((m, i) => {
+    return mesesFiltrados.map((m, i) => {
       const mk = mesKey(m);
       const linhas = filtH.filter((h) => h.mes_referencia?.startsWith(mk));
       const prev = linhas.reduce((s, h) => s + (h.quantidade_prevista_mensal ?? 0), 0);
@@ -270,7 +285,7 @@ export default function HistogramaTabela({ tipo }) {
       realAcum += real;
 
       let projAcum = null;
-      if (lastRealIdx >= 0 && i >= lastRealIdx) {
+      if (lastRealIdx >= 0 && lastProjIdx >= 0 && i >= lastRealIdx && i <= lastProjIdx) {
         projAcumDelta += proj;
         projAcum = totalReal + projAcumDelta;
       }
@@ -282,7 +297,7 @@ export default function HistogramaTabela({ tipo }) {
         projAcum,
       };
     });
-  }, [histogramas, projectMonths, activeSubtipos, tipo]);
+  }, [histogramas, mesesFiltrados, activeSubtipos, tipo]);
 
   // Derived: filtered + sorted resources + dynamic sticky total columns
   const recursosFiltrados = (() => {
@@ -389,6 +404,12 @@ export default function HistogramaTabela({ tipo }) {
             </button>
           ))}
         </>}
+        <DateRangePicker
+          label="Período"
+          value={periodFilter}
+          onChange={setPeriodFilter}
+          onClear={() => setPeriodFilter(null)}
+        />
         <Button size="sm" variant="outline" className="ml-auto" onClick={() => setShowNovoDialog(true)}>
           <Plus className="w-3.5 h-3.5 mr-1" />
           Novo {tipo === "MO" ? "Função" : "Equipamento"}
@@ -464,7 +485,7 @@ export default function HistogramaTabela({ tipo }) {
                   </th>
                 ))}
                 {/* Meses */}
-                {projectMonths.map((m) => {
+                {mesesFiltrados.map((m) => {
                   const colCount = [showPrev, showReal, showProj].filter(Boolean).length || 1;
                   return (
                     <th key={mesKey(m)} colSpan={colCount}
@@ -476,7 +497,7 @@ export default function HistogramaTabela({ tipo }) {
                 <th rowSpan={2} className="px-2 py-3" />
               </tr>
               <tr className="bg-muted border-b border-border">
-                {projectMonths.flatMap((m) => {
+                {mesesFiltrados.flatMap((m) => {
                   const mk = mesKey(m);
                   const cols = [];
                   if (showPrev) cols.push(<th key={`${mk}-prev`} className="px-2 py-1 text-center text-[10px] font-medium text-blue-600 border-l-2 border-border whitespace-nowrap bg-muted">Prev</th>);
@@ -533,7 +554,7 @@ export default function HistogramaTabela({ tipo }) {
                                 {col.pct ? `${gt[col.key]}%` : gt[col.key]}
                               </td>
                             ))}
-                            {projectMonths.flatMap((m) => {
+                            {mesesFiltrados.flatMap((m) => {
                               const mk = mesKey(m);
                               const linhas = histogramas.filter(h =>
                                 h.mes_referencia?.startsWith(mk) && h.subtipo_mo === recurso.subtipo_mo
@@ -581,7 +602,7 @@ export default function HistogramaTabela({ tipo }) {
                     </td>
                   ))}
                   {/* Meses */}
-                  {projectMonths.flatMap((m) => {
+                  {mesesFiltrados.flatMap((m) => {
                     const mk = mesKey(m);
                     const reg = recurso.byMes[mk];
                     const cells = [];
@@ -637,7 +658,7 @@ export default function HistogramaTabela({ tipo }) {
                     ));
                   })()}
                   {/* Totais mensais (filtrados por subtipo) */}
-                  {projectMonths.flatMap((m) => {
+                  {mesesFiltrados.flatMap((m) => {
                     const mk = mesKey(m);
                     const linhas = histogramas.filter((h) =>
                       h.mes_referencia?.startsWith(mk) &&
