@@ -14,9 +14,13 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   Area, AreaChart, BarChart, Bar, Legend
 } from "recharts";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import FilterBar from "@/components/ui/FilterBar";
+import { Search } from "lucide-react";
 
 const DISCIPLINAS = ["Civil", "Mecânica", "Tubulação", "Elétrica", "Estrutura Metálica", "Instrumentação", "Pintura", "Outros"];
 const UNIDADES = ["m³", "kg", "m", "un", "m²", "ton", "l", "hr"];
+const UNIDADE_SIGLAS = UNIDADES;
 
 const COMMODITY_COLUMNS = [
   { key: "codigo",       label: "Código",        type: "string", required: true },
@@ -291,9 +295,10 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
   const [editingItem, setEditingItem]     = useState(null);
   const [showLancModal, setShowLancModal] = useState(false);
   const [editingLanc, setEditingLanc]     = useState(null);
-  const [filtroDisciplina, setFiltroDisciplina] = useState("");
-  const [filtroUnidade, setFiltroUnidade]       = useState("");
+  const [filtros, setFiltros]   = useState({});
+  const [filterKey, setFilterKey] = useState(0);
   const [busca, setBusca]       = useState("");
+  const FILTROS_KEY = "takeoff-filtros";
   const [sortCol, setSortCol]   = useState("codigo");
   const [sortDir, setSortDir]   = useState("asc");
 
@@ -351,8 +356,8 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
 
   const filtered = useMemo(() => {
     let r = enriched;
-    if (filtroDisciplina) r = r.filter(i => i.disciplina === filtroDisciplina);
-    if (filtroUnidade)    r = r.filter(i => i.unidade === filtroUnidade);
+    if (filtros.disciplina?.length > 0) r = r.filter(i => filtros.disciplina.includes(i.disciplina));
+    if (filtros.unidade?.length > 0)    r = r.filter(i => filtros.unidade.includes(i.unidade));
     if (busca) {
       const b = busca.toLowerCase();
       r = r.filter(i => i.codigo?.toLowerCase().includes(b) || i.descricao?.toLowerCase().includes(b));
@@ -362,7 +367,7 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
       const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [enriched, filtroDisciplina, filtroUnidade, busca, sortCol, sortDir]);
+  }, [enriched, filtros, busca, sortCol, sortDir]);
 
   const totals = useMemo(() =>
     filtered.reduce((acc, i) => ({
@@ -442,22 +447,30 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-        <div className="flex flex-wrap gap-2">
+      <FilterToolbar
+        active={!!busca || Object.values(filtros).some(a => a?.length > 0)}
+        onClearAll={() => { setBusca(""); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+      >
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
           <input
-            className="border border-border rounded-lg px-3 py-1.5 text-sm w-52 bg-background text-foreground"
+            className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
             placeholder="Buscar código ou descrição..."
-            value={busca} onChange={e => setBusca(e.target.value)}
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
           />
-          <select className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground" value={filtroDisciplina} onChange={e => setFiltroDisciplina(e.target.value)}>
-            <option value="">Todas as Disciplinas</option>
-            {DISCIPLINAS.map(d => <option key={d}>{d}</option>)}
-          </select>
-          <select className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground" value={filtroUnidade} onChange={e => setFiltroUnidade(e.target.value)}>
-            <option value="">Todas as Unidades</option>
-            {UNIDADES.map(u => <option key={u}>{u}</option>)}
-          </select>
         </div>
+        <FilterBar
+          key={filterKey}
+          storageKey={FILTROS_KEY}
+          filters={[
+            { key: "disciplina", label: "Disciplina", options: DISCIPLINAS },
+            { key: "unidade",    label: "Unidade",    options: UNIDADE_SIGLAS },
+          ]}
+          onChange={setFiltros}
+        />
+      </FilterToolbar>
+      <div className="flex justify-end">
         <Button onClick={() => { setEditingItem(null); setShowItemModal(true); }}>
           <Plus className="w-4 h-4 mr-2" />Novo Item
         </Button>
