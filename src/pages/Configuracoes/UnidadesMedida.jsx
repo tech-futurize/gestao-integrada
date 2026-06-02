@@ -9,7 +9,7 @@ import { entities } from "@/api/supabaseEntities";
 
 const EMPTY = { sigla: "", nome: "" };
 
-export default function UnidadesMedida() {
+export default function UnidadesMedida({ asTab = false }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [dialog, setDialog] = useState(null);
@@ -62,11 +62,9 @@ export default function UnidadesMedida() {
 
   const inativos = all.filter((u) => u.ativo === false).length;
 
-  return (
-    <div className="flex flex-col h-full">
-      <PageHeader />
-
-      <div className="flex-1 overflow-auto p-6 space-y-5">
+  const tabContent = (
+    <>
+      <div className={asTab ? "space-y-5" : "flex-1 overflow-auto p-6 space-y-5"}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -261,6 +259,17 @@ export default function UnidadesMedida() {
           </p>
         </FormDialog>
       )}
+    </>
+  );
+
+  if (asTab) return tabContent;
+
+  return (
+    <div className="flex flex-col h-full">
+      <PageHeader />
+      <div className="flex-1 overflow-auto p-6">
+        {tabContent}
+      </div>
     </div>
   );
 }
