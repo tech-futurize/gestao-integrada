@@ -237,7 +237,11 @@ export default function HistogramaTabela({ tipo }) {
       const proj = linhas.reduce((s, h) => s + (h.qtd_projetado ?? 0), 0);
       prevAcum += prev;
       realAcum += real;
-      return { mes: mesLabel(m), prev, real, proj, prevAcum, realAcum };
+      return {
+        mes: mesLabel(m), prev, real, proj,
+        prevAcum: prevAcum > 0 ? prevAcum : null,
+        realAcum: realAcum > 0 ? realAcum : null,
+      };
     });
   }, [histogramas, projectMonths]);
 
@@ -308,6 +312,36 @@ export default function HistogramaTabela({ tipo }) {
           Novo {tipo === "MO" ? "Função" : "Equipamento"}
         </Button>
       </div>
+
+      {/* Gráfico */}
+      {chartData.length > 0 && (
+        <div className="bg-card rounded-xl border border-border shadow-sm p-5">
+          <h3 className="font-semibold mb-4 text-foreground text-sm">
+            Evolução Mensal — {tipo === "MO" ? "Mão de Obra" : "Equipamentos"}
+          </h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <ComposedChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Legend />
+              {showPrev && <Bar yAxisId="left" dataKey="prev" name="Previsto" fill="#3b82f6" opacity={0.8} />}
+              {showReal && <Bar yAxisId="left" dataKey="real" name="Real" fill="#16a34a" opacity={0.8} />}
+              {showProj && <Bar yAxisId="left" dataKey="proj" name="Projetado" fill="#f59e0b" opacity={0.8} />}
+              {showPrev && (
+                <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Acum. Prev"
+                  stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+              )}
+              {showReal && (
+                <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Acum. Real"
+                  stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Tabela */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
@@ -462,36 +496,6 @@ export default function HistogramaTabela({ tipo }) {
           </table>
         </div>
       </div>
-
-      {/* Gráfico */}
-      {chartData.length > 0 && (
-        <div className="bg-card rounded-xl border border-border shadow-sm p-5">
-          <h3 className="font-semibold mb-4 text-foreground text-sm">
-            Evolução Mensal — {tipo === "MO" ? "Mão de Obra" : "Equipamentos"}
-          </h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Legend />
-              {showPrev && <Bar yAxisId="left" dataKey="prev" name="Previsto" fill="#3b82f6" opacity={0.8} />}
-              {showReal && <Bar yAxisId="left" dataKey="real" name="Real" fill="#16a34a" opacity={0.8} />}
-              {showProj && <Bar yAxisId="left" dataKey="proj" name="Projetado" fill="#f59e0b" opacity={0.8} />}
-              {showPrev && (
-                <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Acum. Prev"
-                  stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-              )}
-              {showReal && (
-                <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Acum. Real"
-                  stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      )}
 
       {/* Dialog novo recurso */}
       <Dialog open={showNovoDialog} onOpenChange={(open) => { setShowNovoDialog(open); if (!open) setNovoNome(""); }}>
