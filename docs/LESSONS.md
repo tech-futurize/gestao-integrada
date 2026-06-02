@@ -276,6 +276,40 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L015 — Riscos: UI tratava campo TEXT (`probabilidade`/`impacto`) como número, corrompendo dados na edição
+
+- **Data:** 2026-06-02
+- **Agente:** Tester
+- **Milestone:** Auditoria QA módulo a módulo
+- **Categoria:** Banco
+- **Gravidade:** Crítica
+- **Contexto em 1 frase:** Auditoria do módulo Gestão de Riscos cruzando o código com o schema real do banco.
+- **Erro observado:** A matriz 5×5 ficava sempre vazia, `score` dava `NaN`, e **editar um risco existente sobrescrevia `probabilidade`/`impacto` para `3`** — `handleEdit` carregava o texto `"Alta"` num `<input type=number>` e `handleSubmit` gravava `Number("Alta") || 3`.
+- **Causa raiz:** As colunas `probabilidade` e `impacto` da tabela `riscos` são `TEXT` (`'Alta'/'Média'/'Baixa'`, `'Alto'/'Médio'`), mas a UI assumia inteiros 1-5 (campos number, `score = p*i`, chave de matriz `${p}-${i}`). O pressuposto de tipo nunca foi validado contra o banco real (a `supabase-migration.sql` local estava desatualizada).
+- **Correção aplicada:** Selects qualitativos (`PROBABILIDADE_OPTIONS`/`IMPACTO_OPTIONS`), helpers `pesoProbabilidade`/`pesoImpacto`/`calcScoreRisco` centralizados em `riscosUtils.js` (com tolerância a dados legados numéricos), matriz/score/KPIs derivados do texto, e `STATUS_RISCO` alinhado aos valores reais (`Ativo/Monitoramento/Mitigado/Encerrado`). Teste de regressão em `riscosUtils.test.js`.
+- **Como evitar em projetos futuros:** Antes de tratar qualquer campo como número, confirmar o `data_type` real da coluna (`information_schema.columns` no banco, não a migration local). Campo de avaliação qualitativa é quase sempre TEXT — derivar peso por mapa, nunca `Number()` direto.
+- **Referências:** `src/utils/riscosUtils.js`, `src/pages/RiscosMudancas/GestaoRiscos.jsx`, `src/utils/riscosUtils.test.js`.
+
+---
+
+### L016 — Persistir coluna inexistente (`semana_iso`) quebra o create; valide nomes de coluna no banco real
+
+- **Data:** 2026-06-02
+- **Agente:** Tester
+- **Milestone:** Auditoria QA módulo a módulo
+- **Categoria:** Banco
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** Cadastro de lançamentos de commodity no Take-Off.
+- **Erro observado:** Criar um lançamento novo pela UI falhava — o código gravava `semana_iso`, mas `lancamentos_commodity` só tem a coluna `semana` (`TEXT NOT NULL`). Registros antigos tinham `semana` (de versão anterior/seed), mascarando a regressão na listagem.
+- **Causa raiz:** O nome da chave enviada ao `create`/`update` divergia do nome real da coluna; o INSERT enviava coluna desconhecida e omitia `semana` (NOT NULL). A leitura usava fallback `semana_iso || semana`, escondendo o problema.
+- **Correção aplicada:** Helper `toLancPayload` que mapeia o valor para a chave `semana` e remove `semana_iso` antes de `create`/`update`.
+- **Como evitar em projetos futuros:** Mesma regra de L013/L015 — os nomes de coluna gravados devem ser cópia literal do schema real. Quando a leitura usa fallback entre dois nomes (`a || b`), é sinal de divergência: padronizar a escrita no nome canônico do banco.
+- **Referências:** `src/components/planejamento/TakeOffCommodities.jsx`.
+
+> **Padrão recorrente (L013 + L014 + L015 + L016):** quatro bugs de integridade no mesmo período por código divergir do schema real. A `docs/database/supabase-migration.sql` está desatualizada e **não deve ser usada como fonte da verdade** — consultar o banco (`information_schema`/`pg_constraint`) ou regenerá-la. Candidato a regra no próximo `/milestone-close`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:
