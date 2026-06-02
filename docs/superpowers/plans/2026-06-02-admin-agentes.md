@@ -330,7 +330,8 @@ import { loadSchema } from '../schema/schema-loader';
 import { today, lastNWeeks } from '../utils/date-helpers';
 
 // Mapa de tools de sistema disponíveis
-const SYSTEM_TOOLS: Record<string, ReturnType<typeof createTool>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SYSTEM_TOOLS: Record<string, any> = {
   'get-schema': getSchemaTool,
   'execute-sql': executeSQLTool,
   'analyze-table': analyzeTableTool,
@@ -404,7 +405,8 @@ export async function loadAgentsFromDB(): Promise<Record<string, Agent>> {
   const agents: Record<string, Agent> = {};
 
   for (const row of agentRows as (AgentRow & { agente_system_tools: SystemToolRow[] })[]) {
-    const tools: Record<string, ReturnType<typeof createTool>> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tools: Record<string, any> = {};
     for (const { tool_id } of row.agente_system_tools ?? []) {
       if (SYSTEM_TOOLS[tool_id]) tools[tool_id.replace(/-/g, '_')] = SYSTEM_TOOLS[tool_id];
     }
