@@ -5,12 +5,14 @@ import {
   getISOWeek,
   getISOWeekYear,
   startOfISOWeek,
+  startOfMonth,
   subMonths,
   addYears,
   parseISO,
   format,
   eachWeekOfInterval,
 } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Upload } from "lucide-react";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -28,6 +30,10 @@ import AvancoTabela from "./AvancoTabela";
 
 function weekKey(monday) {
   return `${getISOWeekYear(monday)}-W${String(getISOWeek(monday)).padStart(2, "0")}`;
+}
+
+function monthKey(date) {
+  return format(startOfMonth(date), "yyyy-MM");
 }
 
 function getProjectWeeks(dataInicio, dataFim) {
@@ -53,46 +59,45 @@ const FIELDS = {
 };
 
 const EXPORT_COLUMNS = [
-  { key: "semana_iso",              label: "Semana ISO",   type: "string", required: true },
-  { key: "avanco_previsto_mensal",  label: "Previsto (%)", type: "number" },
-  { key: "avanco_realizado_mensal", label: "Real (%)",     type: "number" },
+  { key: "semana_iso",              label: "Semana ISO",    type: "string", required: true },
+  { key: "avanco_previsto_mensal",  label: "Previsto (%)",  type: "number" },
+  { key: "avanco_realizado_mensal", label: "Real (%)",      type: "number" },
   { key: "avanco_projetado",        label: "Projetado (%)", type: "number" },
 ];
 
 const formatPct = (v) => `${Number(v).toFixed(2).replace(".", ",")}%`;
 
-// Definição das linhas da tabela (Previsto / Real / Projetado) — recebe acumValues dinâmicos
 function buildRows(cards) {
   return [
     {
-      campo:           FIELDS.prev,
-      label:           "Previsto",
-      dotColor:        "bg-blue-500",
-      rowCls:          "bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100/50 dark:hover:bg-blue-900/20",
-      headerActiveBg:  "bg-blue-50 dark:bg-blue-950/20 border-r border-border",
-      headerCls:       "text-blue-700 dark:text-blue-300",
-      acumValue:       cards.prevAcum,
-      isRealRow:       false,
+      campo:          FIELDS.prev,
+      label:          "Previsto",
+      dotColor:       "bg-blue-500",
+      rowCls:         "bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100/50 dark:hover:bg-blue-900/20",
+      headerActiveBg: "bg-blue-50 dark:bg-card border-r border-border",
+      headerCls:      "text-blue-700 dark:text-blue-300",
+      acumValue:      cards.prevAcum,
+      isRealRow:      false,
     },
     {
-      campo:           FIELDS.real,
-      label:           "Real",
-      dotColor:        "bg-green-500",
-      rowCls:          "bg-green-50 dark:bg-green-950/20 hover:bg-green-100/50 dark:hover:bg-green-900/20",
-      headerActiveBg:  "bg-green-50 dark:bg-green-950/20 border-r border-border",
-      headerCls:       "text-green-700 dark:text-green-300",
-      acumValue:       cards.realAcum,
-      isRealRow:       true,
+      campo:          FIELDS.real,
+      label:          "Real",
+      dotColor:       "bg-green-500",
+      rowCls:         "bg-green-50 dark:bg-green-950/20 hover:bg-green-100/50 dark:hover:bg-green-900/20",
+      headerActiveBg: "bg-green-50 dark:bg-card border-r border-border",
+      headerCls:      "text-green-700 dark:text-green-300",
+      acumValue:      cards.realAcum,
+      isRealRow:      true,
     },
     {
-      campo:           FIELDS.proj,
-      label:           "Projetado",
-      dotColor:        "bg-amber-500",
-      rowCls:          "bg-yellow-50 dark:bg-yellow-950/20 hover:bg-yellow-100/50 dark:hover:bg-yellow-900/20",
-      headerActiveBg:  "bg-yellow-50 dark:bg-yellow-950/20 border-r border-border",
-      headerCls:       "text-amber-700 dark:text-amber-300",
-      acumValue:       cards.projAcum,
-      isRealRow:       false,
+      campo:          FIELDS.proj,
+      label:          "Projetado",
+      dotColor:       "bg-amber-500",
+      rowCls:         "bg-yellow-50 dark:bg-yellow-950/20 hover:bg-yellow-100/50 dark:hover:bg-yellow-900/20",
+      headerActiveBg: "bg-yellow-50 dark:bg-card border-r border-border",
+      headerCls:      "text-amber-700 dark:text-amber-300",
+      acumValue:      cards.projAcum,
+      isRealRow:      false,
     },
   ];
 }
@@ -108,6 +113,7 @@ export default function AvancoFisicoPanel() {
   const [showPrev, setShowPrev] = React.useState(true);
   const [showReal, setShowReal] = React.useState(true);
   const [showProj, setShowProj] = React.useState(true);
+  const [viewMode, setViewMode] = React.useState("semanal"); // "semanal" | "mensal"
 
   // ── Queries ──────────────────────────────────────────────────────────────────
 
@@ -159,25 +165,73 @@ export default function AvancoFisicoPanel() {
     return m;
   }, [avancos]);
 
+  // Períodos mensais únicos derivados das semanas do projeto
+  const monthPeriods = useMemo(() => {
+    const seen = new Set();
+    const months = [];
+    projectWeeks.forEach((monday) => {
+      const k = monthKey(monday);
+      if (!seen.has(k)) { seen.add(k); months.push(startOfMonth(monday)); }
+    });
+    return months;
+  }, [projectWeeks]);
+
+  // dataMap mensal: soma dos valores semanais agrupados por mês (read-only)
+  const monthDataMap = useMemo(() => {
+    const m = new Map();
+    projectWeeks.forEach((monday) => {
+      const mKey = monthKey(monday);
+      const weekRec = dataMap.get(weekKey(monday));
+      if (!weekRec) return;
+      const existing = m.get(mKey) ?? {
+        [FIELDS.prev]: 0,
+        [FIELDS.real]: 0,
+        [FIELDS.proj]: 0,
+      };
+      existing[FIELDS.prev] += weekRec[FIELDS.prev] ?? 0;
+      existing[FIELDS.real] += weekRec[FIELDS.real] ?? 0;
+      existing[FIELDS.proj] += weekRec[FIELDS.proj] ?? 0;
+      m.set(mKey, existing);
+    });
+    return m;
+  }, [dataMap, projectWeeks]);
+
+  const isMensal = viewMode === "mensal";
+
   const { chartData, cards, lastRealPeriod } = useMemo(() => {
-    if (projectWeeks.length === 0) {
+    const periods = isMensal ? monthPeriods : projectWeeks;
+    if (periods.length === 0) {
       return {
         chartData: [],
         cards: { prevAcum: 0, realAcum: 0, projAcum: 0, desvio: 0 },
         lastRealPeriod: null,
       };
     }
-    return computeAvancoSeries({
-      dataMap,
-      periods: projectWeeks,
-      periodKey: weekKey,
-      periodLabel: (d) => format(d, "dd/MM"),
-      fields: FIELDS,
-      currentPeriodKey: weekKey(startOfISOWeek(new Date())),
-    });
-  }, [dataMap, projectWeeks]);
+    const dMap   = isMensal ? monthDataMap : dataMap;
+    const pKey   = isMensal ? monthKey : weekKey;
+    const pLabel = isMensal
+      ? (d) => format(startOfMonth(d), "MMM/yy", { locale: ptBR })
+      : (d) => format(d, "dd/MM");
+    const curKey = isMensal
+      ? monthKey(new Date())
+      : weekKey(startOfISOWeek(new Date()));
 
-  const lastRealLabel = lastRealPeriod ? format(lastRealPeriod, "dd/MM") : null;
+    return computeAvancoSeries({
+      dataMap: dMap,
+      periods,
+      periodKey: pKey,
+      periodLabel: pLabel,
+      fields: FIELDS,
+      currentPeriodKey: curKey,
+    });
+  }, [viewMode, isMensal, monthPeriods, monthDataMap, projectWeeks, dataMap]);
+
+  const lastRealLabel = lastRealPeriod
+    ? (isMensal
+        ? format(startOfMonth(lastRealPeriod), "MMM/yy", { locale: ptBR })
+        : format(lastRealPeriod, "dd/MM"))
+    : null;
+
   const tableRows = buildRows(cards);
 
   // ── Save handler ──────────────────────────────────────────────────────────────
@@ -205,21 +259,17 @@ export default function AvancoFisicoPanel() {
   if (isPending) {
     return (
       <div className="space-y-4">
-        {/* Chips skeleton */}
         <div className="flex gap-2">
           <Skeleton className="h-7 w-24 rounded-full" />
           <Skeleton className="h-7 w-16 rounded-full" />
           <Skeleton className="h-7 w-24 rounded-full" />
         </div>
-        {/* Cards skeleton */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Skeleton key={i} className="h-20 rounded-xl" />
           ))}
         </div>
-        {/* Chart skeleton */}
         <Skeleton className="h-[320px] rounded-xl" />
-        {/* Table skeleton */}
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex gap-3 px-4 py-3 border-b border-border last:border-0">
@@ -252,7 +302,7 @@ export default function AvancoFisicoPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Chips de toggle + botão Import/Export */}
+      {/* Chips de toggle + separador granularidade + botão Import/Export */}
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Exibir:
@@ -271,6 +321,25 @@ export default function AvancoFisicoPanel() {
             {show ? "●" : "○"} {label}
           </button>
         ))}
+
+        {/* Separador + toggle Semanal / Mensal */}
+        <div className="h-5 w-px bg-border mx-1" />
+        {[
+          { key: "semanal", label: "Semanal" },
+          { key: "mensal",  label: "Mensal"  },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setViewMode(key)}
+            className={`px-3 py-1 rounded-full border text-xs font-semibold transition-colors
+              ${viewMode === key
+                ? "bg-muted text-foreground border-border"
+                : "bg-muted text-muted-foreground border-border opacity-50"}`}
+          >
+            {label}
+          </button>
+        ))}
+
         <Button
           size="sm"
           variant="outline"
@@ -290,7 +359,7 @@ export default function AvancoFisicoPanel() {
         desvio={cards.desvio}
         formatValue={formatPct}
         lastRealLabel={lastRealLabel}
-        periodUnitLabel="semana"
+        periodUnitLabel={isMensal ? "mês" : "semana"}
       />
 
       {/* Gráfico Curva S */}
@@ -301,20 +370,25 @@ export default function AvancoFisicoPanel() {
         showReal={showReal}
         showProj={showProj}
         valueFormatter={formatPct}
-        title="Evolução de Avanço Físico"
+        title={`Evolução de Avanço Físico — ${isMensal ? "Mensal" : "Semanal"}`}
+        yRightDomain={[0, 100]}
+        yTickFormatter={(v) => `${v}%`}
       />
 
       {/* Tabela transposta */}
       <AvancoTabela
-        periods={projectWeeks}
-        dataMap={dataMap}
-        periodKey={weekKey}
-        columnLabel={(d) => format(d, "dd/MM")}
-        groupByMonth={true}
+        periods={isMensal ? monthPeriods : projectWeeks}
+        dataMap={isMensal ? monthDataMap : dataMap}
+        periodKey={isMensal ? monthKey : weekKey}
+        columnLabel={isMensal
+          ? (d) => format(startOfMonth(d), "MMM/yy", { locale: ptBR })
+          : (d) => format(d, "dd/MM")}
+        groupByMonth={!isMensal}
         rows={tableRows}
-        formatValue={(v) => Number(v).toFixed(2).replace(".", ",")}
-        isBlocked={(d) => !isCurrentOrPastWeek(d)}
+        formatValue={formatPct}
+        isBlocked={!isMensal ? (d) => !isCurrentOrPastWeek(d) : undefined}
         onSave={handleSave}
+        readOnly={isMensal}
       />
 
       {/* Import/Export */}

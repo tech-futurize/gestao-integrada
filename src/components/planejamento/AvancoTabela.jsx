@@ -66,9 +66,9 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, c
     ) : (
       <td
         className={`px-2 py-1 text-center cursor-pointer hover:bg-muted/40 text-muted-foreground text-xs ${cellWidth}`}
-        onClick={() => { setInputVal("0,00"); setEditing(true); }}
+        onClick={() => { setInputVal(""); setEditing(true); }}
       >
-        {fmt(0)}
+        —
       </td>
     );
   }
@@ -80,13 +80,14 @@ function CelulaEditavelAvanco({ registro, campo, blocked, onSave, formatValue, c
       className={`px-2 py-1 text-center cursor-pointer hover:bg-muted/40 ${cellWidth}`}
       onClick={() => {
         if (!editing) {
-          // Inicializa o campo com vírgula (padrão pt-BR)
-          setInputVal(Number(valor).toFixed(2).replace(".", ","));
+          setInputVal(valor ? Number(valor).toFixed(2).replace(".", ",") : "");
           setEditing(true);
         }
       }}
     >
-      {editing ? inputEl : <span className="text-xs">{fmt(valor)}</span>}
+      {editing ? inputEl : (
+        <span className="text-xs">{valor ? fmt(valor) : "—"}</span>
+      )}
     </td>
   );
 }
@@ -121,7 +122,9 @@ export default function AvancoTabela({
   isBlocked,
   onSave,
   cellWidth = "w-14",
+  readOnly = false,
 }) {
+  const fmt = formatValue ?? ((v) => Number(v).toFixed(1));
   // Agrupamento por mês para o header de 2 níveis (usado quando groupByMonth=true)
   const monthGroups = useMemo(() => {
     if (!groupByMonth) return null;
@@ -226,6 +229,17 @@ export default function AvancoTabela({
                   {/* Células de dados por período */}
                   {periods.map((p) => {
                     const pk = periodKey(p);
+                    if (readOnly) {
+                      const valor = dataMap.get(pk)?.[campo] ?? 0;
+                      return (
+                        <td
+                          key={pk + "-" + campo}
+                          className={`px-2 py-1 text-center text-xs ${cellWidth}`}
+                        >
+                          {fmt(valor)}
+                        </td>
+                      );
+                    }
                     return (
                       <CelulaEditavelAvanco
                         key={pk + "-" + campo}

@@ -15,7 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
+  Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -87,7 +87,8 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
       cancelRef.current = false;
       return;
     }
-    onSave(registro, campo, Number(inputVal));
+    const numVal = Number(inputVal);
+    onSave(registro, campo, isNaN(numVal) ? 0 : numVal);
     setEditing(false);
   };
 
@@ -96,7 +97,7 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
       className={`px-2 py-1 text-center cursor-pointer hover:bg-muted/40 w-12 ${borderClass}`}
       onClick={() => {
         if (!editing) {
-          setInputVal(String(valor));
+          setInputVal(valor ? String(valor) : "");
           setEditing(true);
         }
       }}
@@ -104,15 +105,12 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
       {editing ? (
         <input
           autoFocus
-          type="number"
-          step="1"
-          min="0"
+          type="text"
+          inputMode="numeric"
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
           onBlur={handleBlur}
-          onWheel={(e) => e.currentTarget.blur()}
           onKeyDown={(e) => {
-            if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
             if (e.key === "Enter") {
               cancelRef.current = false;
               e.target.blur();
@@ -122,10 +120,10 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
               setEditing(false);
             }
           }}
-          className="w-10 text-center border rounded text-xs p-0 bg-white text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-10 text-center border rounded text-xs p-0 bg-background text-foreground"
         />
       ) : (
-        <span className="text-xs">{valor}</span>
+        <span className="text-xs">{valor || "—"}</span>
       )}
     </td>
   );
@@ -412,7 +410,6 @@ export default function HistogramaTabela({ tipo }) {
                   <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
                   <Tooltip />
-                  <Legend />
                   {showPrev && <Bar yAxisId="left" dataKey="prev" name="Previsto" fill="#3b82f6" opacity={0.8} />}
                   {showReal && <Bar yAxisId="left" dataKey="real" name="Real" fill="#16a34a" opacity={0.8} />}
                   {showProj && <Bar yAxisId="left" dataKey="proj" name="Projetado" fill="#f59e0b" opacity={0.8} />}
@@ -519,7 +516,7 @@ export default function HistogramaTabela({ tipo }) {
                         const gPctProj = gPrev > 0 ? Math.round((gProj / gPrev) * 100) : 0;
                         const gt = { totalPrev: gPrev, totalReal: gReal, totalProj: gProj, pctReal: gPctReal, pctProj: gPctProj };
                         const isMOD = recurso.subtipo_mo === "MOD";
-                        const stickyBg = isMOD ? "bg-blue-50 dark:bg-blue-950/30" : "bg-orange-50 dark:bg-orange-950/30";
+                        const stickyBg = isMOD ? "bg-blue-50 dark:bg-card" : "bg-orange-50 dark:bg-card";
                         const rowBg = isMOD ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-orange-50/40 dark:bg-orange-950/20";
                         const labelCls = isMOD ? "text-blue-700 dark:text-blue-300" : "text-orange-700 dark:text-orange-300";
                         const colCount = [showPrev, showReal, showProj].filter(Boolean).length || 1;
