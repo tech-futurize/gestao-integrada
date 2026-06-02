@@ -246,6 +246,20 @@ Copie o bloco abaixo para cada nova lição.
 - **Como evitar em projetos futuros:** **Nunca criar um stash quando há intenção de continuar trabalhando naqueles arquivos.** Regra: antes de cada `git stash pop`, sempre commitar (ou pelo menos stagear) o working tree atual para que o merge seja binário (HEAD vs stash), não tri-lateral.
 - **Referências:** commits `f7821b6` (R1), `521cc1c` (R4); `src/components/planejamento/SixWLATable.jsx`, `src/components/planejamento/TakeOffCommodities.jsx`.
 
+### L013 — GerenciarProjeto: STATUS_OPTIONS do frontend divergia 100% da constraint do banco
+
+- **Data:** 2026-06-02
+- **Agente:** Builder
+- **Milestone:** Em andamento
+- **Categoria:** Banco
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** Ao tentar criar ou editar um projeto na tela Gerenciar Projeto, o banco retornava erro de constraint violation.
+- **Erro observado:** `new row for relation "projetos" violates check constraint "projetos_status_check"` — qualquer salvar falhava.
+- **Causa raiz:** O array `STATUS_OPTIONS` no componente usava `["Ativo", "Em Pausa", "Encerrado"]`, mas a constraint do banco aceita apenas `['Planejamento','Em Andamento','Pausado','Concluído','Cancelado']`. Nenhum dos valores do frontend era válido no banco.
+- **Correção aplicada:** Atualizar `STATUS_OPTIONS`, `STATUS_CFG` (chaves e ícones) e o valor padrão `EMPTY_FORM.status` para coincidir com os valores da constraint. Fallback no `handleEdit` alterado de `"Ativo"` para `"Planejamento"`.
+- **Como evitar em projetos futuros:** Ao criar ou revisar qualquer `<Select>` de campo de status, verificar primeiro a constraint correspondente em `docs/database/supabase-migration.sql`. Os valores do componente devem ser cópia literal dos valores da constraint — não paráfrases nem traduções.
+- **Referências:** `src/pages/Configuracoes/GerenciarProjeto.jsx`; `docs/database/supabase-migration.sql` linha 19.
+
 ---
 
 ## 6. Como curar o arquivo
