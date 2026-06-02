@@ -98,7 +98,7 @@ export default function Avancos() {
   // ── Derived data ──
 
   const projectWeeks = useMemo(
-    () => getProjectWeeks(projeto?.data_inicio, projeto?.data_fim_prevista),
+    () => getProjectWeeks(projeto?.data_inicio, projeto?.data_prevista_termino),
     [projeto]
   );
 
@@ -222,7 +222,7 @@ export default function Avancos() {
     );
   }
 
-  if (!projeto?.data_inicio || !projeto?.data_fim_prevista) {
+  if (!projeto?.data_inicio || !projeto?.data_prevista_termino) {
     return pageWrapper(
       <PageEmptyState description="Configure as datas de início e fim do projeto em Configurações → Gerenciar Projeto." />
     );

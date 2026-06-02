@@ -156,7 +156,7 @@ export default function HistogramaTabela({ tipo }) {
   const projeto = projetoArr[0] ?? null;
 
   const projectMonths = useMemo(
-    () => getProjectMonths(projeto?.data_inicio, projeto?.data_fim_prevista),
+    () => getProjectMonths(projeto?.data_inicio, projeto?.data_prevista_termino),
     [projeto]
   );
 
@@ -276,7 +276,7 @@ export default function HistogramaTabela({ tipo }) {
       </div>
     );
   }
-  if (!projeto?.data_inicio || !projeto?.data_fim_prevista) {
+  if (!projeto?.data_inicio || !projeto?.data_prevista_termino) {
     return (
       <div className="py-20 text-center text-muted-foreground text-sm">
         Configure as datas de início e fim do projeto em Configurações → Gerenciar Projeto.

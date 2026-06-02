@@ -260,6 +260,20 @@ Copie o bloco abaixo para cada nova lição.
 - **Como evitar em projetos futuros:** Ao criar ou revisar qualquer `<Select>` de campo de status, verificar primeiro a constraint correspondente em `docs/database/supabase-migration.sql`. Os valores do componente devem ser cópia literal dos valores da constraint — não paráfrases nem traduções.
 - **Referências:** `src/pages/Configuracoes/GerenciarProjeto.jsx`; `docs/database/supabase-migration.sql` linha 19.
 
+### L014 — Histograma/Avanços: campo `data_fim_prevista` não existe na tabela `projetos`
+
+- **Data:** 2026-06-02
+- **Agente:** Builder
+- **Milestone:** Em andamento
+- **Categoria:** Banco
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** Histograma de MO/Equipamentos e página de Avanços Físicos exibiam "Configure as datas de início e fim" mesmo com datas configuradas no projeto.
+- **Erro observado:** Guard `if (!projeto?.data_inicio || !projeto?.data_fim_prevista)` sempre disparava porque `data_fim_prevista` é `undefined` — o campo não existe no retorno do Supabase.
+- **Causa raiz:** A tabela `projetos` tem `data_prevista_termino` (nome real da coluna). O `GerenciarProjeto.jsx` usa `data_fim_prevista` como **alias de estado local** do formulário (mapeando corretamente para o banco ao salvar), mas `HistogramaTabela.jsx` e `Avancos.jsx` liam o alias do formulário diretamente da entidade, onde nunca existe.
+- **Correção aplicada:** Substituir `projeto?.data_fim_prevista` por `projeto?.data_prevista_termino` nas linhas de guard e de `useMemo` nos dois arquivos afetados.
+- **Como evitar em projetos futuros:** Ao referenciar campos de projeto em novos componentes, verificar sempre o nome real da coluna em `docs/database/supabase-migration.sql` — não copiar de outros componentes sem confirmar se aquele campo é DB ou estado local de formulário.
+- **Referências:** `src/components/histograma/HistogramaTabela.jsx` linhas 159/279; `src/pages/Planejamento/Avancos.jsx` linhas 101/225; `docs/database/supabase-migration.sql` linha 18.
+
 ---
 
 ## 6. Como curar o arquivo
