@@ -97,7 +97,7 @@ export default function SixWLATable({ items, restricoes = [], isLoading, discipl
                 className="px-1 py-3 text-center text-xs font-semibold text-muted-foreground sticky bg-muted z-20"
                 style={{ left: L.det, width: COL.det, minWidth: COL.det }}
               >
-                DET
+                Det.
               </th>
 
               {/* ── STICKY DIREITA ──────────────────────────────────── */}
@@ -169,7 +169,7 @@ export default function SixWLATable({ items, restricoes = [], isLoading, discipl
                     className={cn("px-4 py-3 text-center sticky z-10", stickyBg)}
                     style={{ left: L.sem, width: COL.semana, minWidth: COL.semana }}
                   >
-                    <div className="flex flex-wrap gap-1 justify-center">
+                    <div className="flex flex-nowrap gap-1 justify-center">
                       {item.semanasBadge.length > 0
                         ? item.semanasBadge.map(s => (
                             <span
@@ -212,9 +212,9 @@ export default function SixWLATable({ items, restricoes = [], isLoading, discipl
                         <button
                           aria-label="Ver detalhes da atividade"
                           title="Ver detalhes (área, disciplina, datas)"
-                          className="text-[11px] font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors"
+                          className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                         >
-                          DET
+                          <Eye className="w-4 h-4" />
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-52 p-3" side="right" align="start">
