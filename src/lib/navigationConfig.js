@@ -32,6 +32,7 @@ export const navigationGroups = [
       { title: "Take-Off", path: "/planejamento/take-off" },
       { title: "Histogramas", path: "/planejamento/histograma" },
       { title: "Avanços", path: "/planejamento/avancos" },
+      { title: "Faturamento", path: "/planejamento/faturamento" },
     ],
   },
   {
@@ -39,7 +40,6 @@ export const navigationGroups = [
     icon: ScrollText,
     children: [
       { title: "Contratos", path: "/admin-contratual/contratos" },
-      { title: "Medições", path: "/admin-contratual/medicoes" },
       { title: "RDOs", path: "/admin-contratual/rdos" },
       { title: "Registros", path: "/admin-contratual/registros" },
       { title: "Pleitos", path: "/admin-contratual/pleitos" },

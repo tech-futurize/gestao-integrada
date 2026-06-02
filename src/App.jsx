@@ -28,10 +28,10 @@ const SixWLAPage           = lazy(() => import('./pages/Planejamento/SixWLA'));
 const TakeOff              = lazy(() => import('./pages/Planejamento/TakeOff'));
 const PlanejamentoHistograma = lazy(() => import('./pages/Planejamento/Histograma'));
 const Avancos              = lazy(() => import('./pages/Planejamento/Avancos'));
+const Faturamento          = lazy(() => import('./pages/Planejamento/Faturamento'));
 
 // Admin Contratual
 const Contratos            = lazy(() => import('./pages/Contratos'));
-const Medicoes             = lazy(() => import('./pages/AdminContratual/Medicoes'));
 const RDOs                 = lazy(() => import('./pages/AdminContratual/RDOs'));
 const Registros            = lazy(() => import('./pages/AdminContratual/Registros'));
 const AdminPleitos         = lazy(() => import('./pages/AdminContratual/Pleitos'));
@@ -124,10 +124,10 @@ const AuthenticatedApp = () => (
     <Route path="/planejamento/take-off" element={wrap(TakeOff, 'Planejamento')} />
     <Route path="/planejamento/histograma" element={wrap(PlanejamentoHistograma, 'Planejamento')} />
     <Route path="/planejamento/avancos" element={wrap(Avancos, 'Planejamento')} />
+    <Route path="/planejamento/faturamento" element={wrap(Faturamento, 'Planejamento')} />
 
     {/* Adm. Contratual */}
     <Route path="/admin-contratual/contratos" element={wrap(Contratos, 'Adm. Contratual')} />
-    <Route path="/admin-contratual/medicoes" element={wrap(Medicoes, 'Adm. Contratual')} />
     <Route path="/admin-contratual/rdos" element={wrap(RDOs, 'Adm. Contratual')} />
     <Route path="/admin-contratual/registros" element={wrap(Registros, 'Adm. Contratual')} />
     <Route path="/admin-contratual/pleitos" element={wrap(AdminPleitos, 'Adm. Contratual')} />
