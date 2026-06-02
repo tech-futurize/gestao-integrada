@@ -26,6 +26,7 @@ const TABLE_MAP = {
   Disciplina: 'disciplinas',
   Funcao: 'funcoes',
   TipoEquipamento: 'tipos_equipamento',
+  PacoteSuprimento: 'pacotes_suprimento',
 };
 
 function createEntityClient(tableName) {
