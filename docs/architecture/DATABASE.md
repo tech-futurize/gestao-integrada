@@ -205,6 +205,7 @@ Faturamento previsto vs. realizado por mês.
 | faturamento_realizado_mensal | NUMERIC | |
 | faturamento_previsto_acumulado | NUMERIC | |
 | faturamento_realizado_acumulado | NUMERIC | |
+| faturamento_projetado | NUMERIC DEFAULT 0 | Projetado mensal — zerado automaticamente ao salvar Real no mesmo mês |
 
 ---
 
@@ -602,6 +603,7 @@ Look-ahead de 6 semanas — vínculo obrigatório com o cronograma.
 | 2026-05-27 | `supabase-migration-m4-cronograma.sql` | M4.4 — Adiciona `area TEXT` e `disciplina TEXT` em `atividades_cronograma` | `atividades_cronograma` |
 | 2026-05-27 | `supabase-migration-m8-avanco.sql` | M8 — Adiciona `semana_iso TEXT` e `avanco_projetado NUMERIC`; converte histórico; depreca `mes_referencia` | `avanco_fisico` |
 | 2026-05-28 | `supabase-migration-m6-6wla-v2.sql` | M6 — Adiciona `adicionado_manualmente BOOLEAN NOT NULL DEFAULT FALSE` em `itens_6wla` | `itens_6wla` |
+| 2026-06-02 | `supabase-migration-m9-financeiro-projetado.sql` | M9 — Adiciona `faturamento_projetado NUMERIC DEFAULT 0`; habilita aba Avanço Financeiro com 3 séries | `financeiros` |
 
 ---
 
