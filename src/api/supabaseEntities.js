@@ -24,6 +24,8 @@ const TABLE_MAP = {
   Rdo: 'rdo',
   UnidadeMedida: 'unidades_medida',
   Disciplina: 'disciplinas',
+  Funcao: 'funcoes',
+  TipoEquipamento: 'tipos_equipamento',
 };
 
 function createEntityClient(tableName) {

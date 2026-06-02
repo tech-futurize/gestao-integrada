@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -48,32 +47,6 @@ function mesLabel(date) {
   return format(date, "MMM/yy", { locale: ptBR });
 }
 
-function normalizeStr(s) {
-  return s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-}
-
-function levenshtein(a, b) {
-  const m = a.length, n = b.length;
-  if (m === 0) return n;
-  if (n === 0) return m;
-  const dp = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  );
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
-  return dp[m][n];
-}
-
-function isSimilar(a, b) {
-  const na = normalizeStr(a);
-  const nb = normalizeStr(b);
-  if (na === nb || na.length < 3 || nb.length < 3) return false;
-  if (na.includes(nb) || nb.includes(na)) return true;
-  return levenshtein(na, nb) / Math.max(na.length, nb.length) <= 0.35;
-}
 
 // ── CelulaEditavel — defined OUTSIDE main component to prevent remount ────────
 function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
@@ -174,9 +147,7 @@ export default function HistogramaTabela({ tipo }) {
   const [showTotals, setShowTotals] = useState(false);
   const [activeSubtipos, setActiveSubtipos] = useState(() => new Set(["MOD", "MOI"]));
   const [showNovoDialog, setShowNovoDialog] = useState(false);
-  const [novoNome, setNovoNome] = useState("");
-  const [novoSubtipo, setNovoSubtipo] = useState("MOD");
-  const [similarWarning, setSimilarWarning] = useState(null);
+  const [novoFuncao, setNovoFuncao] = useState(null);
 
   // Data queries
   const { data: histogramas = [], isPending, isError } = useQuery({
@@ -191,6 +162,12 @@ export default function HistogramaTabela({ tipo }) {
     enabled: !!selectedProjectId,
   });
   const projeto = projetoArr[0] ?? null;
+
+  const { data: opcoesRecurso = [] } = useQuery({
+    queryKey: tipo === "MO" ? ["funcoes"] : ["tipos_equipamento"],
+    queryFn: () => tipo === "MO" ? entities.Funcao.list() : entities.TipoEquipamento.list(),
+  });
+  const opcoesAtivas = opcoesRecurso.filter(f => f.ativo !== false);
 
   const projectMonths = useMemo(
     () => getProjectMonths(projeto?.data_inicio, projeto?.data_prevista_termino),
@@ -222,6 +199,7 @@ export default function HistogramaTabela({ tipo }) {
 
   const createRecurso = useMutation({
     mutationFn: async (nome_recurso) => {
+      const subtipo = novoFuncao?.subtipo_mo ?? null;
       for (const m of projectMonths) {
         await entities.Histograma.create({
           projeto_id: selectedProjectId,
@@ -231,16 +209,14 @@ export default function HistogramaTabela({ tipo }) {
           quantidade_prevista_mensal: 0,
           quantidade_realizada_mensal: 0,
           qtd_projetado: 0,
-          ...(tipo === "MO" ? { subtipo_mo: novoSubtipo } : {}),
+          ...(tipo === "MO" && subtipo ? { subtipo_mo: subtipo } : {}),
         });
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["histogramas", selectedProjectId, tipo] });
       setShowNovoDialog(false);
-      setNovoNome("");
-      setNovoSubtipo("MOD");
-      setSimilarWarning(null);
+      setNovoFuncao(null);
     },
     onError: onErr,
   });
@@ -534,24 +510,42 @@ export default function HistogramaTabela({ tipo }) {
                   const isGroupStart = hasGroups && recurso.subtipo_mo && recurso.subtipo_mo !== prevSub;
                   return (
                     <React.Fragment key={recurso.nome}>
-                      {isGroupStart && (
-                        <tr>
-                          <td
-                            colSpan={999}
-                            className={`px-3 py-1 ${idx > 0 ? "border-t-2 border-border" : ""} ${
-                              recurso.subtipo_mo === "MOD"
-                                ? "bg-blue-50/40 dark:bg-blue-950/20"
-                                : "bg-orange-50/40 dark:bg-orange-950/20"
-                            }`}
-                          >
-                            <span className={`text-[10px] font-bold ${
-                              recurso.subtipo_mo === "MOD"
-                                ? "text-blue-600 dark:text-blue-400"
-                                : "text-orange-600 dark:text-orange-400"
-                            }`}>{recurso.subtipo_mo}</span>
-                          </td>
-                        </tr>
-                      )}
+                      {isGroupStart && (() => {
+                        const grpRes = recursosFiltrados.filter(r => r.subtipo_mo === recurso.subtipo_mo);
+                        const gPrev = grpRes.reduce((s, r) => s + r.totalPrev, 0);
+                        const gReal = grpRes.reduce((s, r) => s + r.totalReal, 0);
+                        const gProj = grpRes.reduce((s, r) => s + r.totalProj, 0);
+                        const gPctReal = gPrev > 0 ? Math.round((gReal / gPrev) * 100) : 0;
+                        const gPctProj = gPrev > 0 ? Math.round((gProj / gPrev) * 100) : 0;
+                        const gt = { totalPrev: gPrev, totalReal: gReal, totalProj: gProj, pctReal: gPctReal, pctProj: gPctProj };
+                        const isMOD = recurso.subtipo_mo === "MOD";
+                        const stickyBg = isMOD ? "bg-blue-50 dark:bg-blue-950/30" : "bg-orange-50 dark:bg-orange-950/30";
+                        const rowBg = isMOD ? "bg-blue-50/40 dark:bg-blue-950/20" : "bg-orange-50/40 dark:bg-orange-950/20";
+                        const labelCls = isMOD ? "text-blue-700 dark:text-blue-300" : "text-orange-700 dark:text-orange-300";
+                        const colCount = [showPrev, showReal, showProj].filter(Boolean).length || 1;
+                        return (
+                          <tr className={`${rowBg} ${idx > 0 ? "border-t-2 border-border" : ""} text-xs font-bold`}>
+                            <td style={{ position: "sticky", left: 0, zIndex: 10, width: 180, minWidth: 180 }}
+                                className={`${stickyBg} px-3 py-1.5 ${labelCls}`}>
+                              Subtotal {recurso.subtipo_mo}
+                            </td>
+                            {stickyTotalCols.map(col => (
+                              <td key={col.key}
+                                  style={{ position: "sticky", left: col.left, zIndex: 10 }}
+                                  className={`${stickyBg} px-2 py-1.5 text-center ${col.cls} border-l border-border w-[52px]`}>
+                                {col.pct ? `${gt[col.key]}%` : gt[col.key]}
+                              </td>
+                            ))}
+                            {projectMonths.flatMap((m) => {
+                              const mk = mesKey(m);
+                              return Array.from({ length: colCount }, (_, ci) => (
+                                <td key={`${mk}-${ci}`} className={`${ci === 0 ? "border-l-2" : "border-l"} border-border/20 py-1.5`} />
+                              ));
+                            })}
+                            <td />
+                          </tr>
+                        );
+                      })()}
                 <tr
                   className={`border-b border-border hover:bg-muted/30 transition-colors ${idx % 2 === 1 ? "bg-muted/10" : ""}`}>
                   {/* Nome + badge subtipo (sem botão — botão só no header) */}
@@ -662,95 +656,69 @@ export default function HistogramaTabela({ tipo }) {
       </div>
 
       {/* Dialog novo recurso */}
-      <Dialog open={showNovoDialog} onOpenChange={(open) => { setShowNovoDialog(open); if (!open) { setNovoNome(""); setNovoSubtipo("MOD"); setSimilarWarning(null); } }}>
+      <Dialog open={showNovoDialog} onOpenChange={(open) => { setShowNovoDialog(open); if (!open) setNovoFuncao(null); }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Novo {tipo === "MO" ? "Função (MO)" : "Equipamento"}</DialogTitle>
+            <DialogTitle>Novo {tipo === "MO" ? "Função" : "Equipamento"}</DialogTitle>
           </DialogHeader>
           {(() => {
-            const nomeTrim = novoNome.trim();
-            const isDuplicate = recursos.some(
-              (r) => r.nome.toLowerCase() === nomeTrim.toLowerCase()
-            );
-            const similarMatch = !isDuplicate && nomeTrim.length >= 2
-              ? (recursos.find(r => isSimilar(r.nome, nomeTrim))?.nome ?? null)
-              : null;
-
-            const handleCreate = () => {
-              if (!nomeTrim || isDuplicate) return;
-              if (similarMatch && !similarWarning) {
-                setSimilarWarning(similarMatch);
-                return;
-              }
-              setSimilarWarning(null);
-              createRecurso.mutate(nomeTrim);
-            };
-
+            const isDuplicate = novoFuncao
+              ? recursos.some(r => r.nome.toLowerCase() === novoFuncao.nome.toLowerCase())
+              : false;
             return (
               <>
                 <div className="py-2 space-y-3">
-                  {tipo === "MO" && (
-                    <div className="space-y-1">
-                      <Label>Tipo *</Label>
-                      <div className="flex gap-2">
-                        {["MOD", "MOI"].map((sub) => (
+                  <div className="space-y-1">
+                    <Label>Selecione {tipo === "MO" ? "a função" : "o equipamento"} *</Label>
+                    {opcoesAtivas.length === 0 ? (
+                      <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2 border border-amber-200">
+                        Nenhum cadastrado. Acesse <strong>Configurações → Cadastros</strong> para adicionar.
+                      </p>
+                    ) : (
+                      <div className="max-h-52 overflow-y-auto rounded-lg border border-border divide-y divide-border/60">
+                        {opcoesAtivas.map(opcao => (
                           <button
-                            key={sub}
+                            key={opcao.id}
                             type="button"
-                            onClick={() => setNovoSubtipo(sub)}
-                            className={`flex-1 py-1.5 rounded-lg border text-xs font-semibold transition-colors
-                              ${novoSubtipo === sub
-                                ? sub === "MOD"
-                                  ? "bg-blue-100 border-blue-400 text-blue-700 dark:bg-blue-900/30 dark:border-blue-600 dark:text-blue-300"
-                                  : "bg-orange-100 border-orange-400 text-orange-700 dark:bg-orange-900/30 dark:border-orange-600 dark:text-orange-300"
-                                : "border-border text-muted-foreground hover:bg-muted/50"}`}
+                            onClick={() => setNovoFuncao(opcao)}
+                            className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                              novoFuncao?.id === opcao.id
+                                ? "bg-primary/10 text-foreground"
+                                : "hover:bg-muted/50 text-foreground"
+                            }`}
                           >
-                            {sub}
+                            {tipo === "MO" && opcao.subtipo_mo && (
+                              <span className={`text-[9px] font-bold px-1 py-0.5 rounded flex-shrink-0 ${
+                                opcao.subtipo_mo === "MOD"
+                                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
+                                  : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"
+                              }`}>{opcao.subtipo_mo}</span>
+                            )}
+                            <span>{opcao.nome}</span>
                           </button>
                         ))}
                       </div>
-                    </div>
-                  )}
-                  <div className="space-y-1">
-                    <Label>{tipo === "MO" ? "Nome da função" : "Tipo de equipamento"} *</Label>
-                    <Input
-                      value={novoNome}
-                      onChange={(e) => { setNovoNome(e.target.value); setSimilarWarning(null); }}
-                      placeholder={tipo === "MO" ? "Ex: Soldador, Montador" : "Ex: Guindaste, Munck"}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && nomeTrim && !isDuplicate) handleCreate();
-                      }}
-                    />
+                    )}
                   </div>
-                  {similarWarning && (
-                    <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
-                      <span className="mt-0.5 shrink-0">⚠</span>
-                      <span>
-                        Existe {tipo === "MO" ? "uma função" : "um equipamento"} parecido:{" "}
-                        <strong>"{similarWarning}"</strong>. Clique em <em>Criar mesmo assim</em> para confirmar.
-                      </span>
-                    </div>
+                  {isDuplicate && (
+                    <p className="text-xs text-destructive">
+                      {tipo === "MO" ? "Esta função" : "Este equipamento"} já foi adicionado ao histograma.
+                    </p>
                   )}
                   <p className="text-xs text-muted-foreground">
                     Serão criados {projectMonths.length} registros mensais com valores zerados.
                   </p>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => { setShowNovoDialog(false); setNovoNome(""); setNovoSubtipo("MOD"); setSimilarWarning(null); }}>
+                  <Button variant="outline" onClick={() => { setShowNovoDialog(false); setNovoFuncao(null); }}>
                     Cancelar
                   </Button>
                   <Button
                     variant="save"
-                    disabled={!nomeTrim || createRecurso.isPending || isDuplicate}
-                    onClick={handleCreate}
+                    disabled={!novoFuncao || createRecurso.isPending || isDuplicate}
+                    onClick={() => { if (novoFuncao && !isDuplicate) createRecurso.mutate(novoFuncao.nome); }}
                   >
-                    {createRecurso.isPending
-                      ? "Criando..."
-                      : isDuplicate
-                      ? "Já existe"
-                      : similarWarning
-                      ? "Criar mesmo assim"
-                      : "Criar"}
+                    {createRecurso.isPending ? "Criando..." : isDuplicate ? "Já existe" : "Criar"}
                   </Button>
                 </DialogFooter>
               </>
