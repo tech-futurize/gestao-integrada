@@ -37,6 +37,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
     id_cronograma: item?.id_cronograma || "",
     data_cronograma: item?.data_cronograma || "",
     status: item?.status || "A iniciar",
+    pacote_id: item?.pacote_id || "",
     etapas: item?.etapas?.length === 7 ? item.etapas : DEFAULT_ETAPAS,
   });
   const [loading, setLoading] = useState(false);
@@ -53,6 +54,14 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
     queryFn: () => entities.UnidadeMedida.list(),
     staleTime: 1000 * 60 * 10,
   });
+
+  const { data: pacotes = [], isLoading: isLoadingPacotes } = useQuery({
+    queryKey: ["pacotes_suprimento"],
+    queryFn: () => entities.PacoteSuprimento.list(),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  const pacotesAtivos = pacotes.filter((p) => p.ativo !== false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -91,6 +100,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
         id_cronograma: form.id_cronograma || null,
         data_cronograma: form.data_cronograma || null,
         unidade_id: form.unidade_id || null,
+        pacote_id: form.pacote_id || null,
       };
       if (item) await entities.ItemMAS.update(item.id, data);
       else await entities.ItemMAS.create(data);
@@ -146,6 +156,24 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
               onChange={e => set("descricao", e.target.value)}
               placeholder="Descreva o material ou serviço..."
             />
+          </div>
+          <div className="space-y-1 col-span-2">
+            <Label className="text-xs">Pacote</Label>
+            <Select
+              value={form.pacote_id || "__none__"}
+              onValueChange={v => set("pacote_id", v === "__none__" ? "" : v)}
+              disabled={isLoadingPacotes}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={isLoadingPacotes ? "Carregando..." : "Selecionar pacote..."} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">— Sem pacote —</SelectItem>
+                {pacotesAtivos.map(p => (
+                  <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1 col-span-2">
             <Label className="text-xs">Fornecedor</Label>
