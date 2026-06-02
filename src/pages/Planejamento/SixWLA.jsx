@@ -102,6 +102,11 @@ export default function SixWLAPage() {
     [merged]
   );
 
+  const areas = useMemo(
+    () => [...new Set(merged.map(i => i.tarefa?.area).filter(Boolean))].sort(),
+    [merged]
+  );
+
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => entities.Item6WLA.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
@@ -159,6 +164,7 @@ export default function SixWLAPage() {
   const filtered = useMemo(() => {
     let items = merged;
     const discs = filtros.disciplina || [];
+    const areasFilter = filtros.area || [];
 
     const q = searchText.trim().toLowerCase();
     if (q) {
@@ -170,6 +176,10 @@ export default function SixWLAPage() {
 
     if (discs.length > 0) {
       items = items.filter(i => discs.includes(i.tarefa?.disciplina));
+    }
+
+    if (areasFilter.length > 0) {
+      items = items.filter(i => areasFilter.includes(i.tarefa?.area));
     }
 
     if (semanasAtivas.length > 0) {
@@ -278,29 +288,6 @@ export default function SixWLAPage() {
           })}
         </div>
 
-        {/* Semanas — mini-cards filtrantes */}
-        <div className="flex flex-wrap gap-2">
-          {semanas.map((s, i) => {
-            const ativa = semanasAtivas.includes(s.label);
-            return (
-              <button
-                key={s.label}
-                onClick={() => toggleSemana(s.label)}
-                title={`${formatData(s.start)} – ${formatData(s.end)}`}
-                style={ativa ? getWeekBadgeStyle(i, isDark) : undefined}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
-                  ativa
-                    ? ""
-                    : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
-                )}
-              >
-                {s.label}-{formatDataDDMM(s.start)}
-              </button>
-            );
-          })}
-        </div>
-
         {/* Filtros */}
         <FilterToolbar
           active={!!searchText || semanasAtivas.length > 0 || Object.values(filtros).some(a => a?.length > 0)}
@@ -321,9 +308,29 @@ export default function SixWLAPage() {
             storageKey={FILTROS_KEY}
             filters={[
               { key: "disciplina", label: "Disciplina", options: disciplinas },
+              { key: "area", label: "Área", options: areas },
             ]}
             onChange={setFiltros}
           />
+          {semanas.map((s, i) => {
+            const ativa = semanasAtivas.includes(s.label);
+            return (
+              <button
+                key={s.label}
+                onClick={() => toggleSemana(s.label)}
+                title={`${formatData(s.start)} – ${formatData(s.end)}`}
+                style={ativa ? getWeekBadgeStyle(i, isDark) : undefined}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                  ativa
+                    ? ""
+                    : "bg-background text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                )}
+              >
+                {s.label}-{formatDataDDMM(s.start)}
+              </button>
+            );
+          })}
         </FilterToolbar>
 
         {/* Visualização — pills S1–S6 por linha, 6 checkboxes de restrição, observacao */}
