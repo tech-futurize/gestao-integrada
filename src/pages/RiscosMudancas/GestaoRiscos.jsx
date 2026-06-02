@@ -23,14 +23,14 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
 import PlanoAcao from "@/components/riscos/PlanoAcao";
-import { CATEGORIAS_RISCO as CATEGORIAS, CAT_COLORS, SCORE_COLORS, IMPACTO_DIMS, getScoreLevel } from "@/utils/riscosUtils";
+import { CATEGORIAS_RISCO as CATEGORIAS, CAT_COLORS, SCORE_COLORS, IMPACTO_DIMS, getScoreLevel, PROBABILIDADE_OPTIONS, IMPACTO_OPTIONS, STATUS_RISCO, STATUS_RISCO_COLORS, pesoProbabilidade, pesoImpacto, calcScoreRisco } from "@/utils/riscosUtils";
 
 const RISCO_COLUMNS = [
   { key: "codigo",         label: "Código",                    type: "string" },
   { key: "descricao",      label: "Descrição",                 type: "string", required: true },
   { key: "categoria",      label: "Categoria",                 type: "string" },
-  { key: "probabilidade",  label: "Probabilidade",             type: "number" },
-  { key: "impacto",        label: "Impacto",                   type: "number" },
+  { key: "probabilidade",  label: "Probabilidade",             type: "string" },
+  { key: "impacto",        label: "Impacto",                   type: "string" },
   { key: "status",         label: "Status",                    type: "string" },
   { key: "responsavel",    label: "Responsável",               type: "string" },
   { key: "plano_resposta", label: "Plano de Resposta",         type: "string" },
@@ -38,7 +38,7 @@ const RISCO_COLUMNS = [
   { key: "prazo_dias",     label: "Impacto Prazo (dias)",      type: "number" },
   { key: "valor_impacto",  label: "Impacto Financeiro (R$)",   type: "number" },
 ];
-const STATUS_OPTIONS = ["Ativo", "Mitigado", "Encerrado"];
+const STATUS_OPTIONS = STATUS_RISCO;
 
 function ScoreBadge({ score }) {
   const level = getScoreLevel(score || 0);
@@ -52,13 +52,13 @@ function ScoreBadge({ score }) {
 }
 
 const EMPTY_FORM = {
-  codigo: "", descricao: "", categoria: "", probabilidade: 3, impacto: 3,
+  codigo: "", descricao: "", categoria: "", probabilidade: "Média", impacto: "Médio",
   status: "Ativo", responsavel: "", plano_resposta: "",
   impactos: [],
   escopo_texto: "", prazo_dias: "", valor_impacto: "",
 };
 
-// 5×5 matrix cell colors
+// 5×5 matrix cell colors — recebe pesos numéricos (1-5) já derivados do texto
 function matrixColor(p, i) {
   const score = p * i;
   if (score >= 12) return "bg-red-500/80";
@@ -141,11 +141,11 @@ export default function GestaoRiscos() {
 
   const { sortedData: riscosSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "codigo" })
 
-  // Matriz 5×5 — count risks in each cell
+  // Matriz 5×5 — conta riscos por célula (chave por peso numérico derivado do texto)
   const matrixData = useMemo(() => {
     const grid = {};
     riscos.forEach(r => {
-      const key = `${r.probabilidade}-${r.impacto}`;
+      const key = `${pesoProbabilidade(r.probabilidade)}-${pesoImpacto(r.impacto)}`;
       grid[key] = (grid[key] || 0) + 1;
     });
     return grid;
@@ -153,7 +153,7 @@ export default function GestaoRiscos() {
 
   const kpi = {
     total: riscos.length,
-    criticos: riscos.filter(r => (r.score || r.probabilidade * r.impacto || 0) >= 12).length,
+    criticos: riscos.filter(r => (r.score || calcScoreRisco(r.probabilidade, r.impacto)) >= 12).length,
     ativos: riscos.filter(r => r.status === "Ativo").length,
     mitigados: riscos.filter(r => r.status === "Mitigado").length,
   };
@@ -164,8 +164,8 @@ export default function GestaoRiscos() {
       codigo: risco.codigo || "",
       descricao: risco.descricao || "",
       categoria: risco.categoria || "",
-      probabilidade: risco.probabilidade ?? 3,
-      impacto: risco.impacto ?? 3,
+      probabilidade: risco.probabilidade || "Média",
+      impacto: risco.impacto || "Médio",
       status: risco.status || "Ativo",
       responsavel: risco.responsavel || "",
       plano_resposta: risco.plano_resposta || "",
@@ -178,12 +178,12 @@ export default function GestaoRiscos() {
   };
 
   const handleSubmit = () => {
-    const score = (Number(form.probabilidade) || 3) * (Number(form.impacto) || 3);
+    const score = calcScoreRisco(form.probabilidade, form.impacto);
     const payload = {
       ...form,
       projeto_id: selectedProjectId,
-      probabilidade: Number(form.probabilidade) || 3,
-      impacto: Number(form.impacto) || 3,
+      probabilidade: form.probabilidade,
+      impacto: form.impacto,
       score,
       prazo_dias:    form.prazo_dias    !== "" ? Number(form.prazo_dias)    : null,
       valor_impacto: form.valor_impacto !== "" ? Number(form.valor_impacto) : null,
@@ -367,8 +367,8 @@ export default function GestaoRiscos() {
               {isError && <tr><td colSpan={10} className="py-10 text-center text-status-critical text-sm">Erro ao carregar riscos. Verifique sua conexão e tente novamente.</td></tr>}
               {!isLoading && !isError && riscosSorted.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
               {riscosSorted.map((r, i) => {
-                const score = r.score || (r.probabilidade * r.impacto) || 0;
-                const statusColor = { Ativo: "text-amber-600", Mitigado: "text-blue-600", Encerrado: "text-green-600" }[r.status] || "";
+                const score = r.score || calcScoreRisco(r.probabilidade, r.impacto);
+                const statusColor = STATUS_RISCO_COLORS[r.status] || "";
                 return (
                   <tr key={r.id} className={`border-b border-border hover:bg-muted/40 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
                     <td className="px-4 py-3 font-bold text-xs text-foreground whitespace-nowrap">{r.codigo || "—"}</td>
@@ -456,16 +456,22 @@ export default function GestaoRiscos() {
           <SectionDivider label="Avaliação" />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label>Probabilidade (1-5)</Label>
-              <Input type="number" min={1} max={5} value={form.probabilidade} onChange={e => setForm(f => ({ ...f, probabilidade: e.target.value }))} />
+              <Label>Probabilidade</Label>
+              <Select value={form.probabilidade} onValueChange={v => setForm(f => ({ ...f, probabilidade: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{PROBABILIDADE_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
             <div className="space-y-1">
-              <Label>Impacto (1-5)</Label>
-              <Input type="number" min={1} max={5} value={form.impacto} onChange={e => setForm(f => ({ ...f, impacto: e.target.value }))} />
+              <Label>Impacto</Label>
+              <Select value={form.impacto} onValueChange={v => setForm(f => ({ ...f, impacto: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{IMPACTO_OPTIONS.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
             <div className="col-span-2 p-2 bg-muted rounded-lg text-sm">
-              Score calculado: <strong style={{ color: SCORE_COLORS[getScoreLevel((form.probabilidade || 3) * (form.impacto || 3))].color }}>
-                {(form.probabilidade || 3) * (form.impacto || 3)}
+              Score calculado: <strong style={{ color: SCORE_COLORS[getScoreLevel(calcScoreRisco(form.probabilidade, form.impacto))].color }}>
+                {calcScoreRisco(form.probabilidade, form.impacto)}
               </strong>
             </div>
             <div className="space-y-1">
@@ -547,7 +553,7 @@ export default function GestaoRiscos() {
         exportFileName="riscos"
         title="Riscos — Importar / Exportar"
         onExport={() => filtered}
-        onImport={(row) => createMut.mutateAsync({ ...row, projeto_id: selectedProjectId })}
+        onImport={(row) => createMut.mutateAsync({ ...row, projeto_id: selectedProjectId, score: calcScoreRisco(row.probabilidade, row.impacto) })}
       />
       <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
         <AlertDialogContent>

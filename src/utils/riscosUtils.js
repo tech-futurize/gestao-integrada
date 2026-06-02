@@ -21,6 +21,48 @@ export const SCORE_COLORS = {
 
 export const IMPACTO_DIMS = ["Escopo", "Prazo", "Valor"];
 
+// Avaliação qualitativa de risco (texto). As colunas `probabilidade` e `impacto`
+// são TEXT no banco — nunca números. O score numérico é derivado dos pesos abaixo.
+export const PROBABILIDADE_OPTIONS = ["Muito Baixa", "Baixa", "Média", "Alta", "Muito Alta"];
+export const IMPACTO_OPTIONS       = ["Muito Baixo", "Baixo", "Médio", "Alto", "Muito Alto"];
+
+const PROB_PESO    = { "Muito Baixa": 1, "Baixa": 2, "Média": 3, "Alta": 4, "Muito Alta": 5 };
+const IMPACTO_PESO = { "Muito Baixo": 1, "Baixo": 2, "Médio": 3, "Alto": 4, "Muito Alto": 5 };
+
+// Status de risco — alinhado aos valores reais persistidos no banco (texto livre, sem CHECK).
+export const STATUS_RISCO = ["Ativo", "Monitoramento", "Mitigado", "Encerrado"];
+
+export const STATUS_RISCO_COLORS = {
+  "Ativo":         "text-amber-600",
+  "Monitoramento": "text-blue-600",
+  "Mitigado":      "text-indigo-600",
+  "Encerrado":     "text-green-600",
+};
+
+/**
+ * Converte um nível textual em peso 1-5. Tolera dados legados numéricos
+ * (riscos corrompidos pela versão anterior que gravava número no campo texto).
+ * @param {string|number} valor @param {Record<string,number>} mapa
+ * @returns {number} peso 1-5, ou 0 se desconhecido
+ */
+function peso(valor, mapa) {
+  const n = Number(valor);
+  if (Number.isFinite(n) && n >= 1 && n <= 5) return n;
+  return mapa[valor] ?? 0;
+}
+
+export const pesoProbabilidade = (v) => peso(v, PROB_PESO);
+export const pesoImpacto       = (v) => peso(v, IMPACTO_PESO);
+
+/**
+ * Score do risco = peso(probabilidade) × peso(impacto), escala 1-25.
+ * @param {string|number} probabilidade @param {string|number} impacto
+ * @returns {number}
+ */
+export function calcScoreRisco(probabilidade, impacto) {
+  return pesoProbabilidade(probabilidade) * pesoImpacto(impacto);
+}
+
 /** @param {number} score @returns {"high"|"medium"|"low"} */
 export function getScoreLevel(score) {
   if (score >= 12) return "high";
