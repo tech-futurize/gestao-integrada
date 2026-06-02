@@ -74,6 +74,12 @@ export default function SixWLAPage() {
     enabled: !!selectedProjectId,
   });
 
+  // Q3 — disciplinas cadastradas (globais, sem filtro de projeto)
+  const { data: disciplinasDB = [] } = useQuery({
+    queryKey: ["disciplinas"],
+    queryFn: () => entities.Disciplina.list(),
+  });
+
   // Atividades com sobreposição nas próximas 6 semanas (hoje até +42 dias)
   const tarefasNaJanela = useMemo(
     () => tarefas.filter(t => getSemanasBadge(t, semanas).length > 0),
@@ -105,6 +111,13 @@ export default function SixWLAPage() {
   const areas = useMemo(
     () => [...new Set(merged.map(i => i.tarefa?.area).filter(Boolean))].sort(),
     [merged]
+  );
+
+  const disciplinaMap = useMemo(
+    () => Object.fromEntries(
+      disciplinasDB.map(d => [d.nome.toLowerCase(), d.cor || "#6b7280"])
+    ),
+    [disciplinasDB]
   );
 
   const updateMut = useMutation({
@@ -338,6 +351,7 @@ export default function SixWLAPage() {
           items={filtered}
           restricoes={RESTRICOES}
           isLoading={isPending}
+          disciplinaMap={disciplinaMap}
           onUpdate={(id, data) => updateMut.mutate({ id, data })}
           onDelete={(id) => deleteMut.mutate(id)}
         />
