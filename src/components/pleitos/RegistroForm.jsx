@@ -9,11 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Paperclip, X as XIcon, Link2 } from "lucide-react";
+import { Paperclip, X as XIcon, Link2 } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
-import { IMPACT_CATEGORIES as IMPACTO_CATEGORIES } from "@/lib/constants";
 
 export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting, tarefas = [], selectedProjectId = "" }) {
   const [formData, setFormData] = useState({
@@ -22,28 +21,13 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
     responsavel_registro: incidente?.responsavel_registro || "",
     descricao: incidente?.descricao || "",
     impacto_preliminar: incidente?.impacto_preliminar || "",
+    probabilidade: incidente?.probabilidade || "Média",
+    gravidade: incidente?.gravidade || "Média",
     status: incidente?.status || "Registrado",
     pleito_id: incidente?.pleito_id || null,
-    numero_rdo: incidente?.numero_rdo || "",
-    area: incidente?.area || "",
-    disciplina: incidente?.disciplina || "",
-    atividades: incidente?.atividades || "",
-    condicoes_climaticas_manha: incidente?.condicoes_climaticas_manha || "",
-    condicoes_climaticas_tarde: incidente?.condicoes_climaticas_tarde || "",
-    condicoes_climaticas_noite: incidente?.condicoes_climaticas_noite || "",
-    ocorrencias: incidente?.ocorrencias || "",
     responsabilidade: incidente?.responsabilidade || "",
   });
 
-  const [maoDeObra, setMaoDeObra] = useState(
-    incidente?.mao_de_obra?.length ? incidente.mao_de_obra : [{ quantidade: "", funcao: "" }]
-  );
-  const [equipamentosRdo, setEquipamentosRdo] = useState(
-    incidente?.equipamentos_rdo?.length ? incidente.equipamentos_rdo : [{ quantidade: "", equipamento: "" }]
-  );
-  const [impactoOcorrencia, setImpactoOcorrencia] = useState(
-    incidente?.impacto_ocorrencia || []
-  );
   const [newFiles, setNewFiles] = useState([]);
   const [existingAnexos, setExistingAnexos] = useState(incidente?.anexos || []);
   const [removedPaths, setRemovedPaths] = useState([]);
@@ -57,24 +41,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
-  const isRDO = formData.tipo_registro === "RDO";
-
-  const toggleImpacto = (cat) => {
-    setImpactoOcorrencia(prev =>
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-    );
-  };
-
-  const addMaoDeObra = () => setMaoDeObra(prev => [...prev, { quantidade: "", funcao: "" }]);
-  const removeMaoDeObra = (idx) => setMaoDeObra(prev => prev.filter((_, i) => i !== idx));
-  const updateMaoDeObra = (idx, field, value) =>
-    setMaoDeObra(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
-
-  const addEquipamento = () => setEquipamentosRdo(prev => [...prev, { quantidade: "", equipamento: "" }]);
-  const removeEquipamento = (idx) => setEquipamentosRdo(prev => prev.filter((_, i) => i !== idx));
-  const updateEquipamento = (idx, field, value) =>
-    setEquipamentosRdo(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (newFiles.length > 0 && !selectedProjectId) {
@@ -84,7 +50,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
     setIsUploading(true);
 
     try {
-      // Upload de arquivos novos
       const uploaded = [];
       for (const file of newFiles) {
         const ext = file.name.split(".").pop();
@@ -105,7 +70,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
         });
       }
 
-      // Deletar arquivos removidos do storage
       if (removedPaths.length > 0) {
         await supabase.storage.from("registros-anexos").remove(removedPaths);
       }
@@ -114,9 +78,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
         ...formData,
         data_hora: toUtcIso(formData.data_hora),
         pleito_id: formData.pleito_id || null,
-        mao_de_obra: isRDO ? maoDeObra.filter(r => r.quantidade || r.funcao) : [],
-        equipamentos_rdo: isRDO ? equipamentosRdo.filter(r => r.quantidade || r.equipamento) : [],
-        impacto_ocorrencia: impactoOcorrencia,
         anexos: [...existingAnexos, ...uploaded],
         atividades_vinculadas: atividadesVinculadas,
       });
@@ -193,15 +154,10 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
               <Select value={formData.tipo_registro} onValueChange={(v) => set("tipo_registro", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(formData.tipo_registro === "INCIDENTE" || formData.tipo_registro === "Incidente") && (
-                    <SelectItem value={formData.tipo_registro} disabled className="text-muted-foreground italic">
-                      Incidente (legado — selecione um tipo)
-                    </SelectItem>
-                  )}
                   <SelectItem value="Ata de Reunião">Ata de Reunião</SelectItem>
-                  <SelectItem value="RDO">RDO</SelectItem>
                   <SelectItem value="E-mail">E-mail</SelectItem>
                   <SelectItem value="Notificação">Notificação</SelectItem>
+                  <SelectItem value="RDO">RDO</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -218,137 +174,65 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
             </div>
           </div>
 
-          {/* RDO-specific fields */}
-          {isRDO && (
-            <div className="space-y-6 p-4 bg-blue-100/40 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">Campos do RDO</p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Nº RDO</Label>
-                  <Input value={formData.numero_rdo} onChange={(e) => set("numero_rdo", e.target.value)} placeholder="Ex: 001" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Área</Label>
-                  <Input value={formData.area} onChange={(e) => set("area", e.target.value)} placeholder="Ex: Área Norte" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Disciplina</Label>
-                  <Select value={formData.disciplina} onValueChange={(v) => set("disciplina", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Mecânica">Mecânica</SelectItem>
-                      <SelectItem value="Elétrica">Elétrica</SelectItem>
-                      <SelectItem value="Estrutura Metálica">Estrutura Metálica</SelectItem>
-                      <SelectItem value="Tubulação">Tubulação</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Mão de obra */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Mão de Obra</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={addMaoDeObra}>
-                    <Plus className="w-3 h-3 mr-1" /> Adicionar
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {maoDeObra.map((row, idx) => (
-                    <div key={idx} className="flex gap-2 items-center">
-                      <Input className="w-24" placeholder="Qtd" value={row.quantidade}
-                        onChange={(e) => updateMaoDeObra(idx, "quantidade", e.target.value)} />
-                      <Input placeholder="Função" value={row.funcao}
-                        onChange={(e) => updateMaoDeObra(idx, "funcao", e.target.value)} />
-                      {maoDeObra.length > 1 && (
-                        <Button type="button" size="icon" variant="ghost" onClick={() => removeMaoDeObra(idx)}>
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Equipamentos */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Equipamentos</Label>
-                  <Button type="button" size="sm" variant="outline" onClick={addEquipamento}>
-                    <Plus className="w-3 h-3 mr-1" /> Adicionar
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {equipamentosRdo.map((row, idx) => (
-                    <div key={idx} className="flex gap-2 items-center">
-                      <Input className="w-24" placeholder="Qtd" value={row.quantidade}
-                        onChange={(e) => updateEquipamento(idx, "quantidade", e.target.value)} />
-                      <Input placeholder="Equipamento" value={row.equipamento}
-                        onChange={(e) => updateEquipamento(idx, "equipamento", e.target.value)} />
-                      {equipamentosRdo.length > 1 && (
-                        <Button type="button" size="icon" variant="ghost" onClick={() => removeEquipamento(idx)}>
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Atividades */}
-              <div className="space-y-2">
-                <Label>Atividades</Label>
-                <Textarea value={formData.atividades} onChange={(e) => set("atividades", e.target.value)}
-                  placeholder="Descreva as atividades realizadas..." rows={3} />
-              </div>
-
-              {/* Condições Climáticas */}
-              <div className="space-y-2">
-                <Label>Condições Climáticas</Label>
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { label: "Manhã", field: "condicoes_climaticas_manha" },
-                    { label: "Tarde", field: "condicoes_climaticas_tarde" },
-                    { label: "Noite", field: "condicoes_climaticas_noite" },
-                  ].map(({ label, field }) => (
-                    <div key={field} className="space-y-1">
-                      <p className="text-xs text-muted-foreground font-medium">{label}</p>
-                      <Select value={formData[field]} onValueChange={(v) => set(field, v)}>
-                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Praticável">Praticável</SelectItem>
-                          <SelectItem value="Impraticável">Impraticável</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {/* Descrição + Impacto */}
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label>Descrição *</Label>
+              <Textarea value={formData.descricao} onChange={(e) => set("descricao", e.target.value)}
+                placeholder="Descreva o registro..." rows={4} required className="resize-none" />
             </div>
-          )}
-
-          {/* Non-RDO fields */}
-          {!isRDO && (
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label>Descrição *</Label>
-                <Textarea value={formData.descricao} onChange={(e) => set("descricao", e.target.value)}
-                  placeholder="Descreva o registro..." rows={4} required className="resize-none" />
-              </div>
-              <div className="space-y-2">
-                <Label>Avaliação de Impacto</Label>
-                <Textarea value={formData.impacto_preliminar} onChange={(e) => set("impacto_preliminar", e.target.value)}
-                  placeholder="Avaliação preliminar do impacto..." rows={2} className="resize-none" />
-              </div>
+            <div className="space-y-2">
+              <Label>Avaliação de Impacto</Label>
+              <Textarea value={formData.impacto_preliminar} onChange={(e) => set("impacto_preliminar", e.target.value)}
+                placeholder="Avaliação preliminar do impacto..." rows={2} className="resize-none" />
             </div>
-          )}
+          </div>
 
-          {/* Ocorrências (shared) */}
-          <div className="space-y-2">
-            <Label>Ocorrências</Label>
-            <Textarea value={formData.ocorrencias} onChange={(e) => set("ocorrencias", e.target.value)}
-              placeholder="Registre ocorrências..." rows={3} className="resize-none" />
+          {/* Probabilidade + Gravidade + Responsabilidade + Status */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label>Probabilidade</Label>
+              <Select value={formData.probabilidade} onValueChange={(v) => set("probabilidade", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Baixa">Baixa</SelectItem>
+                  <SelectItem value="Média">Média</SelectItem>
+                  <SelectItem value="Alta">Alta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Gravidade</Label>
+              <Select value={formData.gravidade} onValueChange={(v) => set("gravidade", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Baixa">Baixa</SelectItem>
+                  <SelectItem value="Média">Média</SelectItem>
+                  <SelectItem value="Alta">Alta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Responsabilidade</Label>
+              <Select value={formData.responsabilidade} onValueChange={(v) => set("responsabilidade", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Contratada">Contratada</SelectItem>
+                  <SelectItem value="Contratante">Contratante</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={formData.status} onValueChange={(v) => set("status", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Registrado">Registrado</SelectItem>
+                  <SelectItem value="Em Análise">Em Análise</SelectItem>
+                  <SelectItem value="Resolvido">Resolvido</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Vincular Atividades */}
@@ -437,51 +321,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
             </DialogContent>
           </Dialog>
 
-          {/* Responsabilidade + Impacto da Ocorrência */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label>Responsabilidade</Label>
-              <Select value={formData.responsabilidade} onValueChange={(v) => set("responsabilidade", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Contratada">Contratada</SelectItem>
-                  <SelectItem value="Contratante">Contratante</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(v) => set("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Registrado">Registrado</SelectItem>
-                  <SelectItem value="Em Análise">Em Análise</SelectItem>
-                  <SelectItem value="Resolvido">Resolvido</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Impacto da Ocorrência - checkboxes */}
-          <div className="space-y-3">
-            <Label>Impacto da Ocorrência</Label>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              {IMPACTO_CATEGORIES.map((cat) => (
-                <div key={cat} className="flex items-center space-x-2 bg-muted rounded p-2">
-                  <Checkbox
-                    id={`impacto-${cat}`}
-                    checked={impactoOcorrencia.includes(cat)}
-                    onCheckedChange={() => toggleImpacto(cat)}
-                  />
-                  <label htmlFor={`impacto-${cat}`} className="text-xs font-medium cursor-pointer leading-tight">
-                    {cat}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Anexos */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -509,7 +348,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
               <p className="text-xs text-muted-foreground italic">Nenhum anexo adicionado.</p>
             )}
 
-            {/* Anexos já salvos */}
             {existingAnexos.map((anexo) => (
               <div key={anexo.url} className="flex items-center justify-between gap-2 p-2 bg-muted rounded-md">
                 <a
@@ -534,7 +372,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
               </div>
             ))}
 
-            {/* Novos arquivos selecionados */}
             {newFiles.map((file, idx) => (
               <div key={`new-${idx}`} className="flex items-center justify-between gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
                 <div className="flex items-center gap-2 min-w-0">

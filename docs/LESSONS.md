@@ -326,6 +326,38 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L018 — Formulários enviando colunas inexistentes no banco quebram INSERT e UPDATE
+
+- **Data:** 2026-06-02
+- **Agente:** Tester
+- **Milestone:** Auditoria global de save/edit/add
+- **Categoria:** Banco
+- **Gravidade:** Crítica
+- **Contexto em 1 frase:** Auditoria de todos os formulários de salvar/editar descobriu três grupos de forms enviando campos que não existem mais no banco.
+- **Erro observado:** (1) `RegistroForm.jsx` enviava 11 colunas removidas do banco (`numero_rdo`, `area`, `disciplina`, `atividades`, `condicoes_climaticas_*`, `ocorrencias`, `mao_de_obra`, `equipamentos_rdo`, `impacto_ocorrencia`) que existiam na tabela `incidentes` mas foram dropadas quando o módulo RDO foi desacoplado para tabela própria. (2) `TarefaForm.jsx` enviava `responsavel` e `predecessoras` que nunca foram adicionadas à tabela `atividades_cronograma`. (3) `PlanoAcao.jsx` criava acoes sem `pleito_id` mas a coluna era NOT NULL sem default — salvamento de ação vinculada a risco/mudança sempre falhava.
+- **Causa raiz:** Quando colunas são dropadas do banco via migration, o formulário correspondente não foi atualizado. O schema do banco divergiu silenciosamente do estado esperado pelo front-end. Sem testes de integração ponta-a-ponta, o bug só foi detectado em uso real.
+- **Correção aplicada:** (1) RegistroForm reescrito para enviar apenas colunas existentes; adicionados campos `probabilidade` e `gravidade` que estavam no banco mas ausentes do form. (2) Migration M17 adicionou `responsavel TEXT` e `predecessoras TEXT` à `atividades_cronograma`. (3) Migration M17 tornou `acoes.pleito_id` nullable.
+- **Como evitar em projetos futuros:** Ao fazer DROP de coluna ou renomear uma coluna no banco, buscar imediatamente todos os formulários que referenciam aquela tabela (`grep -r "entities.NomeEntidade" src/`) e atualizar os campos enviados. Considerar criar um teste unitário em `riscosUtils.test.js` (ou equivalente) que valide o payload antes de enviar.
+- **Referências:** `src/components/pleitos/RegistroForm.jsx`, `src/components/cronograma/TarefaForm.jsx`, `src/components/riscos/PlanoAcao.jsx`, `docs/database/supabase-migration-m17-bugfixes.sql`.
+
+---
+
+### L019 — acoes.pleito_id manteve NOT NULL ao expandir tabela para riscos/mudanças
+
+- **Data:** 2026-06-02
+- **Agente:** Tester
+- **Milestone:** Auditoria global de save/edit/add
+- **Categoria:** Banco
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** Migration M13 adicionou `registro_risco_id` e `registro_mudanca_id` em `acoes` para o PlanoAcao, mas não alterou a constraint NOT NULL de `pleito_id`.
+- **Erro observado:** Toda tentativa de criar uma nova ação no PlanoAcao (Riscos/Mudanças) falhava com `null value in column "pleito_id" violates not-null constraint`.
+- **Causa raiz:** A tabela `acoes` foi projetada originalmente apenas para pleitos, com `pleito_id NOT NULL`. Ao expandir para cobrir riscos e mudanças, a nova FK foi adicionada mas a constraint do campo original não foi relaxada.
+- **Correção aplicada:** `ALTER TABLE acoes ALTER COLUMN pleito_id DROP NOT NULL` (migration M17).
+- **Como evitar em projetos futuros:** Ao reutilizar uma tabela de entidade A para dar suporte também a B e C, revisar TODAS as constraints NOT NULL do schema original e avaliar se ainda fazem sentido no contexto expandido. Documentar o CHECK lógico no DATABASE.md: ex. "pleito_id OU registro_risco_id OU registro_mudanca_id deve estar preenchido".
+- **Referências:** `docs/database/supabase-migration-m13-riscos.sql`, `docs/database/supabase-migration-m17-bugfixes.sql`, `src/components/riscos/PlanoAcao.jsx`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:
