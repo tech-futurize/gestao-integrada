@@ -7,6 +7,7 @@ import { FormDialog } from "@/components/ui/FormDialog";
 
 const TIPOS = ["Serviços", "Fornecimento", "Fornecimento + Serviço"];
 const STATUS = ["A iniciar", "Em andamento", "Concluído", "Paralisado"];
+const MODALIDADES = ["Preço unitário", "Global"];
 
 const formatBR = (v) => {
   if (v === "" || v == null) return "";
@@ -28,6 +29,7 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
   const [form, setForm] = useState({
     numero: "", objeto: "", fornecedor: "", cnpj: "",
     data_inicio: "", data_fim: "", status: "A iniciar", tipo: "Serviços",
+    modalidade: "", origem: "",
     centro_custo: "", gestor: "", observacoes: "",
     ...contrato,
     valor_total: contrato?.valor_total != null ? formatBR(contrato.valor_total) : "",
@@ -36,7 +38,12 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = () => {
-    onSave({ ...form, valor_total: parseBRFloat(form.valor_total) });
+    onSave({
+      ...form,
+      valor_total: parseBRFloat(form.valor_total),
+      modalidade: form.modalidade || null,
+      origem: form.origem || null,
+    });
   };
 
   return (
@@ -104,6 +111,22 @@ export default function ContratoForm({ contrato, onSave, onClose }) {
             }}
             placeholder="0,00"
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Modalidade</Label>
+          <Select value={form.modalidade || undefined} onValueChange={v => set("modalidade", v)}>
+            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {MODALIDADES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Origem (orçamento/proposta)</Label>
+          <Input value={form.origem} onChange={e => set("origem", e.target.value)} placeholder="Ex: ORC-0042" />
         </div>
       </div>
 

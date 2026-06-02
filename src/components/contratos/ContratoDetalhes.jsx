@@ -1,12 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { entities } from "@/api/supabaseEntities";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Edit, DollarSign, Calendar, User, Building } from "lucide-react";
-import AditivosList from "@/components/contratos/AditivosList";
 import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/dateUtils";
+import ContratoVisaoGeral from "@/components/contratos/ContratoVisaoGeral";
+import ContratoPQP from "@/components/contratos/ContratoPQP";
+import ContratoMedicoes from "@/components/contratos/ContratoMedicoes";
+import ContratoAditivos from "@/components/contratos/ContratoAditivos";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+const CONCLUIDAS = ["Concluído", "Aprovada", "Paga"];
 
 function addDaysToDate(dateStr, days) {
   if (!dateStr || !days) return null;
@@ -15,24 +22,25 @@ function addDaysToDate(dateStr, days) {
   return d.toISOString().split("T")[0];
 }
 
-export default function ContratoDetalhes({
-  contrato, medicoes, aditivos,
-  onBack, onEdit, onDelete, onNovaMedicao,
-  onAddAditivo, onEditAditivo, onDeleteAditivo,
-}) {
-  const totalMedido = (medicoes || [])
-    .filter(m => ["Aprovada", "Paga"].includes(m.status))
-    .reduce((s, m) => s + (m.valor || 0), 0);
+export default function ContratoDetalhes({ contrato, onBack, onEdit, onDelete }) {
+  // Queries próprias (deduplicadas com as das abas) para o card-resumo do contrato
+  const { data: medicoes = [] } = useQuery({
+    queryKey: ["medicoes", "contrato", contrato.id],
+    queryFn: () => entities.Medicao.filter({ contrato_id: contrato.id }),
+    enabled: !!contrato.id,
+  });
+  const { data: aditivos = [] } = useQuery({
+    queryKey: ["aditivos", contrato.id],
+    queryFn: () => entities.Aditivo.filter({ contrato_id: contrato.id }),
+    enabled: !!contrato.id,
+  });
+
+  const totalMedido = medicoes.filter((m) => CONCLUIDAS.includes(m.status)).reduce((s, m) => s + (m.valor || 0), 0);
   const saldo = (contrato.valor_total || 0) - totalMedido;
   const percentMedido = contrato.valor_total ? (totalMedido / contrato.valor_total) * 100 : 0;
 
-  const totalPrazoDias = (aditivos || [])
-    .filter(a => a.status === "Assinado" && a.prazo_dias)
-    .reduce((s, a) => s + (a.prazo_dias || 0), 0);
-
-  const terminoAtual = totalPrazoDias > 0
-    ? addDaysToDate(contrato.data_fim, totalPrazoDias)
-    : contrato.data_fim;
+  const totalPrazoDias = aditivos.filter((a) => a.status === "Assinado" && a.prazo_dias).reduce((s, a) => s + (a.prazo_dias || 0), 0);
+  const terminoAtual = totalPrazoDias > 0 ? addDaysToDate(contrato.data_fim, totalPrazoDias) : contrato.data_fim;
 
   return (
     <div className="space-y-5">
@@ -43,6 +51,7 @@ export default function ContratoDetalhes({
         <ConfirmDeleteButton size="sm" onConfirm={() => onDelete(contrato.id)} description="O contrato e todos os seus dados associados serão excluídos permanentemente." />
       </div>
 
+      {/* Card-resumo — apenas indicadores DESTE contrato */}
       <Card className="bg-card shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-4">
@@ -101,53 +110,25 @@ export default function ContratoDetalhes({
             <div className="w-full bg-muted rounded-full h-2">
               <div className="h-2 rounded-full transition-all bg-ocre" style={{ width: `${Math.min(percentMedido, 100)}%` }} />
             </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-xs text-muted-foreground">Pago/Aprovado: {fmt(totalMedido)}</span>
-              <span className="text-xs text-muted-foreground">Total: {fmt(contrato.valor_total)}</span>
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* ── Aditivos ─────────────────────────────────── */}
+      {/* Abas */}
       <Card className="bg-card shadow-sm">
         <CardContent className="p-6">
-          <AditivosList
-            aditivos={aditivos || []}
-            onAdd={onAddAditivo}
-            onEdit={onEditAditivo}
-            onDelete={onDeleteAditivo}
-          />
-        </CardContent>
-      </Card>
-
-      {/* ── Medições ─────────────────────────────────── */}
-      <Card className="bg-card shadow-sm">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base text-foreground">Medições</CardTitle>
-            <Button size="sm" onClick={onNovaMedicao}>+ Nova Medição</Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {(medicoes || []).length === 0 ? (
-            <p className="text-center text-muted-foreground py-8 text-sm">Nenhuma medição registrada.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {medicoes.map(m => (
-                <div key={m.id} className="py-3 flex items-center justify-between">
-                  <div>
-                    <span className="text-sm font-medium text-foreground">Medição {m.numero}</span>
-                    <span className="text-xs text-muted-foreground ml-2">{m.periodo_inicio} → {m.periodo_fim}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-sm text-foreground">{fmt(m.valor)}</span>
-                    <StatusBadge status={m.status} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <Tabs defaultValue="visao">
+            <TabsList className="mb-4">
+              <TabsTrigger value="visao">Visão Geral</TabsTrigger>
+              <TabsTrigger value="pqp">PQP</TabsTrigger>
+              <TabsTrigger value="medicoes">Medições</TabsTrigger>
+              <TabsTrigger value="aditivos">Aditivos</TabsTrigger>
+            </TabsList>
+            <TabsContent value="visao"><ContratoVisaoGeral contrato={contrato} aditivos={aditivos} /></TabsContent>
+            <TabsContent value="pqp"><ContratoPQP contrato={contrato} /></TabsContent>
+            <TabsContent value="medicoes"><ContratoMedicoes contrato={contrato} /></TabsContent>
+            <TabsContent value="aditivos"><ContratoAditivos contrato={contrato} /></TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
