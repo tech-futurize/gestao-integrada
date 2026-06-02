@@ -49,6 +49,33 @@ function mesLabel(date) {
   return format(date, "MMM/yy", { locale: ptBR });
 }
 
+function normalizeStr(s) {
+  return s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+  return dp[m][n];
+}
+
+function isSimilar(a, b) {
+  const na = normalizeStr(a);
+  const nb = normalizeStr(b);
+  if (na === nb || na.length < 3 || nb.length < 3) return false;
+  if (na.includes(nb) || nb.includes(na)) return true;
+  return levenshtein(na, nb) / Math.max(na.length, nb.length) <= 0.35;
+}
+
 // ── CelulaEditavel — defined OUTSIDE main component to prevent remount ────────
 function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
   const [editing, setEditing] = useState(false);
@@ -123,7 +150,7 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
               setEditing(false);
             }
           }}
-          className="w-10 text-center border rounded text-xs p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-10 text-center border rounded text-xs p-0 bg-white text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       ) : (
         <span className="text-xs">{valor}</span>
@@ -147,6 +174,7 @@ export default function HistogramaTabela({ tipo }) {
   const [showProj, setShowProj] = useState(true);
   const [showNovoDialog, setShowNovoDialog] = useState(false);
   const [novoNome, setNovoNome] = useState("");
+  const [similarWarning, setSimilarWarning] = useState(null);
   const [viewRecurso, setViewRecurso] = useState(null);
 
   // Data queries
@@ -516,15 +544,30 @@ export default function HistogramaTabela({ tipo }) {
       </div>
 
       {/* Dialog novo recurso */}
-      <Dialog open={showNovoDialog} onOpenChange={(open) => { setShowNovoDialog(open); if (!open) setNovoNome(""); }}>
+      <Dialog open={showNovoDialog} onOpenChange={(open) => { setShowNovoDialog(open); if (!open) { setNovoNome(""); setSimilarWarning(null); } }}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Novo {tipo === "MO" ? "Função (MO)" : "Equipamento"}</DialogTitle>
           </DialogHeader>
           {(() => {
+            const nomeTrim = novoNome.trim();
             const isDuplicate = recursos.some(
-              (r) => r.nome.toLowerCase() === novoNome.trim().toLowerCase()
+              (r) => r.nome.toLowerCase() === nomeTrim.toLowerCase()
             );
+            const similarMatch = !isDuplicate && nomeTrim.length >= 2
+              ? (recursos.find(r => isSimilar(r.nome, nomeTrim))?.nome ?? null)
+              : null;
+
+            const handleCreate = () => {
+              if (!nomeTrim || isDuplicate) return;
+              if (similarMatch && !similarWarning) {
+                setSimilarWarning(similarMatch);
+                return;
+              }
+              setSimilarWarning(null);
+              createRecurso.mutate(nomeTrim);
+            };
+
             return (
               <>
                 <div className="py-2 space-y-3">
@@ -532,29 +575,42 @@ export default function HistogramaTabela({ tipo }) {
                     <Label>{tipo === "MO" ? "Nome da função" : "Tipo de equipamento"} *</Label>
                     <Input
                       value={novoNome}
-                      onChange={(e) => setNovoNome(e.target.value)}
+                      onChange={(e) => { setNovoNome(e.target.value); setSimilarWarning(null); }}
                       placeholder={tipo === "MO" ? "Ex: Soldador, Montador" : "Ex: Guindaste, Munck"}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && novoNome.trim() && !isDuplicate) {
-                          createRecurso.mutate(novoNome.trim());
-                        }
+                        if (e.key === "Enter" && nomeTrim && !isDuplicate) handleCreate();
                       }}
                     />
                   </div>
+                  {similarWarning && (
+                    <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+                      <span className="mt-0.5 shrink-0">⚠</span>
+                      <span>
+                        Existe {tipo === "MO" ? "uma função" : "um equipamento"} parecido:{" "}
+                        <strong>"{similarWarning}"</strong>. Clique em <em>Criar mesmo assim</em> para confirmar.
+                      </span>
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Serão criados {projectMonths.length} registros mensais com valores zerados.
                   </p>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => { setShowNovoDialog(false); setNovoNome(""); }}>Cancelar</Button>
+                  <Button variant="outline" onClick={() => { setShowNovoDialog(false); setNovoNome(""); setSimilarWarning(null); }}>
+                    Cancelar
+                  </Button>
                   <Button
                     variant="save"
-                    disabled={!novoNome.trim() || createRecurso.isPending || isDuplicate}
-                    onClick={() => {
-                      if (!isDuplicate) createRecurso.mutate(novoNome.trim());
-                    }}
+                    disabled={!nomeTrim || createRecurso.isPending || isDuplicate}
+                    onClick={handleCreate}
                   >
-                    {createRecurso.isPending ? "Criando..." : isDuplicate ? "Já existe" : "Criar"}
+                    {createRecurso.isPending
+                      ? "Criando..."
+                      : isDuplicate
+                      ? "Já existe"
+                      : similarWarning
+                      ? "Criar mesmo assim"
+                      : "Criar"}
                   </Button>
                 </DialogFooter>
               </>
