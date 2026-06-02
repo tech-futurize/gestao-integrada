@@ -6,6 +6,8 @@ import remarkGfm from "remark-gfm";
 import { useProject } from "@/lib/ProjectContext";
 import { useQuery } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
+import { useAuth } from "@/lib/AuthContext";
+import { useAgentTelemetry } from "@/hooks/useAgentTelemetry";
 
 export default function AgenteChat({ agent }) {
   const [messages, setMessages] = useState([]);
@@ -17,6 +19,8 @@ export default function AgenteChat({ agent }) {
   const abortRef = useRef(null);
   const AgentIcon = agent.icon;
   const { selectedProjectId } = useProject();
+  const { user } = useAuth();
+  const logTelemetry = useAgentTelemetry();
 
   const { data: projetos = [] } = useQuery({
     queryKey: ["projeto_agente", selectedProjectId],
@@ -71,6 +75,7 @@ export default function AgenteChat({ agent }) {
 
     const controller = new AbortController();
     abortRef.current = controller;
+    const startTime = Date.now();
 
     try {
       const response = await fetch(`/mastra-api/api/agents/${agent.id}/stream`, {
@@ -111,6 +116,17 @@ export default function AgenteChat({ agent }) {
           } catch { /* chunk parcial */ }
         }
       }
+
+      logTelemetry({
+        agenteSlug: agent.id,
+        modelo: agent.modelo || 'gpt-4o-mini',
+        provider: agent.provider || 'openai',
+        usuarioEmail: user?.email,
+        projetoId: selectedProjectId,
+        latenciaMs: Date.now() - startTime,
+        threadId,
+        status: 'success',
+      });
     } catch (err) {
       if (err.name === "AbortError") return;
       setMessages((prev) => {
@@ -120,6 +136,16 @@ export default function AgenteChat({ agent }) {
           content: `Erro ao conectar com o agente: ${err.message}`,
         };
         return updated;
+      });
+      logTelemetry({
+        agenteSlug: agent.id,
+        modelo: agent.modelo || 'gpt-4o-mini',
+        provider: agent.provider || 'openai',
+        usuarioEmail: user?.email,
+        projetoId: selectedProjectId,
+        latenciaMs: Date.now() - startTime,
+        threadId,
+        status: 'error',
       });
     } finally {
       abortRef.current = null;
