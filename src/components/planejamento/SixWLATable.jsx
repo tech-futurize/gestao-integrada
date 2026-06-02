@@ -40,7 +40,7 @@ function rRight(idx, total) {
  *   onDelete: (id: string) => void
  * }} props
  */
-export default function SixWLATable({ items, restricoes, isLoading, onUpdate, onDelete }) {
+export default function SixWLATable({ items, restricoes = [], isLoading, onUpdate, onDelete }) {
   const [editingObs, setEditingObs] = useState(null);
   const isDark = useDarkMode();
 
@@ -209,7 +209,11 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                   >
                     <Popover>
                       <PopoverTrigger asChild>
-                        <button className="text-[11px] font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors">
+                        <button
+                          aria-label="Ver detalhes da atividade"
+                          title="Ver detalhes (área, disciplina, datas)"
+                          className="text-[11px] font-semibold text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted transition-colors"
+                        >
                           DET
                         </button>
                       </PopoverTrigger>
