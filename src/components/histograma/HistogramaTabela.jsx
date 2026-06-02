@@ -94,7 +94,7 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
 
   return (
     <td
-      className={`px-2 py-1 text-center cursor-pointer hover:bg-accent w-12 ${borderClass}`}
+      className={`px-2 py-1 text-center cursor-pointer hover:bg-muted/40 w-12 ${borderClass}`}
       onClick={() => {
         if (!editing) {
           setInputVal(String(valor));
@@ -237,8 +237,21 @@ export default function HistogramaTabela({ tipo }) {
 
   // Chart data: monthly totals + running accumulation
   const chartData = useMemo(() => {
-    let prevAcum = 0, realAcum = 0;
-    return projectMonths.map((m) => {
+    // Identify last month with real data and total real accumulated
+    const monthsWithReal = new Set(
+      histogramas
+        .filter(h => (h.quantidade_realizada_mensal ?? 0) > 0)
+        .map(h => h.mes_referencia?.slice(0, 7))
+    );
+    const lastRealIdx = projectMonths.reduce(
+      (last, m, i) => (monthsWithReal.has(mesKey(m)) ? i : last), -1
+    );
+    const totalReal = histogramas.reduce(
+      (s, h) => s + (h.quantidade_realizada_mensal ?? 0), 0
+    );
+
+    let prevAcum = 0, realAcum = 0, projAcumDelta = 0;
+    return projectMonths.map((m, i) => {
       const mk = mesKey(m);
       const linhas = histogramas.filter((h) => h.mes_referencia?.startsWith(mk));
       const prev = linhas.reduce((s, h) => s + (h.quantidade_prevista_mensal ?? 0), 0);
@@ -246,10 +259,18 @@ export default function HistogramaTabela({ tipo }) {
       const proj = linhas.reduce((s, h) => s + (h.qtd_projetado ?? 0), 0);
       prevAcum += prev;
       realAcum += real;
+
+      let projAcum = null;
+      if (lastRealIdx >= 0 && i >= lastRealIdx) {
+        projAcumDelta += proj;
+        projAcum = totalReal + projAcumDelta;
+      }
+
       return {
         mes: mesLabel(m), prev, real, proj,
         prevAcum: prevAcum > 0 ? prevAcum : null,
-        realAcum: realAcum > 0 ? realAcum : null,
+        realAcum: real > 0 ? realAcum : null,
+        projAcum,
       };
     });
   }, [histogramas, projectMonths]);
@@ -328,27 +349,35 @@ export default function HistogramaTabela({ tipo }) {
           <h3 className="font-semibold mb-4 text-foreground text-sm">
             Evolução Mensal — {tipo === "MO" ? "Mão de Obra" : "Equipamentos"}
           </h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Legend />
-              {showPrev && <Bar yAxisId="left" dataKey="prev" name="Previsto" fill="#3b82f6" opacity={0.8} />}
-              {showReal && <Bar yAxisId="left" dataKey="real" name="Real" fill="#16a34a" opacity={0.8} />}
-              {showProj && <Bar yAxisId="left" dataKey="proj" name="Projetado" fill="#f59e0b" opacity={0.8} />}
-              {showPrev && (
-                <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Acum. Prev"
-                  stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-              )}
-              {showReal && (
-                <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Acum. Real"
-                  stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div style={{ width: `${Math.max(chartData.length, 12) / 12 * 100}%`, minWidth: "100%" }}>
+              <ResponsiveContainer width="100%" height={280}>
+                <ComposedChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  {showPrev && <Bar yAxisId="left" dataKey="prev" name="Previsto" fill="#3b82f6" opacity={0.8} />}
+                  {showReal && <Bar yAxisId="left" dataKey="real" name="Real" fill="#16a34a" opacity={0.8} />}
+                  {showProj && <Bar yAxisId="left" dataKey="proj" name="Projetado" fill="#f59e0b" opacity={0.8} />}
+                  {showPrev && (
+                    <Line yAxisId="right" type="monotone" dataKey="prevAcum" name="Acum. Prev"
+                      stroke="#3b82f6" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+                  )}
+                  {showReal && (
+                    <Line yAxisId="right" type="monotone" dataKey="realAcum" name="Acum. Real"
+                      stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
+                  )}
+                  {showProj && (
+                    <Line yAxisId="right" type="monotone" dataKey="projAcum" name="Acum. Proj"
+                      stroke="#d97706" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3 }} />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       )}
 
