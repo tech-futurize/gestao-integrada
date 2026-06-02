@@ -258,18 +258,21 @@ export default function GestaoRiscos() {
         ) : null}
       />
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-border px-6">
-        {["riscos", "plano-acao"].map(t => (
+      <div className="flex gap-1 border-b border-border pb-0 px-6">
+        {[
+          { key: "riscos", label: "Riscos" },
+          { key: "plano-acao", label: "Plano de Ação" },
+        ].map(({ key, label }) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t
-                ? "border-emerald-600 text-emerald-700"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+            key={key}
+            onClick={() => setTab(key)}
+            className={`px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
+              tab === key
+                ? "bg-card border border-b-card border-border text-foreground -mb-px"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t === "riscos" ? "Riscos" : "Plano de Ação"}
+            {label}
           </button>
         ))}
       </div>
@@ -316,7 +319,7 @@ export default function GestaoRiscos() {
       <div className="flex gap-4 items-stretch">
 
         {/* Coluna esquerda — Matriz 5×5 interativa */}
-        <Card className="border shadow-sm" style={{ flex: "0 0 72%" }}>
+        <Card className="border shadow-sm" style={{ flex: "0 0 70%" }}>
           <CardContent className="p-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">
               Matriz de Riscos — Probabilidade × Impacto
@@ -415,7 +418,7 @@ export default function GestaoRiscos() {
             );
           })}
           {/* Legenda de severidade */}
-          <div className="flex flex-col gap-1.5 mt-auto pt-3 border-t border-border">
+          <div className="flex flex-row flex-wrap gap-x-3 gap-y-1.5 mt-auto pt-3 border-t border-border">
             {[
               { label: "Crítico (≥12)",  bg: "bg-red-500/80"    },
               { label: "Alto (6–11)",    bg: "bg-amber-500/80"  },
