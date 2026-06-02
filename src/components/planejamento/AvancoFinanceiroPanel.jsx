@@ -6,15 +6,18 @@ import {
   startOfMonth,
   parseISO,
   format,
+  endOfMonth,
+  isBefore,
+  isAfter,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import PageEmptyState from "@/components/ui/PageEmptyState";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import { computeAvancoSeries } from "./avancoSeries";
 import AvancoCards from "./AvancoCards";
 import CurvaSChart from "./CurvaSChart";
@@ -130,6 +133,7 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
   const [showPrev, setShowPrev] = React.useState(true);
   const [showReal, setShowReal] = React.useState(true);
   const [showProj, setShowProj] = React.useState(true);
+  const [periodFilter, setPeriodFilter] = React.useState(null);
 
   // ── Queries ──────────────────────────────────────────────────────────────────
 
@@ -175,6 +179,13 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
     [projeto]
   );
 
+  const monthsFiltrados = useMemo(() => {
+    if (!periodFilter) return projectMonths;
+    const from = startOfMonth(periodFilter.from);
+    const to   = endOfMonth(periodFilter.to);
+    return projectMonths.filter(m => !isBefore(m, from) && !isAfter(m, to));
+  }, [projectMonths, periodFilter]);
+
   const dataMap = useMemo(() => {
     const m = new Map();
     financeiros.forEach((r) => {
@@ -184,7 +195,7 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
   }, [financeiros]);
 
   const { chartData, cards, lastRealPeriod } = useMemo(() => {
-    if (projectMonths.length === 0) {
+    if (monthsFiltrados.length === 0) {
       return {
         chartData: [],
         cards: { prevAcum: 0, realAcum: 0, projAcum: 0, desvio: 0 },
@@ -193,13 +204,13 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
     }
     return computeAvancoSeries({
       dataMap,
-      periods: projectMonths,
+      periods: monthsFiltrados,
       periodKey: mesKey,
       periodLabel: mesLabel,
       fields: FIELDS,
       currentPeriodKey: mesKey(startOfMonth(new Date())),
     });
-  }, [dataMap, projectMonths]);
+  }, [dataMap, monthsFiltrados]);
 
   const lastRealLabel = lastRealPeriod ? mesLabel(lastRealPeriod) : null;
   const tableRows = buildRows(cards);
@@ -318,6 +329,14 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
             {show ? "●" : "○"} {label}
           </button>
         ))}
+        <div className="ml-auto">
+          <DateRangePicker
+            label="Período"
+            value={periodFilter}
+            onChange={setPeriodFilter}
+            onClear={() => setPeriodFilter(null)}
+          />
+        </div>
       </div>
 
       {/* Cards KPI */}
@@ -344,7 +363,7 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
 
       {/* Tabela transposta mensal */}
       <AvancoTabela
-        periods={projectMonths}
+        periods={monthsFiltrados}
         dataMap={dataMap}
         periodKey={mesKey}
         columnLabel={mesLabel}
