@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
+import { useSortTable } from "@/hooks/useSortTable";
 import { usePermissions } from "@/hooks/usePermissions";
 import PageHeader from "@/components/ui/PageHeader";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterToolbar from "@/components/ui/FilterToolbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
@@ -19,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import {
   FileText, Plus, Upload, TrendingUp, AlertTriangle, AlertCircle,
-  Edit, Trash2, History, ChevronUp, ChevronDown, ChevronsUpDown,
+  Edit, Trash2, History, ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
 
 import { ETAPAS, DISCIPLINAS, DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
@@ -56,13 +58,6 @@ const EMPTY_FORM = {
 
 const PER_PAGE = 10;
 
-function SortIcon({ col, sortCol, sortDir }) {
-  if (sortCol !== col) return <ChevronsUpDown className="w-3 h-3 inline ml-1 text-gray-300" />;
-  return sortDir === "asc"
-    ? <ChevronUp className="w-3 h-3 inline ml-1" />
-    : <ChevronDown className="w-3 h-3 inline ml-1" />;
-}
-
 function ProgressBar({ pct }) {
   return (
     <div className="flex items-center gap-2 min-w-24">
@@ -91,8 +86,8 @@ export default function Documentos() {
   // Filtros e ordenação
   const [busca, setBusca] = useState("");
   const [filtros, setFiltros] = useState({});
-  const [sortCol, setSortCol] = useState("tag_id");
-  const [sortDir, setSortDir] = useState("asc");
+  const [filterKey, setFilterKey] = useState(0);
+  const FILTROS_KEY = "documentos-filtros";
   const [page, setPage] = useState(1);
 
   const { data: docs = [], isLoading, isError } = useQuery({
@@ -181,7 +176,7 @@ export default function Documentos() {
   const tarefaLabel = (id) => {
     if (!id) return "—";
     const t = tarefas.find(t => t.id === id);
-    if (!t) return id;
+    if (!t) return "—";
     return t.codigo_wbs ? `${t.codigo_wbs} — ${t.nome}` : t.nome;
   };
 
@@ -268,22 +263,16 @@ export default function Documentos() {
     }
     if (disc.length > 0) r = r.filter(d => disc.includes(d.disciplina));
     if (forn.length > 0) r = r.filter(d => forn.includes(d.fornecedor));
-    return [...r].sort((a, b) => {
-      const av = a[sortCol] ?? "";
-      const bv = b[sortCol] ?? "";
-      const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-  }, [docs, busca, filtros, sortCol, sortDir]);
+    return r;
+  }, [docs, busca, filtros]);
+
+  const { sortedData: docsSorted, sortKey: sortCol, sortDir, handleSort } = useSortTable(
+    filtered,
+    { defaultKey: "tag_id" }
+  );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-  const handleSort = (col) => {
-    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortCol(col); setSortDir("asc"); }
-    setPage(1);
-  };
+  const paginated = docsSorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   // KPIs
   const progGeral = docs.length ? Math.round(docs.reduce((s, d) => s + (d.progresso || 0), 0) / docs.length) : 0;
@@ -320,30 +309,36 @@ export default function Documentos() {
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            className="border border-border rounded-lg px-3 py-1.5 text-sm w-56 bg-background text-foreground"
-            placeholder="Buscar TAG/ID ou título..."
-            value={busca}
-            onChange={e => { setBusca(e.target.value); setPage(1); }}
-          />
+        <FilterToolbar
+          active={!!busca || Object.values(filtros).some(a => a?.length > 0)}
+          onClearAll={() => { setBusca(""); setFiltros({}); setPage(1); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+        >
+          <div className="relative">
+            <input
+              className="h-8 border border-border rounded-md px-3 text-sm w-56 bg-background text-foreground"
+              placeholder="Buscar TAG/ID ou título..."
+              value={busca}
+              onChange={e => { setBusca(e.target.value); setPage(1); }}
+            />
+          </div>
           <FilterBar
-            storageKey="documentos-filtros"
+            key={filterKey}
+            storageKey={FILTROS_KEY}
             filters={[
               { key: "disciplina", label: "Disciplina", options: ["MEC", "CIV", "ELE", "TUB", "INS", "AUT", "EST", "PRC", "HSE"] },
               { key: "fornecedor", label: "Fornecedor", options: fornecedorOptions },
             ]}
             onChange={setFiltros}
           />
-        </div>
+        </FilterToolbar>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Total Docs", value: docs.length, sub: `${docs.filter(d => d.etapa === "Aprovado").length} aprovados`, color: "#26405d", icon: FileText },
-          { label: "Total Sheets", value: totalSheets >= 1000 ? `${(totalSheets / 1000).toFixed(1)}k A4` : `${totalSheets} A4`, sub: "folhas equivalentes", color: "#2563eb", icon: FileText },
+          { label: "Total de Folhas", value: totalSheets >= 1000 ? `${(totalSheets / 1000).toFixed(1)}k A4` : `${totalSheets} A4`, sub: "folhas equivalentes", color: "#2563eb", icon: FileText },
           { label: "Progresso Geral", value: `${progGeral}%`, sub: <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden"><div className="h-full rounded-full bg-green-500" style={{ width: `${progGeral}%` }} /></div>, color: "#16a34a", icon: TrendingUp },
-          { label: "Overdue", value: overdue.length, sub: overdue.length > 0 ? "⚠ documentos vencidos" : "Nenhum vencido", color: overdue.length > 0 ? "#dc2626" : "#16a34a", icon: AlertTriangle },
+          { label: "Vencidos", value: overdue.length, sub: overdue.length > 0 ? "⚠ documentos vencidos" : "Nenhum vencido", color: overdue.length > 0 ? "#dc2626" : "#16a34a", icon: AlertTriangle },
         ].map(({ label, value, sub, color, icon: Icon }) => (
           <Card key={label} className="bg-card shadow-sm">
             <CardContent className="p-4 flex items-start gap-3">
@@ -391,9 +386,17 @@ export default function Documentos() {
                     <th
                       key={key}
                       onClick={() => handleSort(key)}
-                      className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap cursor-pointer hover:text-foreground"
+                      className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap cursor-pointer select-none group hover:text-foreground"
                     >
-                      {label}<SortIcon col={key} sortCol={sortCol} sortDir={sortDir} />
+                      <span className="inline-flex items-center gap-1">
+                        {label}
+                        {sortCol !== key
+                          ? <ArrowUpDown className="w-3 h-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+                          : sortDir === "asc"
+                            ? <ArrowUp className="w-3 h-3 text-primary" />
+                            : <ArrowDown className="w-3 h-3 text-primary" />
+                        }
+                      </span>
                     </th>
                   ))}
                   <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap">Ações</th>
@@ -494,8 +497,8 @@ export default function Documentos() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-1 self-stretch rounded-full flex-shrink-0"
-                  style={{ backgroundColor: editing ? "#059669" : "#26FFFF", minHeight: "40px" }}
+                  className={`w-1 self-stretch rounded-full flex-shrink-0 ${editing ? "bg-emerald-600" : "bg-primary"}`}
+                  style={{ minHeight: "40px" }}
                 />
                 <div className="w-9 h-9 rounded-lg bg-green-50 border border-emerald-200 flex items-center justify-center flex-shrink-0">
                   <FileText className="w-5 h-5 text-emerald-600" />
