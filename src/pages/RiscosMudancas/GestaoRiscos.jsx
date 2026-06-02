@@ -457,7 +457,8 @@ export default function GestaoRiscos() {
               <col style={{ width: "96px" }} />   {/* P */}
               <col style={{ width: "96px" }} />   {/* I */}
               <col style={{ width: "110px" }} />  {/* Score */}
-              <col style={{ width: "130px" }} />  {/* Responsável */}
+              <col style={{ width: "120px" }} />  {/* Responsável */}
+              <col style={{ width: "96px" }} />   {/* Status */}
               <col style={{ width: "48px" }} />   {/* Ações */}
             </colgroup>
             <thead>
@@ -470,13 +471,14 @@ export default function GestaoRiscos() {
                 <th onClick={() => handleSort("impacto")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">I<SortIcon col="impacto" /></th>
                 <th onClick={() => handleSort("score")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Score<SortIcon col="score" /></th>
                 <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Responsável<SortIcon col="responsavel" /></th>
+                <th onClick={() => handleSort("status")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group whitespace-nowrap">Status<SortIcon col="status" /></th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
-              {isLoading && <tr><td colSpan={9} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
-              {isError && <tr><td colSpan={9} className="py-10 text-center text-status-critical text-sm">Erro ao carregar riscos. Verifique sua conexão e tente novamente.</td></tr>}
-              {!isLoading && !isError && riscosSorted.length === 0 && <tr><td colSpan={9} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
+              {isLoading && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
+              {isError && <tr><td colSpan={10} className="py-10 text-center text-status-critical text-sm">Erro ao carregar riscos. Verifique sua conexão e tente novamente.</td></tr>}
+              {!isLoading && !isError && riscosSorted.length === 0 && <tr><td colSpan={10} className="py-10 text-center text-muted-foreground">Nenhum risco encontrado</td></tr>}
               {riscosSorted.map((r, i) => {
                 const score = r.score || calcScoreRisco(r.probabilidade, r.impacto);
                 const statusColor = STATUS_RISCO_COLORS[r.status] || "";
@@ -514,6 +516,9 @@ export default function GestaoRiscos() {
                     <td className="px-4 py-3 text-center font-bold text-foreground">{r.impacto}</td>
                     <td className="px-4 py-3 text-center"><ScoreBadge score={score} /></td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{r.responsavel || "—"}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`text-xs font-semibold ${statusColor}`}>{r.status || "—"}</span>
+                    </td>
                     <td className="px-4 py-3">
                       <RowActions
                         onEdit={() => handleEdit(r)}
