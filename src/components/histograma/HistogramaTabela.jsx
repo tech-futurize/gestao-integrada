@@ -437,9 +437,9 @@ export default function HistogramaTabela({ tipo }) {
 
       {/* Tabela */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="text-sm border-collapse w-max min-w-full">
-            <thead>
+        <div style={{ maxHeight: 420, overflowX: "auto", overflowY: "auto" }}>
+          <table className="text-sm border-separate w-max min-w-full" style={{ borderSpacing: 0 }}>
+            <thead className="sticky top-0 z-[50]">
               <tr className="bg-muted border-b border-border">
                 {/* Nome + botão expandir (APENAS NO HEADER) */}
                 <th
@@ -527,7 +527,7 @@ export default function HistogramaTabela({ tipo }) {
                           <tr className={`${rowBg} ${idx > 0 ? "border-t-2 border-border" : ""} text-xs font-bold`}>
                             <td style={{ position: "sticky", left: 0, zIndex: 10, width: 180, minWidth: 180 }}
                                 className={`${stickyBg} px-3 py-1.5 ${labelCls}`}>
-                              Subtotal {recurso.subtipo_mo}
+                              {recurso.subtipo_mo}
                             </td>
                             {stickyTotalCols.map(col => (
                               <td key={col.key}
@@ -538,9 +538,18 @@ export default function HistogramaTabela({ tipo }) {
                             ))}
                             {projectMonths.flatMap((m) => {
                               const mk = mesKey(m);
-                              return Array.from({ length: colCount }, (_, ci) => (
-                                <td key={`${mk}-${ci}`} className={`${ci === 0 ? "border-l-2" : "border-l"} border-border/20 py-1.5`} />
-                              ));
+                              const linhas = histogramas.filter(h =>
+                                h.mes_referencia?.startsWith(mk) && h.subtipo_mo === recurso.subtipo_mo
+                              );
+                              const tPrev = linhas.reduce((s, h) => s + (h.quantidade_prevista_mensal ?? 0), 0);
+                              const tReal = linhas.reduce((s, h) => s + (h.quantidade_realizada_mensal ?? 0), 0);
+                              const tProj = linhas.reduce((s, h) => s + (h.qtd_projetado ?? 0), 0);
+                              const cells = [];
+                              if (showPrev) cells.push(<td key={`${mk}-prev`} className="px-2 py-1.5 text-center text-blue-700/80 dark:text-blue-300/80 border-l-2 border-border/50">{tPrev || "·"}</td>);
+                              if (showReal) cells.push(<td key={`${mk}-real`} className={`px-2 py-1.5 text-center text-green-700/80 dark:text-green-300/80 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border/50`}>{tReal || "·"}</td>);
+                              if (showProj) cells.push(<td key={`${mk}-proj`} className={`px-2 py-1.5 text-center text-amber-600/80 dark:text-amber-400/80 ${cells.length === 0 ? "border-l-2" : "border-l"} border-border/50`}>{tProj || "·"}</td>);
+                              if (cells.length === 0) cells.push(<td key={`${mk}-empty`} className="border-l-2 border-border/20 py-1.5" />);
+                              return cells;
                             })}
                             <td />
                           </tr>
