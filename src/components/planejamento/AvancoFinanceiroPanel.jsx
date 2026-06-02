@@ -1,5 +1,6 @@
 // src/components/planejamento/AvancoFinanceiroPanel.jsx
 import React, { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   eachMonthOfInterval,
@@ -108,6 +109,7 @@ function buildRows(cards) {
       headerCls:       "text-green-700 dark:text-green-300",
       acumValue:       cards.realAcum,
       isRealRow:       true,
+      readOnlyRow:     true, // Real é derivado do módulo Faturamento (não editável aqui)
     },
     {
       campo:           FIELDS.proj,
@@ -150,6 +152,13 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
   });
   const projeto = projetoArr[0] ?? null;
 
+  // Faturamentos do projeto — fonte única do "Real" financeiro (derivação)
+  const { data: faturamentos = [] } = useQuery({
+    queryKey: ["faturamentos", selectedProjectId],
+    queryFn: () => entities.Faturamento.filter({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId,
+  });
+
   // ── Mutations ─────────────────────────────────────────────────────────────────
 
   const onErr = (e) =>
@@ -186,13 +195,29 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
     return projectMonths.filter(m => !isBefore(m, from) && !isAfter(m, to));
   }, [projectMonths, periodFilter]);
 
+  // Real financeiro derivado: Σ valor_medido dos faturamentos por mês (fonte única)
+  const realPorMes = useMemo(() => {
+    const m = new Map();
+    faturamentos.forEach((f) => {
+      if (!f.mes_referencia) return;
+      const k = f.mes_referencia.slice(0, 7);
+      m.set(k, (m.get(k) ?? 0) + (Number(f.valor_medido) || 0));
+    });
+    return m;
+  }, [faturamentos]);
+
   const dataMap = useMemo(() => {
     const m = new Map();
     financeiros.forEach((r) => {
-      if (r.mes_referencia) m.set(r.mes_referencia.slice(0, 7), r);
+      if (r.mes_referencia) m.set(r.mes_referencia.slice(0, 7), { ...r });
+    });
+    // Sobrepõe o realizado com a soma dos faturamentos (injeta registro sintético se faltar)
+    realPorMes.forEach((val, k) => {
+      const existing = m.get(k) ?? { mes_referencia: `${k}-01` };
+      m.set(k, { ...existing, faturamento_realizado_mensal: val });
     });
     return m;
-  }, [financeiros]);
+  }, [financeiros, realPorMes]);
 
   const { chartData, cards, lastRealPeriod } = useMemo(() => {
     if (monthsFiltrados.length === 0) {
@@ -218,6 +243,7 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
   // ── Save handler ──────────────────────────────────────────────────────────────
 
   const handleSave = (pk, campo, valor) => {
+    if (campo === FIELDS.real) return; // Real é derivado do módulo Faturamento — não editável
     const existing = dataMap.get(pk);
     if (existing) {
       const updates = { [campo]: valor };
@@ -362,6 +388,12 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
       />
 
       {/* Tabela transposta mensal */}
+      <p className="text-xs text-muted-foreground">
+        A linha <span className="font-semibold text-green-600 dark:text-green-400">Real</span> é
+        derivada do módulo{" "}
+        <Link to="/planejamento/faturamento" className="underline hover:text-foreground">Faturamento</Link>{" "}
+        (somatório dos faturamentos por mês) e não é editável aqui.
+      </p>
       <AvancoTabela
         periods={monthsFiltrados}
         dataMap={dataMap}
