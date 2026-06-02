@@ -314,71 +314,136 @@ export default function GestaoRiscos() {
         <KPICard label="Mitigados" value={kpi.mitigados} accent="text-status-positive" />
       </div>
 
-      {/* Cards por Categoria */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Por Categoria</p>
-        <div className="grid grid-cols-4 md:grid-cols-7 gap-3">
+      {/* Seção principal: Matriz 72% + Distribuição 28% */}
+      <div className="flex gap-4 items-start">
+
+        {/* Coluna esquerda — Matriz 5×5 interativa */}
+        <Card className="border shadow-sm" style={{ flex: "0 0 72%" }}>
+          <CardContent className="p-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+              Matriz de Riscos — Probabilidade × Impacto
+            </p>
+            <div className="flex gap-3 items-start">
+              {/* Eixo Y */}
+              <div className="flex flex-col items-end shrink-0" style={{ paddingTop: "20px" }}>
+                {[5,4,3,2,1].map(p => (
+                  <div key={p} className="flex items-center justify-end" style={{ height: "72px", marginBottom: "6px" }}>
+                    <span className="text-xs text-muted-foreground w-4 text-right">{p}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Grade */}
+              <div className="flex-1 min-w-0">
+                {/* Header impacto */}
+                <div className="flex gap-1.5 mb-1.5">
+                  {[1,2,3,4,5].map(i => (
+                    <div key={i} className="flex-1 text-center">
+                      <span className="text-xs text-muted-foreground">{i}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Linhas P=5 até P=1 */}
+                {[5,4,3,2,1].map(p => (
+                  <div key={p} className="flex gap-1.5 mb-1.5">
+                    {[1,2,3,4,5].map(i => {
+                      const score = p * i;
+                      const cellStyle = getCellStyle(score);
+                      const chips = matrixCells[`${p}-${i}`] || [];
+                      const hasHoveredInCell = chips.some(c => c.id === hoveredRisco?.risco?.id);
+                      return (
+                        <div
+                          key={i}
+                          className={`flex-1 rounded-lg border overflow-y-auto flex flex-col gap-1 p-1 ${cellStyle.bg} ${cellStyle.border}`}
+                          style={{ height: "72px" }}
+                        >
+                          {chips.map(r => (
+                            <RiscoChip
+                              key={r.id}
+                              risco={r}
+                              cellScore={score}
+                              isActive={hoveredRisco?.risco?.id === r.id}
+                              isDimmed={hasHoveredInCell && hoveredRisco?.risco?.id !== r.id}
+                              onMouseEnter={(e) => {
+                                clearTimeout(hoverTimeoutRef.current);
+                                setHoveredRisco({ risco: r, anchorRect: e.currentTarget.getBoundingClientRect() });
+                              }}
+                              onMouseLeave={() => {
+                                hoverTimeoutRef.current = setTimeout(() => setHoveredRisco(null), 80);
+                              }}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+
+                {/* Eixo X label */}
+                <div className="text-center mt-1">
+                  <span className="text-xs text-muted-foreground">Impacto →</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Legenda na base */}
+            <div className="flex gap-4 mt-4 pt-3 border-t border-border flex-wrap">
+              {[
+                { label: "Crítico (≥12)",  bg: "bg-red-500/80"    },
+                { label: "Alto (6–11)",    bg: "bg-amber-500/80"  },
+                { label: "Moderado (4–5)", bg: "bg-yellow-400/80" },
+                { label: "Baixo (1–3)",   bg: "bg-green-500/80"  },
+              ].map(l => (
+                <div key={l.label} className="flex items-center gap-1.5">
+                  <div className={`w-3 h-3 rounded ${l.bg}`} />
+                  <span className="text-xs text-muted-foreground">{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Coluna direita — Distribuição por categoria */}
+        <div className="flex-1 bg-card rounded-xl border border-border shadow-sm p-4 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Distribuição</p>
           {CATEGORIAS.map(cat => {
             const count = riscos.filter(r => r.categoria === cat).length;
             const color = CAT_COLORS[cat];
+            const pct = riscos.length > 0 ? (count / riscos.length) * 100 : 0;
             return (
               <div
                 key={cat}
-                className="bg-card rounded-xl border border-border border-l-4 p-3"
+                className="bg-background rounded-lg p-2.5 border-l-4"
                 style={{ borderLeftColor: color }}
               >
-                <p className="text-xs text-muted-foreground">{cat}</p>
-                <p className="text-2xl font-bold text-foreground">{count}</p>
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs text-muted-foreground">{cat}</span>
+                  <span className="text-sm font-extrabold" style={{ color }}>{count}</span>
+                </div>
+                <div className="h-1 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${pct}%`, background: color }}
+                  />
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Matriz 5×5 */}
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Matriz de Riscos (Probabilidade × Impacto)</p>
-          <div className="flex gap-4 items-start">
-            <div>
-              <div className="flex items-end gap-1 mb-1">
-                <span className="text-xs text-muted-foreground w-16 text-right">Prob.</span>
-                {[1,2,3,4,5].map(i => <span key={i} className="text-xs text-center w-10 text-muted-foreground">{i}</span>)}
-              </div>
-              {[5,4,3,2,1].map(p => (
-                <div key={p} className="flex items-center gap-1 mb-1">
-                  <span className="text-xs text-muted-foreground w-16 text-right">{p}</span>
-                  {[1,2,3,4,5].map(i => {
-                    const count = matrixData[`${p}-${i}`] || 0;
-                    return (
-                      <div key={i} className={`w-10 h-10 rounded-md flex items-center justify-center text-xs font-bold text-white ${matrixColor(p, i)}`}>
-                        {count > 0 ? count : ""}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-              <div className="flex items-center gap-1 mt-1">
-                <span className="w-16" />
-                <span className="text-xs text-muted-foreground flex-1 text-center">Impacto →</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 mt-4">
-              {[
-                { color: "bg-red-500/80", label: "Crítico (≥12)" },
-                { color: "bg-amber-400/80", label: "Alto (6-11)" },
-                { color: "bg-yellow-300/80", label: "Moderado (4-5)" },
-                { color: "bg-green-300/80", label: "Baixo (1-3)" },
-              ].map(l => (
-                <div key={l.label} className="flex items-center gap-2">
-                  <div className={`w-4 h-4 rounded ${l.color}`} />
-                  <span className="text-xs text-muted-foreground">{l.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Popup de hover — renderizado via portal em RiscoHoverCard */}
+      {hoveredRisco && (
+        <RiscoHoverCard
+          risco={hoveredRisco.risco}
+          anchorRect={hoveredRisco.anchorRect}
+          onMouseEnter={() => clearTimeout(hoverTimeoutRef.current)}
+          onMouseLeave={() => {
+            hoverTimeoutRef.current = setTimeout(() => setHoveredRisco(null), 80);
+          }}
+        />
+      )}
 
       {/* Tabela */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
