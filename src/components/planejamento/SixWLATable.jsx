@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Trash2, Edit, Info, ChevronRight, ChevronLeft } from "lucide-react";
+import { Edit, Info, ChevronRight, ChevronLeft } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
+import DetailDialog from "@/components/ui/DetailDialog";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -7,6 +9,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { getWeekBadgeStyle, fmtDateStr } from "@/utils/sixWLAUtils";
 import { useDarkMode } from "@/hooks/useDarkMode";
 
+// Larguras fixas das colunas sticky esquerda (px)
+const COL = { atividade: 200, semana: 80, previsto: 72, real: 72, toggle: 24 };
+
+// Larguras fixas das colunas sticky direita (px)
+const R = { restricao: 48, obs: 80, remove: 40 };
+
+// Offset right de cada coluna de restrição (da mais à direita para a mais à esquerda)
+function rRight(idx, total) {
+  return (total - 1 - idx) * R.restricao + R.obs + R.remove;
+}
 
 /**
  * @param {{
@@ -30,8 +42,9 @@ import { useDarkMode } from "@/hooks/useDarkMode";
  * }} props
  */
 export default function SixWLATable({ items, restricoes, isLoading, onUpdate, onDelete }) {
-  const [editingObs, setEditingObs] = useState(null); // { id: string, value: string }
+  const [editingObs, setEditingObs] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [viewItem, setViewItem] = useState(null);
   const isDark = useDarkMode();
 
   const handleObsClose = (open, item) => {
@@ -41,22 +54,57 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
     }
   };
 
-  // Atividade(sticky), Sem., %Prev, %Real, toggle + detalhes condicionais + restricoes + Obs + Remove
   const detailColCount = showDetails ? 8 : 0;
   const totalCols = 5 + detailColCount + restricoes.length + 2;
 
+  // Offsets left acumulados para cada coluna sticky esquerda
+  const L = {
+    sem:    COL.atividade,
+    prev:   COL.atividade + COL.semana,
+    real:   COL.atividade + COL.semana + COL.previsto,
+    toggle: COL.atividade + COL.semana + COL.previsto + COL.real,
+  };
+
+  // Separator visual na zona expansível
+  const sepStart = "border-l-2 border-slate-300 dark:border-slate-600";
+  const sepEnd   = "border-r-2 border-slate-300 dark:border-slate-600";
+
   return (
+    <>
     <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground sticky left-0 bg-muted z-10 min-w-[200px]">Atividade</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">Sem.</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">%Prev</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground">%Real</th>
-              {/* toggle de colunas de detalhe */}
-              <th className="px-1 py-3 text-center w-6">
+              {/* ── STICKY ESQUERDA ─────────────────────────────────── */}
+              <th
+                className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground sticky left-0 bg-muted z-20"
+                style={{ width: COL.atividade, minWidth: COL.atividade }}
+              >
+                Atividade
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground sticky bg-muted z-20"
+                style={{ left: L.sem, width: COL.semana, minWidth: COL.semana }}
+              >
+                Sem.
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground sticky bg-muted z-20"
+                style={{ left: L.prev, width: COL.previsto, minWidth: COL.previsto }}
+              >
+                %Prev
+              </th>
+              <th
+                className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground sticky bg-muted z-20"
+                style={{ left: L.real, width: COL.real, minWidth: COL.real }}
+              >
+                %Real
+              </th>
+              <th
+                className="px-1 py-3 text-center sticky bg-muted z-20"
+                style={{ left: L.toggle, width: COL.toggle, minWidth: COL.toggle }}
+              >
                 <button
                   onClick={() => setShowDetails(v => !v)}
                   className="p-0.5 rounded hover:bg-border text-muted-foreground hover:text-foreground transition-colors"
@@ -67,29 +115,42 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                     : <ChevronRight className="w-3.5 h-3.5" />}
                 </button>
               </th>
+
+              {/* ── EXPANSÍVEL (rolagem horizontal) ─────────────────── */}
               {showDetails && (
                 <>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Área</th>
+                  <th className={cn("px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap", sepStart)}>Área</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Disciplina</th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">BL Ini</th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">BL Fim</th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Real Ini</th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Real Fim</th>
                   <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Proj Ini</th>
-                  <th className="px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap">Proj Fim</th>
+                  <th className={cn("px-3 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap", sepEnd)}>Proj Fim</th>
                 </>
               )}
-              {restricoes.map(r => (
+
+              {/* ── STICKY DIREITA ──────────────────────────────────── */}
+              {restricoes.map((r, idx) => (
                 <th
                   key={r.key}
-                  className="px-2 py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap"
+                  className="py-3 text-center text-xs font-semibold text-muted-foreground whitespace-nowrap sticky bg-muted z-20"
                   title={r.full}
+                  style={{ right: rRight(idx, restricoes.length), width: R.restricao, minWidth: R.restricao }}
                 >
                   {r.tableLabel}
                 </th>
               ))}
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Obs.</th>
-              <th className="px-2 py-3" />
+              <th
+                className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground sticky bg-muted z-20"
+                style={{ right: R.remove, width: R.obs, minWidth: R.obs }}
+              >
+                Obs.
+              </th>
+              <th
+                className="px-2 py-3 sticky bg-muted z-20"
+                style={{ right: 0, width: R.remove, minWidth: R.remove }}
+              />
             </tr>
           </thead>
           <tbody>
@@ -110,12 +171,18 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
             {items.map((item, i) => {
               const avReal = item.tarefa?.avanco_realizado;
               const isOdd = i % 2 !== 0;
+              // Células sticky precisam de fundo sólido para não mostrar conteúdo em rolagem
+              const stickyBg = "bg-card";
               return (
                 <tr
                   key={item.id}
                   className={`border-b border-border hover:bg-muted/40 transition-colors ${isOdd ? "bg-muted/10" : ""}`}
                 >
-                  <td className={cn("px-4 py-3 font-medium text-foreground max-w-xs sticky left-0 z-10", isOdd ? "bg-muted/10" : "bg-card")}>
+                  {/* ── STICKY ESQUERDA ─────────────────────────────── */}
+                  <td
+                    className={cn("px-4 py-3 font-medium text-foreground sticky left-0 z-10", stickyBg)}
+                    style={{ width: COL.atividade, minWidth: COL.atividade }}
+                  >
                     <div className="flex items-start gap-1.5">
                       {item.adicionado_manualmente && (
                         <Info className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" title="Adicionado manualmente" />
@@ -128,7 +195,10 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td
+                    className={cn("px-4 py-3 text-center sticky z-10", stickyBg)}
+                    style={{ left: L.sem, width: COL.semana, minWidth: COL.semana }}
+                  >
                     <div className="flex flex-wrap gap-1 justify-center">
                       {item.semanasBadge.length > 0
                         ? item.semanasBadge.map(s => (
@@ -143,10 +213,16 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                         : <span className="text-xs text-muted-foreground">—</span>}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-center text-xs font-medium text-muted-foreground">
+                  <td
+                    className={cn("px-4 py-3 text-center text-xs font-medium text-muted-foreground sticky z-10", stickyBg)}
+                    style={{ left: L.prev, width: COL.previsto, minWidth: COL.previsto }}
+                  >
                     {item.tarefa?.avanco_previsto != null ? `${item.tarefa.avanco_previsto}%` : "—"}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td
+                    className={cn("px-4 py-3 text-center sticky z-10", stickyBg)}
+                    style={{ left: L.real, width: COL.real, minWidth: COL.real }}
+                  >
                     <span className={cn(
                       "text-xs font-bold",
                       avReal >= 100 ? "text-green-600 dark:text-green-400" :
@@ -157,11 +233,16 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                       {avReal != null ? `${avReal}%` : "—"}
                     </span>
                   </td>
-                  {/* célula vazia do toggle — mantém alinhamento */}
-                  <td className="px-1 py-3" />
+                  {/* placeholder do toggle — mantém alinhamento */}
+                  <td
+                    className={cn("px-1 py-3 sticky z-10", stickyBg)}
+                    style={{ left: L.toggle, width: COL.toggle, minWidth: COL.toggle }}
+                  />
+
+                  {/* ── EXPANSÍVEL ──────────────────────────────────── */}
                   {showDetails && (
                     <>
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      <td className={cn("px-4 py-3 text-xs text-muted-foreground whitespace-nowrap", sepStart)}>
                         {item.tarefa?.area || "—"}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -182,13 +263,19 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                       <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
                         {fmtDateStr(item.tarefa?.inicio_previsto)}
                       </td>
-                      <td className="px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap">
+                      <td className={cn("px-3 py-3 text-center text-xs text-muted-foreground whitespace-nowrap", sepEnd)}>
                         {fmtDateStr(item.tarefa?.termino_previsto)}
                       </td>
                     </>
                   )}
-                  {restricoes.map(r => (
-                    <td key={r.key} className="px-2 py-2 text-center">
+
+                  {/* ── STICKY DIREITA ──────────────────────────────── */}
+                  {restricoes.map((r, idx) => (
+                    <td
+                      key={r.key}
+                      className={cn("px-2 py-2 text-center sticky z-10", stickyBg)}
+                      style={{ right: rRight(idx, restricoes.length), width: R.restricao, minWidth: R.restricao }}
+                    >
                       <Checkbox
                         checked={!!item[r.key]}
                         onCheckedChange={(checked) => onUpdate(item.id, { [r.key]: !!checked })}
@@ -196,7 +283,10 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                       />
                     </td>
                   ))}
-                  <td className="px-4 py-3">
+                  <td
+                    className={cn("px-4 py-3 sticky z-10", stickyBg)}
+                    style={{ right: R.remove, width: R.obs, minWidth: R.obs }}
+                  >
                     <Popover
                       open={editingObs?.id === item.id}
                       onOpenChange={(open) => handleObsClose(open, item)}
@@ -225,7 +315,19 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                       </PopoverContent>
                     </Popover>
                   </td>
+<<<<<<< Updated upstream
                   <td className="px-2 py-3">
+                    <RowActions
+                      onView={() => setViewItem(item)}
+                      onDelete={() => onDelete(item.id)}
+                      deleteTitle="Remover do 6WLA"
+                      deleteDescription="Esta atividade será removida da seleção de semanas. A tarefa no cronograma não será excluída."
+                    />
+=======
+                  <td
+                    className={cn("px-2 py-3 sticky z-10", stickyBg)}
+                    style={{ right: 0, width: R.remove, minWidth: R.remove }}
+                  >
                     <button
                       onClick={() => onDelete(item.id)}
                       className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500"
@@ -233,6 +335,7 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
+>>>>>>> Stashed changes
                   </td>
                 </tr>
               );
@@ -241,5 +344,25 @@ export default function SixWLATable({ items, restricoes, isLoading, onUpdate, on
         </table>
       </div>
     </div>
+
+    {viewItem && (
+      <DetailDialog
+        open={!!viewItem}
+        onOpenChange={(o) => !o && setViewItem(null)}
+        title={viewItem.tarefa?.nome || "Atividade"}
+        sections={[
+          { label: "Status", value: viewItem.tarefa?.status },
+          { label: "Área", value: viewItem.tarefa?.area },
+          { label: "Disciplina", value: viewItem.tarefa?.disciplina },
+          { label: "Responsável", value: viewItem.tarefa?.responsavel },
+          { label: "Avanço previsto", value: viewItem.tarefa?.avanco_previsto != null ? `${viewItem.tarefa.avanco_previsto}%` : null },
+          { label: "Avanço realizado", value: viewItem.tarefa?.avanco_realizado != null ? `${viewItem.tarefa.avanco_realizado}%` : null },
+          { label: "Início planejado", value: viewItem.tarefa?.data_inicio_planejada },
+          { label: "Fim planejado", value: viewItem.tarefa?.data_fim_planejada },
+          { label: "Observação", value: viewItem.observacao, full: true },
+        ]}
+      />
+    )}
+    </>
   );
 }

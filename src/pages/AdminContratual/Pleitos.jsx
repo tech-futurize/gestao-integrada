@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, Upload, AlertTriangle } from "lucide-react";
+import { Plus, FileText, Upload, AlertTriangle, Search } from "lucide-react";
 import { KPICard } from "@/components/ui/KPICard";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast } from "@/components/ui/use-toast";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import FilterBar from "@/components/ui/FilterBar";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 
 const PLEITO_COLUMNS = [
   { key: "titulo",              label: "Título",             type: "string", required: true },
@@ -32,12 +35,41 @@ export default function Pleitos() {
   const [showForm, setShowForm] = useState(false);
   const [editingPleito, setEditingPleito] = useState(null);
   const [selectedPleito, setSelectedPleito] = useState(null);
+  const [busca, setBusca] = useState("");
+  const [filtros, setFiltros] = useState({});
+  const [periodo, setPeriodo] = useState(null);
+  const [filterKey, setFilterKey] = useState(0);
+  const FILTROS_KEY = "pleitos-filtros";
 
   const { data: casos = [], isPending: isLoading, isError } = useQuery({
     queryKey: ["pleitos", selectedProjectId],
     queryFn: () => entities.Pleito.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
+
+  const statusOptions = useMemo(
+    () => [...new Set(casos.map(c => c.status).filter(Boolean))].sort(),
+    [casos]
+  );
+
+  const filteredCasos = useMemo(() => {
+    let r = casos;
+    if (busca) {
+      const b = busca.toLowerCase();
+      r = r.filter(p => p.titulo?.toLowerCase().includes(b) || p.descricao_problema?.toLowerCase().includes(b));
+    }
+    if (filtros.status?.length)    r = r.filter(p => filtros.status.includes(p.status));
+    if (filtros.prioridade?.length) r = r.filter(p => filtros.prioridade.includes(p.prioridade));
+    if (periodo?.from) {
+      const fromStr = periodo.from.toISOString().split("T")[0];
+      r = r.filter(p => p.data_abertura && p.data_abertura >= fromStr);
+    }
+    if (periodo?.to) {
+      const toStr = periodo.to.toISOString().split("T")[0];
+      r = r.filter(p => p.data_abertura && p.data_abertura <= toStr);
+    }
+    return r;
+  }, [casos, busca, filtros, periodo]);
 
   const createMutation = useMutation({
     mutationFn: (data) => entities.Pleito.create(data),
@@ -130,7 +162,37 @@ export default function Pleitos() {
             />
           )}
 
-          <PleitosList casos={casos} isLoading={isLoading} onSelect={setSelectedPleito} />
+          <FilterToolbar
+            active={!!busca || !!periodo?.from || Object.values(filtros).some(a => a?.length > 0)}
+            onClearAll={() => { setBusca(""); setPeriodo(null); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+          >
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
+                placeholder="Buscar por título..."
+                value={busca}
+                onChange={e => setBusca(e.target.value)}
+              />
+            </div>
+            <FilterBar
+              key={filterKey}
+              storageKey={FILTROS_KEY}
+              filters={[
+                { key: "status",    label: "Status",    options: statusOptions },
+                { key: "prioridade", label: "Prioridade", options: ["Baixa", "Média", "Alta", "Crítica"] },
+              ]}
+              onChange={setFiltros}
+            />
+            <DateRangePicker
+              label="Data Abertura"
+              value={periodo}
+              onChange={setPeriodo}
+              onClear={() => setPeriodo(null)}
+            />
+          </FilterToolbar>
+
+          <PleitosList casos={filteredCasos} isLoading={isLoading} onSelect={setSelectedPleito} />
         </div>
       </div>
       <ImportExportDialog
