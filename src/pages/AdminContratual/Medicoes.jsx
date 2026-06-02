@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
-import { Plus, ClipboardList, Upload } from "lucide-react";
+import { Plus, ClipboardList, Upload, Search } from "lucide-react";
 import MedicoesList from "@/components/contratos/MedicoesList";
 import MedicaoForm from "@/components/contratos/MedicaoForm";
 import PageEmptyState from "@/components/ui/PageEmptyState";
@@ -10,6 +10,8 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import FilterBar from "@/components/ui/FilterBar";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import DateRangePicker from "@/components/ui/DateRangePicker";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 
 const EXPORT_COLUMNS = [
@@ -38,12 +40,29 @@ export default function Medicoes() {
   });
 
   const [filtros, setFiltros] = useState({});
+  const [filterKey, setFilterKey] = useState(0);
+  const FILTROS_KEY = "medicoes-filtros";
+  const [busca, setBusca] = useState("");
+  const [periodo, setPeriodo] = useState(null);
 
   const medicoesFiltradas = useMemo(() => {
     const st = filtros.status || [];
-    if (st.length === 0) return medicoes;
-    return medicoes.filter(m => st.includes(m.status));
-  }, [medicoes, filtros]);
+    let r = medicoes;
+    if (busca) {
+      const b = busca.toLowerCase();
+      r = r.filter(m => m.numero?.toLowerCase().includes(b));
+    }
+    if (st.length > 0) r = r.filter(m => st.includes(m.status));
+    if (periodo?.from) {
+      const fromStr = periodo.from.toISOString().split("T")[0];
+      r = r.filter(m => m.periodo_inicio && m.periodo_inicio >= fromStr);
+    }
+    if (periodo?.to) {
+      const toStr = periodo.to.toISOString().split("T")[0];
+      r = r.filter(m => m.periodo_inicio && m.periodo_inicio <= toStr);
+    }
+    return r;
+  }, [medicoes, busca, filtros, periodo]);
 
   const { data: contratos = [] } = useQuery({
     queryKey: ["contratos", selectedProjectId],
@@ -126,13 +145,34 @@ export default function Medicoes() {
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-4">
-        <FilterBar
-          storageKey="medicoes-filtros"
-          filters={[
-            { key: "status", label: "Status", options: ["Elaboração", "Em Revisão", "Em Aprovação", "Aprovada", "Paga", "Rejeitada"] },
-          ]}
-          onChange={setFiltros}
-        />
+        <FilterToolbar
+          active={!!busca || !!periodo?.from || Object.values(filtros).some(a => a?.length > 0)}
+          onClearAll={() => { setBusca(""); setPeriodo(null); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+        >
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
+              placeholder="Buscar por número..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+            />
+          </div>
+          <FilterBar
+            key={filterKey}
+            storageKey={FILTROS_KEY}
+            filters={[
+              { key: "status", label: "Status", options: ["Elaboração", "Em Revisão", "Em Aprovação", "Aprovada", "Paga", "Rejeitada"] },
+            ]}
+            onChange={setFiltros}
+          />
+          <DateRangePicker
+            label="Período Início"
+            value={periodo}
+            onChange={setPeriodo}
+            onClear={() => setPeriodo(null)}
+          />
+        </FilterToolbar>
         <MedicoesList
           medicoes={medicoesFiltradas}
           contratos={contratos}
