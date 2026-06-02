@@ -2,9 +2,11 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
-import { FileText, Search, Eye, Trash2, Edit, Sun, CloudRain, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { FileText, Search, Sun, CloudRain, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import RowActions from "@/components/ui/RowActions";
 import { useSortTable } from "@/hooks/useSortTable";
 import FilterToolbar from "@/components/ui/FilterToolbar";
+import FilterBar from "@/components/ui/FilterBar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -30,12 +32,20 @@ export default function RDOModule({
   const [viewRDO, setViewRDO]   = useState(null);
   const [search, setSearch]     = useState("");
   const [periodo, setPeriodo]   = useState(null);
+  const [filtros, setFiltros] = useState({});
+  const [filterKey, setFilterKey] = useState(0);
+  const FILTROS_KEY = "rdo-filtros";
 
   const { data: rdos = [], isLoading } = useQuery({
     queryKey: ["rdos", selectedProjectId],
     queryFn: () => entities.Rdo.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
+
+  const areaOptions = useMemo(
+    () => [...new Set(rdos.map(r => r.area).filter(Boolean))].sort(),
+    [rdos]
+  );
 
   const { data: casos = [] } = useQuery({
     queryKey: ["pleitos", selectedProjectId],
@@ -71,6 +81,7 @@ export default function RDOModule({
     if (search) result = result.filter(r =>
       (r.numero || r.area || "").toLowerCase().includes(search.toLowerCase())
     );
+    if (filtros.area?.length > 0) result = result.filter(r => filtros.area.includes(r.area));
     if (periodo?.from) {
       const fromStr = periodo.from.toISOString().split("T")[0];
       result = result.filter(r => r.data && r.data >= fromStr);
@@ -80,7 +91,7 @@ export default function RDOModule({
       result = result.filter(r => r.data && r.data <= toStr);
     }
     return result;
-  }, [rdos, search, periodo]);
+  }, [rdos, search, filtros, periodo]);
 
   const { sortedData: rdosSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "data", defaultDir: "desc" });
 
@@ -95,8 +106,14 @@ export default function RDOModule({
     );
   };
 
-  const isFilterActive = !!search || !!periodo?.from;
-  const handleClearAll = () => { setSearch(""); setPeriodo(null); };
+  const isFilterActive = !!search || !!periodo?.from || Object.values(filtros).some(a => a?.length > 0);
+  const handleClearAll = () => {
+    setSearch("");
+    setPeriodo(null);
+    setFiltros({});
+    localStorage.removeItem(FILTROS_KEY);
+    setFilterKey(k => k + 1);
+  };
 
   function SortIcon({ col }) {
     if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 inline ml-1 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />;
@@ -119,6 +136,14 @@ export default function RDOModule({
             onChange={e => setSearch(e.target.value)}
           />
         </div>
+        <FilterBar
+          key={filterKey}
+          storageKey={FILTROS_KEY}
+          filters={[
+            { key: "area", label: "Área", options: areaOptions },
+          ]}
+          onChange={setFiltros}
+        />
         <DateRangePicker
           label="Período"
           value={periodo}
@@ -141,7 +166,7 @@ export default function RDOModule({
               <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Equip.</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Ocorrências</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Evidências</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">Ações</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground whitespace-nowrap w-28"><span className="sr-only">Ações</span></th>
             </tr>
           </thead>
           <tbody>
