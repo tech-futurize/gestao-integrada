@@ -52,6 +52,34 @@ function ScoreBadge({ score }) {
   );
 }
 
+function RiscoChip({ risco, cellScore, isActive, isDimmed, onMouseEnter, onMouseLeave }) {
+  const chipStyle = getCellChipStyle(cellScore);
+  return (
+    <span
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{
+        display: "block",
+        width: "100%",
+        fontSize: "8px",
+        fontWeight: 700,
+        padding: "2px 6px",
+        borderRadius: "4px",
+        textAlign: "center",
+        cursor: "pointer",
+        transition: "all 0.1s",
+        background: isActive ? chipStyle.activeColor : chipStyle.normalBg,
+        color: isActive ? "#fff" : chipStyle.textColor,
+        opacity: isDimmed ? 0.35 : 1,
+        outline: isActive ? "1.5px solid rgba(255,255,255,0.5)" : "none",
+        boxShadow: isActive ? `0 2px 8px ${chipStyle.activeColor}88` : "none",
+      }}
+    >
+      {risco.codigo || "—"}
+    </span>
+  );
+}
+
 const EMPTY_FORM = {
   codigo: "", descricao: "", categoria: "", probabilidade: "Média", impacto: "Médio",
   status: "Ativo", responsavel: "", plano_resposta: "",
