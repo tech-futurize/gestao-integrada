@@ -404,16 +404,18 @@ export default function HistogramaTabela({ tipo }) {
             </button>
           ))}
         </>}
-        <DateRangePicker
-          label="Período"
-          value={periodFilter}
-          onChange={setPeriodFilter}
-          onClear={() => setPeriodFilter(null)}
-        />
-        <Button size="sm" variant="outline" className="ml-auto" onClick={() => setShowNovoDialog(true)}>
-          <Plus className="w-3.5 h-3.5 mr-1" />
-          Novo {tipo === "MO" ? "Função" : "Equipamento"}
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setShowNovoDialog(true)}>
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            Novo {tipo === "MO" ? "Função" : "Equipamento"}
+          </Button>
+          <DateRangePicker
+            label="Período"
+            value={periodFilter}
+            onChange={setPeriodFilter}
+            onClear={() => setPeriodFilter(null)}
+          />
+        </div>
       </div>
 
       {/* Gráfico */}
