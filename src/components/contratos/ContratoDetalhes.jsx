@@ -1,12 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ArrowLeft, Edit, DollarSign, Calendar, User, Building } from "lucide-react";
+import { ArrowLeft, Edit, DollarSign, Calendar, User, Building, Upload } from "lucide-react";
 import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/dateUtils";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
+import ContratoIODialog from "@/components/contratos/ContratoIODialog";
 import ContratoVisaoGeral from "@/components/contratos/ContratoVisaoGeral";
 import ContratoPQP from "@/components/contratos/ContratoPQP";
 import ContratoMedicoes from "@/components/contratos/ContratoMedicoes";
@@ -23,6 +26,16 @@ function addDaysToDate(dateStr, days) {
 }
 
 export default function ContratoDetalhes({ contrato, onBack, onEdit, onDelete }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [showIO, setShowIO] = useState(false);
+
+  const importPQP = useMutation({
+    mutationFn: (itens) => entities.Contrato.update(contrato.id, { itens }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["contratos"] }); toast({ title: "PQP importada", duration: 2000 }); setShowIO(false); },
+    onError: (e) => toast({ title: "Erro ao importar", description: friendlyMessage(e), variant: "destructive" }),
+  });
+
   // Queries próprias (deduplicadas com as das abas) para o card-resumo do contrato
   const { data: medicoes = [] } = useQuery({
     queryKey: ["medicoes", "contrato", contrato.id],
@@ -47,6 +60,7 @@ export default function ContratoDetalhes({ contrato, onBack, onEdit, onDelete })
       <div className="flex items-center gap-3">
         <Button variant="outline" size="sm" onClick={onBack}><ArrowLeft className="w-4 h-4 mr-1" /> Voltar</Button>
         <h2 className="text-lg font-bold flex-1 text-foreground">Detalhes do Contrato</h2>
+        <Button size="sm" variant="outline" onClick={() => setShowIO(true)}><Upload className="w-4 h-4 mr-1" /> Importar / Exportar</Button>
         <Button size="sm" variant="outline" onClick={() => onEdit(contrato)}><Edit className="w-4 h-4 mr-1" /> Editar</Button>
         <ConfirmDeleteButton size="sm" onConfirm={() => onDelete(contrato.id)} description="O contrato e todos os seus dados associados serão excluídos permanentemente." />
       </div>
@@ -131,6 +145,17 @@ export default function ContratoDetalhes({ contrato, onBack, onEdit, onDelete })
           </Tabs>
         </CardContent>
       </Card>
+
+      {showIO && (
+        <ContratoIODialog
+          open={showIO}
+          onOpenChange={setShowIO}
+          contrato={contrato}
+          medicoes={medicoes}
+          aditivos={aditivos}
+          onImportPQP={(itens) => importPQP.mutate(itens)}
+        />
+      )}
     </div>
   );
 }
