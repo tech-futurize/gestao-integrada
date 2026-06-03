@@ -9,15 +9,9 @@ import PageEmptyState from "@/components/ui/PageEmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { entities } from "@/api/supabaseEntities";
 import { Button } from "@/components/ui/button";
-import { FormDialog } from "@/components/ui/FormDialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useProject } from "@/lib/ProjectContext";
-
-const STATUS_OPTIONS = ["Planejamento", "Em Andamento", "Pausado", "Concluído", "Cancelado"];
+import ProjetoForm from "@/components/projeto/ProjetoForm";
 
 const STATUS_CFG = {
   Planejamento: { icon: Clock, color: "#3b82f6", bg: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
@@ -28,8 +22,23 @@ const STATUS_CFG = {
 };
 
 const EMPTY_FORM = {
-  nome: "", descricao: "", status: "Planejamento", data_inicio: "", data_fim_prevista: "",
+  // Geral
+  nome: "", descricao: "", status: "Planejamento",
+  data_inicio: "", data_fim_prevista: "",
   cliente: "", responsavel: "", contrato_numero: "", valor_contrato: "",
+  // Comercial
+  cliente_cnpj: "", cliente_contato: "", contrato_objeto: "",
+  moeda: "BRL", regime_execucao: "", data_base_orcamento: "",
+  // Orçamento
+  bdi_percentual: "", encargos_sociais_percentual: "",
+  regime_tributario: "", retencao_percentual: "",
+  // Local/Prazo
+  local_cidade: "", local_uf: "", local_endereco: "",
+  prazo_contratual_dias: "", data_inicio_efetivo: "",
+  // Equipe/Vínculo
+  gestor_contrato: "", projeto_pai_id: "",
+  // PQ-mestra
+  pqp_mestra: [],
 };
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
@@ -77,6 +86,7 @@ export default function GerenciarProjeto() {
   const handleEdit = (projeto) => {
     setEditing(projeto);
     setForm({
+      // Geral
       nome: projeto.nome || "",
       descricao: projeto.descricao || "",
       status: projeto.status || "Planejamento",
@@ -86,6 +96,29 @@ export default function GerenciarProjeto() {
       responsavel: projeto.responsavel_geral || "",
       contrato_numero: projeto.contrato_numero || "",
       valor_contrato: projeto.valor_contrato ?? "",
+      // Comercial
+      cliente_cnpj: projeto.cliente_cnpj || "",
+      cliente_contato: projeto.cliente_contato || "",
+      contrato_objeto: projeto.contrato_objeto || "",
+      moeda: projeto.moeda || "BRL",
+      regime_execucao: projeto.regime_execucao || "",
+      data_base_orcamento: projeto.data_base_orcamento || "",
+      // Orçamento
+      bdi_percentual: projeto.bdi_percentual ?? "",
+      encargos_sociais_percentual: projeto.encargos_sociais_percentual ?? "",
+      regime_tributario: projeto.regime_tributario || "",
+      retencao_percentual: projeto.retencao_percentual ?? "",
+      // Local/Prazo
+      local_cidade: projeto.local_cidade || "",
+      local_uf: projeto.local_uf || "",
+      local_endereco: projeto.local_endereco || "",
+      prazo_contratual_dias: projeto.prazo_contratual_dias ?? "",
+      data_inicio_efetivo: projeto.data_inicio_efetivo || "",
+      // Equipe/Vínculo
+      gestor_contrato: projeto.gestor_contrato || "",
+      projeto_pai_id: projeto.projeto_pai_id || "",
+      // PQ-mestra
+      pqp_mestra: projeto.pqp_mestra || [],
     });
     setShowForm(true);
   };
@@ -100,6 +133,7 @@ export default function GerenciarProjeto() {
       return;
     }
     const payload = {
+      // Geral
       nome: form.nome.trim(),
       descricao: form.descricao,
       status: form.status,
@@ -109,6 +143,29 @@ export default function GerenciarProjeto() {
       responsavel_geral: form.responsavel,
       contrato_numero: form.contrato_numero,
       valor_contrato: parseFloat(form.valor_contrato) || 0,
+      // Comercial
+      cliente_cnpj: form.cliente_cnpj || null,
+      cliente_contato: form.cliente_contato || null,
+      contrato_objeto: form.contrato_objeto || null,
+      moeda: form.moeda || "BRL",
+      regime_execucao: form.regime_execucao || null,
+      data_base_orcamento: form.data_base_orcamento || null,
+      // Orçamento
+      bdi_percentual: form.bdi_percentual !== "" ? parseFloat(form.bdi_percentual) : null,
+      encargos_sociais_percentual: form.encargos_sociais_percentual !== "" ? parseFloat(form.encargos_sociais_percentual) : null,
+      regime_tributario: form.regime_tributario || null,
+      retencao_percentual: form.retencao_percentual !== "" ? parseFloat(form.retencao_percentual) : null,
+      // Local/Prazo
+      local_cidade: form.local_cidade || null,
+      local_uf: form.local_uf || null,
+      local_endereco: form.local_endereco || null,
+      prazo_contratual_dias: form.prazo_contratual_dias !== "" ? parseInt(form.prazo_contratual_dias) : null,
+      data_inicio_efetivo: form.data_inicio_efetivo || null,
+      // Equipe/Vínculo
+      gestor_contrato: form.gestor_contrato || null,
+      projeto_pai_id: form.projeto_pai_id || null,
+      // PQ-mestra
+      pqp_mestra: form.pqp_mestra || [],
     };
     if (editing) updateMut.mutate({ id: editing.id, data: payload });
     else createMut.mutate(payload);
@@ -162,7 +219,10 @@ export default function GerenciarProjeto() {
                   {p.data_inicio && <div><span className="font-medium">Início:</span> {formatDate(p.data_inicio)}</div>}
                   {p.data_prevista_termino && <div><span className="font-medium">Fim Prev.:</span> {formatDate(p.data_prevista_termino)}</div>}
                   {p.responsavel_geral && <div className="col-span-2"><span className="font-medium">Resp.:</span> {p.responsavel_geral}</div>}
-                  {p.valor_contrato && <div className="col-span-2"><span className="font-medium">Contrato:</span> {fmt(p.valor_contrato)}</div>}
+                  {p.valor_contrato > 0 && <div className="col-span-2"><span className="font-medium">Valor:</span> {fmt(p.valor_contrato)}</div>}
+                  {p.regime_execucao && <div><span className="font-medium">Regime:</span> {p.regime_execucao}</div>}
+                  {p.bdi_percentual != null && <div><span className="font-medium">BDI:</span> {p.bdi_percentual}%</div>}
+                  {p.local_cidade && <div className="col-span-2"><span className="font-medium">Local:</span> {p.local_cidade}{p.local_uf ? `/${p.local_uf}` : ""}</div>}
                 </div>
                 <div className="flex items-center justify-between pt-1">
                   <Button size="sm" variant="outline" className="flex-1 mr-2" onClick={() => handleSelect(p.id)}>
@@ -183,69 +243,18 @@ export default function GerenciarProjeto() {
       )}
 
       {/* Modal */}
-      <FormDialog
-        open={showForm}
-        onOpenChange={open => { if (!open) { setShowForm(false); setEditing(null); } }}
-        icon={Settings}
-        title={editing ? "Editar Projeto" : "Novo Projeto"}
-        subtitle={editing ? editing.nome : "Configurar novo projeto"}
-        maxWidth="max-w-2xl"
-        onClose={() => { setShowForm(false); setEditing(null); }}
-        onSave={handleSubmit}
-        saving={createMut.isPending || updateMut.isPending}
-        saveLabel={editing ? "Salvar" : "Criar Projeto"}
-        footer={
-          <>
-            {editing && <Button variant="destructive" onClick={() => { deleteMut.mutate(editing.id); setShowForm(false); }}>Excluir</Button>}
-            <Button variant="outline" onClick={() => { setShowForm(false); setEditing(null); }}>Cancelar</Button>
-            <Button variant="save" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending}>
-              {editing ? "Salvar" : "Criar Projeto"}
-            </Button>
-          </>
-        }
-      >
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1 col-span-2">
-              <Label>Nome do Projeto *</Label>
-              <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Planta Industrial XYZ" />
-            </div>
-            <div className="space-y-1 col-span-2">
-              <Label>Descrição</Label>
-              <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} />
-            </div>
-            <div className="space-y-1">
-              <Label>Cliente *</Label>
-              <Input value={form.cliente} onChange={e => setForm(f => ({ ...f, cliente: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Responsável</Label>
-              <Input value={form.responsavel} onChange={e => setForm(f => ({ ...f, responsavel: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Data de Início</Label>
-              <Input type="date" value={form.data_inicio} onChange={e => setForm(f => ({ ...f, data_inicio: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Data Fim Prevista</Label>
-              <Input type="date" value={form.data_fim_prevista} onChange={e => setForm(f => ({ ...f, data_fim_prevista: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Nº do Contrato</Label>
-              <Input value={form.contrato_numero} onChange={e => setForm(f => ({ ...f, contrato_numero: e.target.value }))} placeholder="CT-2026-001" />
-            </div>
-            <div className="space-y-1">
-              <Label>Valor do Contrato (R$)</Label>
-              <Input type="number" value={form.valor_contrato} onChange={e => setForm(f => ({ ...f, valor_contrato: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
-      </FormDialog>
+      {showForm && (
+        <ProjetoForm
+          form={form}
+          onChange={setForm}
+          projetos={projetos}
+          editing={editing}
+          onSave={handleSubmit}
+          onClose={() => { setShowForm(false); setEditing(null); }}
+          saving={createMut.isPending || updateMut.isPending}
+          onDelete={() => { deleteMut.mutate(editing.id); setShowForm(false); setEditing(null); }}
+        />
+      )}
 
       {viewItem && (
         <DetailDialog
@@ -256,9 +265,20 @@ export default function GerenciarProjeto() {
             { label: "Nome", value: viewItem.nome },
             { label: "Status", value: viewItem.status },
             { label: "Cliente", value: viewItem.cliente },
+            { label: "CNPJ", value: viewItem.cliente_cnpj },
             { label: "Responsável", value: viewItem.responsavel_geral },
+            { label: "Gestor do Contrato", value: viewItem.gestor_contrato },
             { label: "Início", value: formatDate(viewItem.data_inicio) },
+            { label: "Início Efetivo", value: formatDate(viewItem.data_inicio_efetivo) },
             { label: "Fim previsto", value: formatDate(viewItem.data_prevista_termino) },
+            { label: "Prazo (dias)", value: viewItem.prazo_contratual_dias },
+            { label: "Regime", value: viewItem.regime_execucao },
+            { label: "Regime Tributário", value: viewItem.regime_tributario },
+            { label: "BDI (%)", value: viewItem.bdi_percentual },
+            { label: "Encargos (%)", value: viewItem.encargos_sociais_percentual },
+            { label: "Retenção (%)", value: viewItem.retencao_percentual },
+            { label: "Local", value: [viewItem.local_endereco, viewItem.local_cidade, viewItem.local_uf].filter(Boolean).join(", ") },
+            { label: "Objeto", value: viewItem.contrato_objeto, full: true },
             { label: "Descrição", value: viewItem.descricao, full: true },
           ]}
         />
