@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, UserX } from "lucide-react";
+import { Users, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
 import DetailDialog from "@/components/ui/DetailDialog";
 import PageHeader from "@/components/ui/PageHeader";
@@ -23,17 +23,14 @@ import {
   DENY_ALL,
 } from "@/lib/permissionsConfig";
 
-const STATUS_OPTIONS = ["Ativo", "Inativo"];
-
 const STATUS_CFG = {
-  Ativo: { bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
-  Inativo: { bg: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400" },
+  Ativo:   { bg: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50" },
+  Inativo: { bg: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700" },
 };
 
 const EMPTY_FORM = {
   nome: "",
   email: "",
-  cargo: "",
   perfil: "Visualizador",
   status: "Ativo",
 };
@@ -46,11 +43,26 @@ export default function Usuarios() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewItem, setViewItem] = useState(null);
   const [permsMatrix, setPermsMatrix] = useState({});
+  const [search, setSearch] = useState("");
+  const [filterPerfil, setFilterPerfil] = useState("Todos");
 
   const { data: usuarios = [], isLoading, isError } = useQuery({
     queryKey: ["usuarios"],
     queryFn: () => entities.Usuario.list(),
   });
+
+  const usuariosFiltrados = useMemo(() => {
+    const q = search.toLowerCase();
+    return usuarios.filter((u) => {
+      const matchSearch = !q ||
+        u.nome?.toLowerCase().includes(q) ||
+        u.email?.toLowerCase().includes(q);
+      const matchPerfil = filterPerfil === "Todos" || u.perfil === filterPerfil;
+      return matchSearch && matchPerfil;
+    });
+  }, [usuarios, search, filterPerfil]);
+
+  const hasFilters = search || filterPerfil !== "Todos";
 
   // Permissões do usuário em edição
   const { data: userPermsRows = [] } = useQuery({
@@ -116,12 +128,12 @@ export default function Usuarios() {
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  // Desativação de usuário
-  const deactivateMut = useMutation({
-    mutationFn: (id) => entities.Usuario.update(id, { status: "Inativo" }),
+  // Toggle de status (Ativo ↔ Inativo)
+  const toggleStatusMut = useMutation({
+    mutationFn: ({ id, status }) =>
+      entities.Usuario.update(id, { status: status === "Ativo" ? "Inativo" : "Ativo" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["usuarios"] });
-      toast({ variant: "success", description: "Usuário desativado." });
     },
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
@@ -191,7 +203,6 @@ export default function Usuarios() {
     setForm({
       nome: usuario.nome || "",
       email: usuario.email || "",
-      cargo: usuario.cargo || "",
       perfil: usuario.perfil || "Visualizador",
       status: usuario.status || "Ativo",
     });
@@ -210,6 +221,11 @@ export default function Usuarios() {
     }
   };
 
+  const clearFilters = () => {
+    setSearch("");
+    setFilterPerfil("Todos");
+  };
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -219,77 +235,128 @@ export default function Usuarios() {
           </Button>
         }
       />
-      <div className="flex-1 overflow-auto p-6 space-y-6">
+      <div className="flex-1 overflow-auto p-6 space-y-4">
 
-      {isError ? (
-        <div className="rounded-xl border border-status-critical/30 bg-status-critical/10 px-4 py-3 text-sm text-status-critical">
-          Erro ao carregar usuários. Tente recarregar a página.
-        </div>
-      ) : isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
-        </div>
-      ) : usuarios.length === 0 ? (
-        <PageEmptyState icon={Users} description="Nenhum usuário cadastrado. Crie o primeiro usuário." />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {usuarios.map((u) => {
-            const cfg = STATUS_CFG[u.status] || STATUS_CFG.Ativo;
-            return (
-              <div key={u.id} className="bg-card rounded-xl border border-border p-5 space-y-3 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-foreground text-base leading-tight truncate">{u.nome}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{u.email}</p>
-                  </div>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${cfg.bg}`}>
-                    {u.status || "Ativo"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  {u.cargo && (
-                    <div className="col-span-2">
-                      <span className="font-medium">Cargo:</span> {u.cargo}
-                    </div>
-                  )}
-                  <div>
-                    <span className="font-medium">Perfil:</span> {u.perfil || "Visualizador"}
-                  </div>
-                </div>
-                <RowActions
-                  onView={() => setViewItem(u)}
-                  onEdit={() => handleEdit(u)}
-                  size="md"
-                  extra={u.status !== "Inativo" ? (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); deactivateMut.mutate(u.id); }}
-                      className="h-8 w-8 inline-flex items-center justify-center rounded-md text-status-critical hover:bg-status-critical/10 transition-colors"
-                      title="Desativar usuário"
-                      aria-label="Desativar usuário"
-                    >
-                      <UserX className="w-4 h-4" />
-                    </button>
-                  ) : null}
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
+        {/* Barra de filtros */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="relative pr-1">
+              Filtros
+              {hasFilters && (
+                <button
+                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/80 z-10 transition-colors"
+                  onClick={clearFilters}
+                  aria-label="Limpar filtros"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </span>
+          </span>
 
-      <FormDialog
-        open={showForm}
-        onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); } }}
-        icon={Users}
-        title={editing ? "Editar Usuário" : "Novo Usuário"}
-        subtitle={editing ? editing.email : "Cadastro de usuário"}
-        maxWidth="max-w-2xl"
-        onClose={() => { setShowForm(false); setEditing(null); }}
-        onSave={handleSubmit}
-        saving={createMut.isPending || updateMut.isPending}
-        saveLabel={editing ? "Salvar" : "Criar Usuário"}
-      >
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar por nome ou e-mail..."
+              className="pl-8 h-8 text-sm w-64"
+            />
+          </div>
+
+          <Select value={filterPerfil} onValueChange={setFilterPerfil}>
+            <SelectTrigger className="h-8 text-sm w-40">
+              <SelectValue placeholder="Perfil" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Todos">Todos os perfis</SelectItem>
+              {PERFIL_OPTIONS.map((p) => (
+                <SelectItem key={p} value={p}>{p}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Conteúdo */}
+        {isError ? (
+          <div className="rounded-xl border border-status-critical/30 bg-status-critical/10 px-4 py-3 text-sm text-status-critical">
+            Erro ao carregar usuários. Tente recarregar a página.
+          </div>
+        ) : isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+          </div>
+        ) : usuarios.length === 0 ? (
+          <PageEmptyState icon={Users} description="Nenhum usuário cadastrado. Crie o primeiro usuário." />
+        ) : (
+          <div className="rounded-xl border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/50 border-b border-border">
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Nome / E-mail</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground w-36">Perfil</th>
+                  <th className="text-center py-3 px-4 font-medium text-muted-foreground w-28">Status</th>
+                  <th className="text-right py-3 px-4 font-medium text-muted-foreground w-28">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usuariosFiltrados.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-10 text-muted-foreground text-sm">
+                      Nenhum usuário encontrado para os filtros aplicados.
+                    </td>
+                  </tr>
+                ) : (
+                  usuariosFiltrados.map((u) => {
+                    const status = u.status || "Ativo";
+                    const cfg = STATUS_CFG[status] || STATUS_CFG.Ativo;
+                    return (
+                      <tr key={u.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4">
+                          <p className="font-medium text-foreground leading-tight">{u.nome}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{u.email}</p>
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">{u.perfil || "Visualizador"}</td>
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => toggleStatusMut.mutate({ id: u.id, status })}
+                            disabled={toggleStatusMut.isPending}
+                            title={status === "Ativo" ? "Clique para desativar" : "Clique para ativar"}
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-colors cursor-pointer ${cfg.bg}`}
+                          >
+                            {status}
+                          </button>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <RowActions
+                            onView={() => setViewItem(u)}
+                            onEdit={() => handleEdit(u)}
+                            size="sm"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <FormDialog
+          open={showForm}
+          onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); } }}
+          icon={Users}
+          title={editing ? "Editar Usuário" : "Novo Usuário"}
+          subtitle={editing ? editing.email : "Cadastro de usuário"}
+          maxWidth="max-w-2xl"
+          onClose={() => { setShowForm(false); setEditing(null); }}
+          onSave={handleSubmit}
+          saving={createMut.isPending || updateMut.isPending}
+          saveLabel={editing ? "Salvar" : "Criar Usuário"}
+        >
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1 col-span-2">
               <Label>Nome *</Label>
@@ -308,14 +375,6 @@ export default function Usuarios() {
                 placeholder="usuario@empresa.com"
               />
             </div>
-            <div className="space-y-1 col-span-2">
-              <Label>Cargo</Label>
-              <Input
-                value={form.cargo}
-                onChange={(e) => setForm((f) => ({ ...f, cargo: e.target.value }))}
-                placeholder="Ex: Engenheiro de Campo"
-              />
-            </div>
             <div className="space-y-1">
               <Label>Perfil</Label>
               <Select value={form.perfil} onValueChange={(v) => setForm((f) => ({ ...f, perfil: v }))}>
@@ -327,12 +386,24 @@ export default function Usuarios() {
             </div>
             <div className="space-y-1">
               <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, status: f.status === "Ativo" ? "Inativo" : "Ativo" }))}
+                className={`w-full h-9 px-3 rounded-md border text-sm font-medium transition-colors flex items-center justify-between ${
+                  form.status === "Ativo"
+                    ? "border-green-300 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-300"
+                    : "border-slate-300 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                }`}
+              >
+                <span>{form.status}</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                  form.status === "Ativo"
+                    ? "bg-green-200 text-green-800 dark:bg-green-800 dark:text-green-200"
+                    : "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+                }`}>
+                  {form.status === "Ativo" ? "Ativo" : "Inativo"}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -421,22 +492,21 @@ export default function Usuarios() {
             </div>
           )}
 
-      </FormDialog>
+        </FormDialog>
 
-      {viewItem && (
-        <DetailDialog
-          open={!!viewItem}
-          onOpenChange={(o) => !o && setViewItem(null)}
-          title={viewItem.nome || viewItem.email}
-          sections={[
-            { label: "Nome", value: viewItem.nome },
-            { label: "E-mail", value: viewItem.email },
-            { label: "Perfil", value: viewItem.perfil },
-            { label: "Status", value: viewItem.status },
-            { label: "Cargo", value: viewItem.cargo },
-          ]}
-        />
-      )}
+        {viewItem && (
+          <DetailDialog
+            open={!!viewItem}
+            onOpenChange={(o) => !o && setViewItem(null)}
+            title={viewItem.nome || viewItem.email}
+            sections={[
+              { label: "Nome", value: viewItem.nome },
+              { label: "E-mail", value: viewItem.email },
+              { label: "Perfil", value: viewItem.perfil },
+              { label: "Status", value: viewItem.status },
+            ]}
+          />
+        )}
       </div>
     </div>
   );
