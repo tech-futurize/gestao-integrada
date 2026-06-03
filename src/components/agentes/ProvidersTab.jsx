@@ -121,6 +121,8 @@ export default function ProvidersTab() {
   const { data: configs = [], isPending } = useQuery({
     queryKey: ['provider-configs'],
     queryFn: () => entities.ProviderConfig.list(),
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: precos = [] } = useQuery({

@@ -50,6 +50,17 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
     queryKey: ['agente-tools'],
     queryFn: () => entities.AgenteTool.list(),
   });
+
+  const { data: providerConfigs = [] } = useQuery({
+    queryKey: ['provider-configs'],
+    queryFn: () => entities.ProviderConfig.list(),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+  const isProviderKeySet = (providerId) => {
+    const cfg = providerConfigs.find(c => c.provider === providerId);
+    return !!(cfg?.api_key);
+  };
   const systemTools_db = allTools.filter(t => t.is_system);
   const customTools_db = allTools.filter(t => !t.is_system);
 
@@ -282,9 +293,15 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
       <div className="p-3 rounded-md border border-border bg-muted/30 flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold">Chave API — {currentProvider.label}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Gerenciada via variável de ambiente no servidor Mastra. Não editável pela UI.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Configure na aba <strong>Provedores</strong>. A chave é carregada pelo executor no startup.
+          </p>
         </div>
-        <Badge className="bg-green-600 text-white text-xs">✓ Configurada</Badge>
+        {isProviderKeySet(form.provider) ? (
+          <Badge className="bg-green-600 text-white text-xs">✓ Configurada</Badge>
+        ) : (
+          <Badge variant="secondary" className="text-xs">Não configurada</Badge>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
