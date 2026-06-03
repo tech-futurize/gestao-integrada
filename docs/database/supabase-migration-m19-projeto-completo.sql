@@ -1,0 +1,20 @@
+-- Migration m19: Cadastro de projeto completo (dados principais EPC + PQ-mestra)
+ALTER TABLE projetos
+  ADD COLUMN IF NOT EXISTS cliente_cnpj            TEXT,
+  ADD COLUMN IF NOT EXISTS cliente_contato         TEXT,
+  ADD COLUMN IF NOT EXISTS contrato_objeto         TEXT,
+  ADD COLUMN IF NOT EXISTS moeda                   TEXT DEFAULT 'BRL',
+  ADD COLUMN IF NOT EXISTS regime_execucao         TEXT,
+  ADD COLUMN IF NOT EXISTS data_base_orcamento     DATE,
+  ADD COLUMN IF NOT EXISTS bdi_percentual          NUMERIC,
+  ADD COLUMN IF NOT EXISTS encargos_sociais_percentual NUMERIC,
+  ADD COLUMN IF NOT EXISTS regime_tributario       TEXT,
+  ADD COLUMN IF NOT EXISTS retencao_percentual     NUMERIC,
+  ADD COLUMN IF NOT EXISTS local_cidade            TEXT,
+  ADD COLUMN IF NOT EXISTS local_uf                TEXT,
+  ADD COLUMN IF NOT EXISTS local_endereco          TEXT,
+  ADD COLUMN IF NOT EXISTS prazo_contratual_dias   INTEGER,
+  ADD COLUMN IF NOT EXISTS data_inicio_efetivo     DATE,
+  ADD COLUMN IF NOT EXISTS gestor_contrato         TEXT,
+  ADD COLUMN IF NOT EXISTS projeto_pai_id          UUID REFERENCES projetos(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS pqp_mestra              JSONB DEFAULT '[]'::jsonb;
