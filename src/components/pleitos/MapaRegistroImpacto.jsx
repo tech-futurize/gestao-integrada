@@ -248,8 +248,6 @@ export default function MapaRegistroImpacto({ incidentes }) {
         registros={getDrilldownRegistros()}
       />
 
-      <div className="mt-4 pt-3 border-t border-border" />
-
       {/* Charts row */}
       <ChartsRow
         todasOcorrencias={todasOcorrencias}
@@ -262,9 +260,23 @@ export default function MapaRegistroImpacto({ incidentes }) {
 }
 
 function RadarAngleTick({ x, y, payload, cx, cy: _cy }) {
+  const MAX_LINE_LEN = 12;
   const words = payload.value.split(/\s+/);
-  const lineHeight = 11;
-  const totalHeight = words.length * lineHeight;
+  const lines = [];
+  let current = "";
+  for (const w of words) {
+    const candidate = current ? `${current} ${w}` : w;
+    if (candidate.length > MAX_LINE_LEN && current) {
+      lines.push(current);
+      current = w;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+
+  const lineHeight = 13;
+  const totalHeight = lines.length * lineHeight;
   const startY = y - totalHeight / 2 + lineHeight / 2;
 
   let textAnchor = "middle";
@@ -272,9 +284,9 @@ function RadarAngleTick({ x, y, payload, cx, cy: _cy }) {
   else if (x > cx + 10) textAnchor = "start";
 
   return (
-    <text textAnchor={textAnchor} fontSize={9} fill="#6b7280">
-      {words.map((word, i) => (
-        <tspan key={i} x={x} y={startY + i * lineHeight}>{word}</tspan>
+    <text textAnchor={textAnchor} fontSize={11} fill="#6b7280">
+      {lines.map((line, i) => (
+        <tspan key={i} x={x} y={startY + i * lineHeight}>{line}</tspan>
       ))}
     </text>
   );
@@ -282,19 +294,19 @@ function RadarAngleTick({ x, y, payload, cx, cy: _cy }) {
 
 function renderPieLabel({ cx, cy, midAngle, outerRadius, name, percent }) {
   const RADIAN = Math.PI / 180;
-  const radius = outerRadius + 28;
+  const radius = outerRadius + 32;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   return (
     <text
       x={x}
       y={y}
-      fontSize={10}
-      fill="#6b7280"
+      fontSize={12}
+      fill="#374151"
       textAnchor={x > cx ? "start" : "end"}
     >
-      <tspan x={x} dy="0">{name}</tspan>
-      <tspan x={x} dy="14">{`${(percent * 100).toFixed(0)}%`}</tspan>
+      <tspan x={x} dy="0" fontWeight="600">{name}</tspan>
+      <tspan x={x} dy="16">{`${(percent * 100).toFixed(0)}%`}</tspan>
     </text>
   );
 }
@@ -333,8 +345,8 @@ function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPi
             <span className="ml-2 text-xs font-semibold text-ocre">— filtrando: {responsabilidadeFiltro}</span>
           )}
         </h4>
-        <ResponsiveContainer width="100%" height={240}>
-          <PieChart margin={{ top: 30, right: 50, bottom: 30, left: 50 }}>
+        <ResponsiveContainer width="100%" height={260}>
+          <PieChart margin={{ top: 36, right: 60, bottom: 36, left: 60 }}>
             <Pie
               data={pieData}
               cx="50%"
@@ -363,8 +375,8 @@ function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPi
 
       {/* Radar chart */}
       <div>
-        <ResponsiveContainer width="100%" height={260}>
-          <RadarChart data={radarData} outerRadius="60%" margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
+        <ResponsiveContainer width="100%" height={300}>
+          <RadarChart data={radarData} outerRadius="52%" margin={{ top: 24, right: 70, bottom: 24, left: 70 }}>
             <PolarGrid stroke="#e2e8f0" />
             <PolarAngleAxis
               dataKey="category"

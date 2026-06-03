@@ -2,19 +2,21 @@
 
 > Documenta todas as tabelas, campos e relacionamentos do banco.
 > **Consulta obrigatória** para o Builder antes de criar ou alterar qualquer tabela.
-> Schema completo em: `supabase-migration.sql`
+> Schema base em: `docs/database/supabase-migration.sql` — migrations incrementais em `docs/database/` (m3–m19 são a fonte atual da verdade).
+>
+> ⚠️ **Atenção:** `supabase-migration.sql` contém apenas o schema inicial. Para o estado atual do banco, aplique também todas as migrations incrementais listadas na seção [Migrations](#migrations) abaixo.
 
 ---
 
 ## Visão Geral
 
 - **Banco:** Supabase PostgreSQL
-- **Total de tabelas:** ~25 (após Milestone Refatoração Geral 2026-Q2)
+- **Total de tabelas:** ~30 (schema atual via migrations incrementais m3–m19)
 - **Auth:** Supabase Auth (tabela `auth.users` gerenciada pelo Supabase)
 - **RLS:** Habilitado em todas as tabelas com policy aberta para `authenticated`
 - **UUID:** `gen_random_uuid()` como PK padrão
 - **Timestamps:** `created_at` e `updated_at` em todas as tabelas
-- **Migration ativa:** `supabase-migration-2026-q2.sql` (aplicar antes de rodar o app)
+- **Migrations:** `docs/database/supabase-migration.sql` (base) + incrementais m3–m19 em `docs/database/`
 
 ### Tabelas removidas
 - ~~`rncs`~~ — módulo Qualidade dropado
@@ -30,7 +32,6 @@
 - `usuarios` — cadastro básico de usuários
 
 > **Nota:** `acoes` **NÃO foi removida**. Continua ativa para Pleitos (`pleitos`). A tabela `plano_acao` é distinta — serve exclusivamente a Riscos e Mudanças.
-> **Migration pendente (se não aplicada):** `ALTER TABLE incidentes RENAME TO registros; ALTER TABLE casos RENAME TO pleitos;`
 
 ### Tabelas no banco sem acesso via TABLE_MAP (sem UI ativa)
 As tabelas abaixo existem no Supabase mas não estão mapeadas em `supabaseEntities.js` — não são acessadas pelo código atual:
@@ -622,8 +623,7 @@ Look-ahead de 6 semanas — vínculo obrigatório com o cronograma.
 
 | Data | Arquivo | Descrição | Impacto |
 |------|---------|-----------|---------|
-| 2026-Q1 | `supabase-migration.sql` | Criação inicial do schema (~30 tabelas) | Todas as tabelas base |
-| 2026-Q2 | `supabase-migration-2026-q2.sql` | Refatoração Geral: Drop Qualidade, criação de `unidades_medida`, `plano_acao`, `rdo`, `usuarios`; ALTER em 10+ tabelas | Ver seção "Tabelas removidas/adicionadas" acima |
+| 2026-Q1 | `supabase-migration.sql` | Criação inicial do schema (base) — aplicar primeiro | Todas as tabelas base |
 | 2026-05-27 | `supabase-migration-m4-cronograma.sql` | M4.4 — Adiciona `area TEXT` e `disciplina TEXT` em `atividades_cronograma` | `atividades_cronograma` |
 | 2026-05-27 | `supabase-migration-m8-avanco.sql` | M8 — Adiciona `semana_iso TEXT` e `avanco_projetado NUMERIC`; converte histórico; depreca `mes_referencia` | `avanco_fisico` |
 | 2026-05-28 | `supabase-migration-m6-6wla-v2.sql` | M6 — Adiciona `adicionado_manualmente BOOLEAN NOT NULL DEFAULT FALSE` em `itens_6wla` | `itens_6wla` |

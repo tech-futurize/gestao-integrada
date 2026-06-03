@@ -180,7 +180,6 @@ Quando `/audit` declara "Verified & Polished", o mesmo ciclo **deve** incluir um
 │   ├── /testing/
 │   │   └── TESTING.md
 │   ├── /adrs/
-│   ├── /research/
 │   └── /security/
 │
 └── /src/

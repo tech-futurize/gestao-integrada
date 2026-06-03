@@ -208,8 +208,9 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
 
   const dataMap = useMemo(() => {
     const m = new Map();
+    // Null out realizado: só deve exibir valor quando vem do módulo Faturamento
     financeiros.forEach((r) => {
-      if (r.mes_referencia) m.set(r.mes_referencia.slice(0, 7), { ...r });
+      if (r.mes_referencia) m.set(r.mes_referencia.slice(0, 7), { ...r, faturamento_realizado_mensal: null });
     });
     // Sobrepõe o realizado com a soma dos faturamentos (injeta registro sintético se faltar)
     realPorMes.forEach((val, k) => {

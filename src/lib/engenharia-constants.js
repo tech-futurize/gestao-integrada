@@ -31,11 +31,11 @@ export const DISC_COLORS = {
 };
 
 export const ETAPA_COLORS = {
-  "A Emitir":                  { bg: "#f3f4f6", text: "#6b7280" },
-  "Em Elaboração":             { bg: "#dbeafe", text: "#2563eb" },
+  "A Emitir":                  { bg: "#dbeafe", text: "#2563eb" },
+  "Em Elaboração":             { bg: "#ffedd5", text: "#ea580c" },
   "Em Verificação Técnica":    { bg: "#fef3c7", text: "#d97706" },
   "Comentários do Cliente":    { bg: "#fae8ff", text: "#9333ea" },
   "Aprovado":                  { bg: "#dcfce7", text: "#16a34a" },
 };
 
-export const ETAPA_COLORS_PIE = ["#6b7280", "#2563eb", "#d97706", "#9333ea", "#16a34a"];
+export const ETAPA_COLORS_PIE = ["#2563eb", "#ea580c", "#d97706", "#9333ea", "#16a34a"];

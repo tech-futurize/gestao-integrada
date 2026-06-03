@@ -234,14 +234,15 @@ export default function AvancoTabela({
                     const pk = periodKey(p);
                     const rec = dataMap.get(pk) ?? null;
                     if (readOnly || readOnlyRow) {
-                      const valor = rec?.[campo] ?? 0;
+                      const rawValor = rec?.[campo];
+                      const valor = readOnlyRow ? rawValor : (rawValor ?? 0);
                       return (
                         <td
                           key={pk + "-" + campo}
                           className={`px-2 py-1 text-center text-xs ${cellWidth} ${readOnlyRow ? "text-muted-foreground" : ""}`}
                           title={readOnlyRow ? "Derivado do módulo Faturamento" : undefined}
                         >
-                          {fmt(valor)}
+                          {readOnlyRow && valor == null ? "—" : fmt(valor)}
                         </td>
                       );
                     }

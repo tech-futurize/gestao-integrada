@@ -20,11 +20,11 @@ const FILTROS_STORAGE_KEY = "suprimentos-filtros";
 
 const ETAPAS = [
   { key: "requisicao",  label: "Requisição",   abbr: "Req.",    cor: "#64748b" },
-  { key: "cotacao",     label: "Cotação",       abbr: "Cot.",    cor: "#374151" },
-  { key: "patec",       label: "PATEC",         abbr: "PATEC",   cor: "#4b5563" },
-  { key: "aquisicao",   label: "Aquisição",     abbr: "Aquis.",  cor: "#92400e" },
-  { key: "fabricacao",  label: "Fabricação",    abbr: "Fabr.",   cor: "#c35e1e" },
-  { key: "transporte",  label: "Transporte",    abbr: "Transp.", cor: "#4d7c0f" },
+  { key: "cotacao",     label: "Cotação",       abbr: "Cot.",    cor: "#57767e" },
+  { key: "patec",       label: "PATEC",         abbr: "PATEC",   cor: "#4a7871" },
+  { key: "aquisicao",   label: "Aquisição",     abbr: "Aquis.",  cor: "#3d7a64" },
+  { key: "fabricacao",  label: "Fabricação",    abbr: "Fabr.",   cor: "#307c57" },
+  { key: "transporte",  label: "Transporte",    abbr: "Transp.", cor: "#237e4a" },
   { key: "fornecimento",label: "Fornecimento",  abbr: "Forn.",   cor: "#15803d" },
 ];
 

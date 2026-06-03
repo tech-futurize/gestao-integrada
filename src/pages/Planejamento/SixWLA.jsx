@@ -122,8 +122,19 @@ export default function SixWLAPage() {
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => entities.Item6WLA.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ["itens_6wla", selectedProjectId] });
+      const previous = queryClient.getQueryData(["itens_6wla", selectedProjectId]);
+      queryClient.setQueryData(["itens_6wla", selectedProjectId], (old) =>
+        old ? old.map((item) => (item.id === id ? { ...item, ...data } : item)) : old
+      );
+      return { previous };
+    },
+    onError: (e, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["itens_6wla", selectedProjectId], ctx.previous);
+      toast({ title: "Erro", description: e.message, variant: "destructive" });
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["itens_6wla"] }),
   });
 
   const deleteMut = useMutation({

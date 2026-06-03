@@ -227,24 +227,24 @@ export default function SixWLATable({ items, restricoes = [], isLoading, discipl
                             <span className="text-muted-foreground w-10 shrink-0">Área</span>
                             <span className="font-medium text-foreground">{item.tarefa?.area || "—"}</span>
                           </div>
-                          {/* Disciplina mini-card */}
-                          {discCor ? (
-                            <div
-                              className="rounded px-2.5 py-1.5 text-xs font-semibold"
-                              style={{
-                                borderLeft: `3px solid ${discCor}`,
-                                background: `${discCor}18`,
-                                color: discCor,
-                              }}
-                            >
-                              {item.tarefa.disciplina}
-                            </div>
-                          ) : (
-                            <div className="flex gap-2">
-                              <span className="text-muted-foreground w-10 shrink-0">Disc.</span>
+                          {/* Disciplina */}
+                          <div className="flex gap-2 items-center">
+                            <span className="text-muted-foreground w-10 shrink-0">Disc.</span>
+                            {discCor ? (
+                              <div
+                                className="rounded px-2.5 py-1.5 text-xs font-semibold flex-1"
+                                style={{
+                                  borderLeft: `3px solid ${discCor}`,
+                                  background: `${discCor}18`,
+                                  color: discCor,
+                                }}
+                              >
+                                {item.tarefa.disciplina}
+                              </div>
+                            ) : (
                               <span className="font-medium text-foreground">—</span>
-                            </div>
-                          )}
+                            )}
+                          </div>
                           {/* Datas em grid 3×3: label | Início | Fim */}
                           <div className="grid grid-cols-3 gap-x-3 gap-y-1 border-t border-border pt-2 mt-1">
                             <div />

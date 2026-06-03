@@ -44,3 +44,7 @@ docs/temp/
 *.duckdb.wal
 output.txt
 .mcp.json
+
+# Superpowers plans/specs (gerados por agentes, não versionados)
+docs/superpowers/plans/
+docs/superpowers/specs/

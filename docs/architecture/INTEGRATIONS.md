@@ -12,9 +12,9 @@
 | Serviço | Uso | Status |
 |---------|-----|--------|
 | Auth | Login email+senha, sessões | ✅ Ativo |
-| Database (PostgreSQL) | 25 tabelas, persistência total | ✅ Ativo |
+| Database (PostgreSQL) | ~30 tabelas, persistência total | ✅ Ativo |
 | Row Level Security | Acesso por usuário autenticado | ✅ Ativo |
-| Storage | Upload de arquivos | ⬜ Não configurado |
+| Storage | Upload de arquivos (buckets: `registros-anexos`, `rdo-evidencias`) | ✅ Ativo |
 | Realtime | Notificações em tempo real | ⬜ Não configurado |
 | Edge Functions | Lógica server-side | ⬜ Não configurado |
 
@@ -48,12 +48,27 @@ GITHUB_TOKEN=<token-com-permissao-repo>
 
 ---
 
-## 3. Integrações Futuras
+## 3. Mastra (Agentes de IA)
+
+**Servidor:** `http://localhost:4111` (desenvolvimento local)
+**Localização no repositório:** `agents-mastra/` (servidor separado — não faz parte do bundle Vite)
+
+| Aspecto | Detalhe |
+|---------|---------|
+| Função | Servidor de agentes de IA interno do projeto |
+| Status | ✅ Ativo (ferramenta interna em desenvolvimento) |
+| Autenticação | Sem autenticação externa — acesso local apenas |
+| Variável | Nenhuma env var pública necessária |
+
+> O servidor Mastra não é exposto ao browser diretamente; é chamado por ferramentas de desenvolvimento (Claude Code / agentes). Não inclui secrets de produção.
+
+---
+
+## 4. Integrações Futuras
 
 | Serviço | Finalidade | Prioridade |
 |---------|-----------|------------|
 | Supabase Realtime | Notificações em tempo real | Média |
-| Supabase Storage | Upload de documentos/RNC | Média |
 | React-PDF | Exportação de relatórios PDF | Baixa |
 | Resend / Nodemailer | E-mails de notificação | Baixa |
 
@@ -72,62 +87,10 @@ GITHUB_TOKEN=<token-com-permissao-repo>
 
 ---
 
-## Índice de Serviços
-
-<!-- Liste aqui todos os serviços para referência rápida -->
-
-| Serviço | Função | Status |
-|---------|--------|--------|
-| | | ✅ Ativo / ⬜ Planejado |
-| | | |
-
----
-
-## Detalhamento por Serviço
-
-<!-- Copie este bloco para cada novo serviço integrado -->
-
-### <!-- Nome do Serviço (ex: Anthropic) -->
-
-- **Função no projeto:** <!-- O que este serviço faz? Ex: "Geração de texto via Claude API para relatórios automáticos" -->
-- **Tipo de autenticação:** <!-- API Key, OAuth 2.0, JWT, Service Account... -->
-- **Variável de ambiente:** <!-- Nome exato da env var. Ex: ANTHROPIC_API_KEY -->
-- **Onde a chave é guardada:**
-  - Local: `.env.local`
-  - Produção: <!-- Ex: Vercel Secrets, AWS Secrets Manager -->
-- **Endpoints utilizados:**
-  - <!-- Ex: POST /v1/messages — geração de texto -->
-  - <!-- Ex: POST /v1/messages (streaming) — geração em tempo real -->
-- **Rate limits conhecidos:** <!-- Ex: 1000 req/min no plano atual -->
-- **Como o projeto lida com rate limits:** <!-- Ex: Retry com exponential backoff via lib/api.ts -->
-- **Fallback se o serviço cair:** <!-- Ex: Mostra mensagem de indisponibilidade temporária, sem retry -->
-- **Custo estimado mensal:** <!-- Ex: ~$50 baseado em 10k requests/mês -->
-- **Docs oficiais:** <!-- Link para documentação do serviço -->
-
----
-
-### <!-- Próximo Serviço -->
-
-- **Função no projeto:** 
-- **Tipo de autenticação:** 
-- **Variável de ambiente:** 
-- **Onde a chave é guardada:**
-  - Local: `.env.local`
-  - Produção: 
-- **Endpoints utilizados:**
-  - 
-- **Rate limits conhecidos:** 
-- **Como o projeto lida com rate limits:** 
-- **Fallback se o serviço cair:** 
-- **Custo estimado mensal:** 
-- **Docs oficiais:** 
-
----
-
 ## Regras de Segurança para Integrações
 
 - Chaves de API nunca no código — sempre via variáveis de ambiente
-- Variáveis com prefixo `NEXT_PUBLIC_` são expostas ao browser — nunca coloque secrets nelas
+- Variáveis com prefixo `VITE_` são expostas ao browser (bundle Vite) — nunca coloque secrets nelas
 - Cada serviço deve ter a chave com o menor escopo de permissão possível
 - Rotacionar chaves a cada 90 dias (ou conforme política do serviço)
 - Documentar aqui sempre que uma chave for rotacionada
