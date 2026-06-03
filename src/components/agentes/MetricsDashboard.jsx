@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { X, Bot, CalendarDays, Cpu, User } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
+import FilterToolbar from '@/components/ui/FilterToolbar';
 import {
   BarChart, Bar, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -207,7 +208,10 @@ export default function MetricsDashboard() {
     <div className="space-y-5">
 
       {/* ① Filtros */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <FilterToolbar
+        active={!!activeFilter}
+        onClearAll={() => setActiveFilter(null)}
+      >
         <DateRangePicker
           label="Período"
           value={dateRange}
@@ -228,7 +232,7 @@ export default function MetricsDashboard() {
             </button>
           );
         })()}
-      </div>
+      </FilterToolbar>
 
       {/* ② Banner de custo */}
       <div
@@ -282,29 +286,33 @@ export default function MetricsDashboard() {
           {byDay.length === 0 ? (
             <p className="text-center text-muted-foreground text-sm py-8">Nenhuma execução no período.</p>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={byDay} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <XAxis dataKey="day" tick={{ fontSize: 10 }} tickFormatter={d => d.slice(5)} />
-                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <Tooltip
-                  formatter={(v) => [v, 'Execuções']}
-                  labelFormatter={l => new Date(l).toLocaleDateString('pt-BR')}
-                />
-                <Bar
-                  dataKey="execucoes"
-                  radius={[3, 3, 0, 0]}
-                  cursor="pointer"
-                  onClick={(data) => toggleFilter('day', data.day)}
-                >
-                  {byDay.map((item, i) => (
-                    <Cell
-                      key={i}
-                      fill={activeFilter?.type === 'day' && activeFilter.value === item.day ? ACTIVE_COLOR : '#26405d'}
+            <div className="overflow-x-auto">
+              <div style={{ minWidth: Math.max(100, byDay.length * 36) }}>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={byDay} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                    <XAxis dataKey="day" tick={{ fontSize: 10 }} tickFormatter={d => d.slice(5)} />
+                    <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                    <Tooltip
+                      formatter={(v) => [v, 'Execuções']}
+                      labelFormatter={l => new Date(l).toLocaleDateString('pt-BR')}
                     />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                    <Bar
+                      dataKey="execucoes"
+                      radius={[3, 3, 0, 0]}
+                      cursor="pointer"
+                      onClick={(data) => toggleFilter('day', data.day)}
+                    >
+                      {byDay.map((item, i) => (
+                        <Cell
+                          key={i}
+                          fill={activeFilter?.type === 'day' && activeFilter.value === item.day ? ACTIVE_COLOR : '#26405d'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
