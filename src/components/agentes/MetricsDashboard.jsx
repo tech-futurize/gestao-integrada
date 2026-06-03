@@ -212,7 +212,7 @@ export default function MetricsDashboard() {
           {usdBrl ? (
             <>
               <p className="text-3xl font-extrabold leading-tight">{formatBRL(totalCusto, usdBrl)}</p>
-              <p className="text-xs opacity-55 mt-0.5 mb-1">{formatUSD(totalCusto)} · cotação R$ {usdBrl.toFixed(2)}/USD</p>
+              <p className="text-xs opacity-55 mt-0.5 mb-1">{formatUSD(totalCusto)} · cotação atual ~R$ {Number(usdBrl).toFixed(2)}/USD</p>
             </>
           ) : (
             <p className="text-3xl font-extrabold leading-tight mb-1">{formatUSD(totalCusto)}</p>
@@ -225,7 +225,7 @@ export default function MetricsDashboard() {
         </div>
         <div className="grid grid-cols-2 gap-3 text-center">
           <div className="bg-white/10 rounded-lg px-4 py-3">
-            <p className="text-xs opacity-65 mb-1">vs período anterior</p>
+            <p className="text-xs opacity-65 mb-1">vs mês anterior</p>
             {custoVariacao !== null ? (
               <p className="text-base font-extrabold" style={{ color: '#26ffff' }}>
                 {custoVariacao >= 0 ? '↑' : '↓'} {Math.abs(custoVariacao).toFixed(0)}%
@@ -235,7 +235,7 @@ export default function MetricsDashboard() {
             )}
           </div>
           <div className="bg-white/10 rounded-lg px-4 py-3">
-            <p className="text-xs opacity-65 mb-1">custo médio</p>
+            <p className="text-xs opacity-65 mb-1">custo médio / execução</p>
             <p className="text-sm font-extrabold">
               {usdBrl ? formatBRL(custoMedio, usdBrl) : formatUSD(custoMedio)}
             </p>
