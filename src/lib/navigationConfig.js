@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   Bot,
   Settings2,
+  FileText,
 } from "lucide-react";
 
 export const navigationGroups = [
@@ -52,6 +53,13 @@ export const navigationGroups = [
     icon: ShieldAlert,
     children: [
       { title: "Gestão de Riscos", path: "/riscos-mudancas/gestao-riscos" },
+    ],
+  },
+  {
+    title: "Formulários Digitais",
+    icon: FileText,
+    children: [
+      { title: "Formulários", path: "/formularios" },
     ],
   },
   {

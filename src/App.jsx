@@ -50,8 +50,14 @@ const GerenciarProjeto     = lazy(() => import('./pages/Configuracoes/GerenciarP
 const Usuarios             = lazy(() => import('./pages/Configuracoes/Usuarios'));
 const Cadastros            = lazy(() => import('./pages/Configuracoes/Cadastros'));
 const AdminAgentes         = lazy(() => import('./pages/Configuracoes/AdminAgentes'));
+const FormularioBuilder    = lazy(() => import('./pages/Configuracoes/FormularioBuilder'));
 // UnidadesMedida e Disciplinas são acessadas como abas dentro de Cadastros (via prop asTab)
 // As rotas legadas (/configuracoes/unidades-medida, /configuracoes/disciplinas) redirecionam para /configuracoes/cadastros
+
+// Formulários Digitais
+const ListaFormularios     = lazy(() => import('./pages/Formularios/ListaFormularios'));
+const ResponderFormulario  = lazy(() => import('./pages/Formularios/ResponderFormulario'));
+const RespostasFormulario  = lazy(() => import('./pages/Formularios/RespostasFormulario'));
 
 // Acesso restrito
 const SemPermissao         = lazy(() => import('./pages/SemPermissao'));
@@ -156,6 +162,13 @@ const AuthenticatedApp = () => (
     <Route path="/configuracoes/agentes-admin" element={wrap(AdminAgentes, 'Configurações')} />
     <Route path="/configuracoes/unidades-medida" element={<Navigate to="/configuracoes/cadastros" replace />} />
     <Route path="/configuracoes/disciplinas" element={<Navigate to="/configuracoes/cadastros" replace />} />
+    {/* Builder — dentro de Configurações */}
+    <Route path="/configuracoes/cadastros/formularios/:id" element={wrap(FormularioBuilder, 'Configurações')} />
+
+    {/* Formulários Digitais */}
+    <Route path="/formularios"               element={wrap(ListaFormularios,    'Formulários Digitais')} />
+    <Route path="/formularios/:id/responder" element={wrap(ResponderFormulario, 'Formulários Digitais')} />
+    <Route path="/formularios/:id/respostas" element={wrap(RespostasFormulario, 'Formulários Digitais')} />
 
     {/* Sem permissão — sem modulo, acessível a qualquer autenticado */}
     <Route path="/sem-permissao" element={wrap(SemPermissao)} />

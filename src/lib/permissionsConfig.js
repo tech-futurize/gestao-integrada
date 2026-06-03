@@ -7,6 +7,7 @@ export const MODULES = [
   'Planejamento',
   'Adm. Contratual',
   'Riscos e Mudanças',
+  'Formulários Digitais',
   'Agentes de IA',
   'Configurações',
 ];
@@ -30,37 +31,38 @@ const NONE = DENY_ALL;
 export const PERFIL_SEED = {
   Admin: {
     'Dashboard': ALL, 'Engenharia': ALL, 'Suprimentos': ALL, 'Planejamento': ALL,
-    'Adm. Contratual': ALL, 'Riscos e Mudanças': ALL, 'Agentes de IA': ALL, 'Configurações': ALL,
+    'Adm. Contratual': ALL, 'Riscos e Mudanças': ALL, 'Formulários Digitais': ALL,
+    'Agentes de IA': ALL, 'Configurações': ALL,
   },
   Gestor: {
     'Dashboard': ALL, 'Engenharia': ALL, 'Suprimentos': ALL, 'Planejamento': ALL,
-    'Adm. Contratual': ALL, 'Riscos e Mudanças': ALL, 'Agentes de IA': ALL,
-    'Configurações': VIEW,
+    'Adm. Contratual': ALL, 'Riscos e Mudanças': ALL, 'Formulários Digitais': ALL,
+    'Agentes de IA': ALL, 'Configurações': VIEW,
   },
   Visualizador: {
     'Dashboard': VIEW, 'Engenharia': VIEW, 'Suprimentos': VIEW, 'Planejamento': VIEW,
-    'Adm. Contratual': VIEW, 'Riscos e Mudanças': VIEW, 'Agentes de IA': VIEW,
-    'Configurações': NONE,
+    'Adm. Contratual': VIEW, 'Riscos e Mudanças': VIEW, 'Formulários Digitais': VIEW,
+    'Agentes de IA': VIEW, 'Configurações': NONE,
   },
   Engenharia: {
     'Dashboard': VIEW, 'Engenharia': ALL, 'Suprimentos': VIEW, 'Planejamento': VIEW,
-    'Adm. Contratual': VIEW, 'Riscos e Mudanças': VIEW, 'Agentes de IA': VIEW,
-    'Configurações': NONE,
+    'Adm. Contratual': VIEW, 'Riscos e Mudanças': VIEW, 'Formulários Digitais': VIEW,
+    'Agentes de IA': VIEW, 'Configurações': NONE,
   },
   Planejamento: {
     'Dashboard': VIEW, 'Engenharia': VIEW, 'Suprimentos': VIEW, 'Planejamento': ALL,
-    'Adm. Contratual': VIEW, 'Riscos e Mudanças': VIEW, 'Agentes de IA': VIEW,
-    'Configurações': NONE,
+    'Adm. Contratual': VIEW, 'Riscos e Mudanças': VIEW, 'Formulários Digitais': VIEW,
+    'Agentes de IA': VIEW, 'Configurações': NONE,
   },
   Contratual: {
     'Dashboard': VIEW, 'Engenharia': VIEW, 'Suprimentos': VIEW, 'Planejamento': VIEW,
-    'Adm. Contratual': ALL, 'Riscos e Mudanças': VIEW, 'Agentes de IA': VIEW,
-    'Configurações': NONE,
+    'Adm. Contratual': ALL, 'Riscos e Mudanças': VIEW, 'Formulários Digitais': VIEW,
+    'Agentes de IA': VIEW, 'Configurações': NONE,
   },
   Suprimentos: {
     'Dashboard': VIEW, 'Engenharia': VIEW, 'Suprimentos': ALL, 'Planejamento': VIEW,
-    'Adm. Contratual': VIEW, 'Riscos e Mudanças': VIEW, 'Agentes de IA': VIEW,
-    'Configurações': NONE,
+    'Adm. Contratual': VIEW, 'Riscos e Mudanças': VIEW, 'Formulários Digitais': VIEW,
+    'Agentes de IA': VIEW, 'Configurações': NONE,
   },
 };
 
