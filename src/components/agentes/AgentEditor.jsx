@@ -11,7 +11,28 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Check, ArrowLeft, ArrowRight } from 'lucide-react';
+import {
+  X, Plus, Check, ArrowLeft, ArrowRight,
+  Bot, BrainCircuit, Database, ScrollText, BarChart3,
+  Search, FileSearch, TrendingUp, Calculator, Building2,
+} from 'lucide-react';
+
+const ICON_OPTIONS = [
+  { value: 'Bot',          Icon: Bot },
+  { value: 'BrainCircuit', Icon: BrainCircuit },
+  { value: 'Database',     Icon: Database },
+  { value: 'ScrollText',   Icon: ScrollText },
+  { value: 'BarChart3',    Icon: BarChart3 },
+  { value: 'Search',       Icon: Search },
+  { value: 'FileSearch',   Icon: FileSearch },
+  { value: 'TrendingUp',   Icon: TrendingUp },
+  { value: 'Calculator',   Icon: Calculator },
+  { value: 'Building2',    Icon: Building2 },
+];
+
+function resolveIcon(name) {
+  return ICON_OPTIONS.find(o => o.value === name)?.Icon ?? Bot;
+}
 
 const PROVIDERS = [
   { value: 'openai',    label: 'OpenAI',    models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'o1-mini'] },
@@ -186,49 +207,92 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
   );
 
   // ── Passo 1: Identidade ─────────────────────────────────────────────────────
-  const StepIdentidade = () => (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-base font-bold text-foreground">Identidade & Apresentação</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">Nome, ícone e como o agente aparece no chat</p>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <Label>Nome *</Label>
-          <Input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Analista de Dados" />
+  const StepIdentidade = () => {
+    const PreviewIcon = resolveIcon(form.icone);
+    return (
+      <div className="space-y-5">
+        <div>
+          <h3 className="text-base font-bold text-foreground">Identidade & Apresentação</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Nome, ícone e como o agente aparece no chat</p>
         </div>
-        <div className="space-y-1">
-          <Label>Slug / endpoint {isEditing && <span className="text-muted-foreground">(imutável)</span>}</Label>
-          <Input
-            value={form.slug}
-            onChange={e => !isEditing && set('slug', e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
-            placeholder="analista-dados"
-            disabled={isEditing}
-            className={isEditing ? 'font-mono text-muted-foreground bg-muted' : 'font-mono'}
-          />
-        </div>
-      </div>
-      <div className="space-y-1">
-        <Label>Descrição</Label>
-        <Input value={form.descricao} onChange={e => set('descricao', e.target.value)} placeholder="Para que serve este agente?" />
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div className="space-y-1">
-          <Label>Ícone (lucide-react)</Label>
-          <Input value={form.icone} onChange={e => set('icone', e.target.value)} placeholder="Bot" />
-        </div>
-        <div className="space-y-1">
-          <Label>Cor</Label>
-          <div className="flex gap-2 items-center">
-            <input
-              type="color"
-              value={form.cor}
-              onChange={e => set('cor', e.target.value)}
-              className="h-9 w-12 rounded border border-border cursor-pointer p-0.5"
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label>Nome *</Label>
+            <Input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Analista de Dados" />
+          </div>
+          <div className="space-y-1">
+            <Label>Slug / endpoint {isEditing && <span className="text-muted-foreground">(imutável)</span>}</Label>
+            <Input
+              value={form.slug}
+              onChange={e => !isEditing && set('slug', e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
+              placeholder="analista-dados"
+              disabled={isEditing}
+              className={isEditing ? 'font-mono text-muted-foreground bg-muted' : 'font-mono'}
             />
-            <Input value={form.cor} onChange={e => set('cor', e.target.value)} className="font-mono" />
           </div>
         </div>
+
+        <div className="space-y-1">
+          <Label>Descrição</Label>
+          <Input value={form.descricao} onChange={e => set('descricao', e.target.value)} placeholder="Para que serve este agente?" />
+        </div>
+
+        {/* Ícone — seletor visual */}
+        <div className="space-y-2">
+          <Label>Ícone</Label>
+          <div className="grid grid-cols-5 gap-2">
+            {ICON_OPTIONS.map(({ value, Icon }) => {
+              const active = form.icone === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => set('icone', value)}
+                  className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border transition-all ${
+                    active
+                      ? 'border-[hsl(210_62%_16%)] bg-[hsl(210_62%_16%/8%)]'
+                      : 'border-border hover:border-muted-foreground/40 hover:bg-muted/50'
+                  }`}
+                >
+                  <Icon size={18} className={active ? 'text-[hsl(210_62%_16%)]' : 'text-muted-foreground'} />
+                  <span className={`text-[10px] leading-none ${active ? 'text-[hsl(210_62%_16%)] font-semibold' : 'text-muted-foreground'}`}>{value}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Cor + preview */}
+        <div className="flex items-end gap-4">
+          <div className="flex-1 space-y-1">
+            <Label>Cor do agente</Label>
+            <div className="flex gap-2 items-center">
+              <input
+                type="color"
+                value={form.cor}
+                onChange={e => set('cor', e.target.value)}
+                className="h-9 w-12 rounded border border-border cursor-pointer p-0.5"
+              />
+              <Input value={form.cor} onChange={e => set('cor', e.target.value)} className="font-mono" />
+            </div>
+            <p className="text-xs text-muted-foreground">Aparece no ícone e card do agente</p>
+          </div>
+          {/* Mini-preview do card */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card min-w-[180px]">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: (form.cor || '#26405d') + '22' }}
+            >
+              <PreviewIcon size={18} style={{ color: form.cor || '#26405d' }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold truncate">{form.nome || 'Nome do agente'}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{form.descricao || 'Descrição'}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="space-y-1">
           <Label>Status</Label>
           <div className="flex items-center gap-2 h-9">
@@ -239,33 +303,8 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
           </div>
         </div>
       </div>
-      <div className="space-y-2">
-        <Label>Sugestões de prompt</Label>
-        <div className="flex gap-2">
-          <Input
-            value={sugestaoInput}
-            onChange={e => setSugestaoInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSugestao())}
-            placeholder="Digite uma sugestão e pressione Enter"
-          />
-          <Button type="button" variant="outline" size="sm" onClick={addSugestao}><Plus size={14} /></Button>
-        </div>
-        <div className="flex flex-wrap gap-2 min-h-[28px]">
-          {(form.sugestoes || []).map((s, i) => (
-            <Badge key={i} variant="secondary" className="gap-1 text-xs pr-1">
-              {s}
-              <button
-                onClick={() => set('sugestoes', form.sugestoes.filter((_, j) => j !== i))}
-                className="hover:text-destructive"
-              >
-                <X size={10} />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // ── Passo 2: Modelo ─────────────────────────────────────────────────────────
   const StepModelo = () => (
@@ -367,6 +406,34 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
         <code className="bg-muted px-1 rounded">{'{hoje}'}</code>{' '}
         <code className="bg-muted px-1 rounded">{'{projeto_id}'}</code>
       </p>
+
+      {/* Sugestões de prompt — ficam aqui junto com o conteúdo do agente */}
+      <div className="space-y-2 pt-1">
+        <Label>Sugestões de prompt</Label>
+        <p className="text-xs text-muted-foreground -mt-1">Atalhos exibidos no chat para o usuário começar rápido</p>
+        <div className="flex gap-2">
+          <Input
+            value={sugestaoInput}
+            onChange={e => setSugestaoInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSugestao())}
+            placeholder="Ex: Mostre os contratos ativos"
+          />
+          <Button type="button" variant="outline" size="sm" onClick={addSugestao}><Plus size={14} /></Button>
+        </div>
+        <div className="flex flex-wrap gap-2 min-h-[28px]">
+          {(form.sugestoes || []).map((s, i) => (
+            <Badge key={i} variant="secondary" className="gap-1 text-xs pr-1">
+              {s}
+              <button
+                onClick={() => set('sugestoes', form.sugestoes.filter((_, j) => j !== i))}
+                className="hover:text-destructive"
+              >
+                <X size={10} />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      </div>
     </div>
   );
 
