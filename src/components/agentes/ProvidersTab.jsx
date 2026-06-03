@@ -276,8 +276,8 @@ export default function ProvidersTab() {
                         {providerPrecos.map((p) => (
                           <tr key={p.id} className="border-b border-border/40">
                             <td className="py-1.5 font-mono">{p.modelo}</td>
-                            <td className="py-1.5 text-right text-muted-foreground">${Number(p.preco_input_1k).toFixed(6)}</td>
-                            <td className="py-1.5 text-right text-muted-foreground">${Number(p.preco_output_1k).toFixed(6)}</td>
+                            <td className="py-1.5 text-right text-muted-foreground">${Number(p.preco_input_1k).toFixed(4)}</td>
+                            <td className="py-1.5 text-right text-muted-foreground">${Number(p.preco_output_1k).toFixed(4)}</td>
                           </tr>
                         ))}
                       </tbody>
