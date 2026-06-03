@@ -3,13 +3,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRightLeft, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import RowActions from "@/components/ui/RowActions";
-import DetailDialog from "@/components/ui/DetailDialog";
 import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
-import DashboardExecutivo from "@/components/mudancas/DashboardExecutivo";
+import MudancasResumo from "@/components/mudancas/MudancasResumo";
+import MapaImpacto from "@/components/mudancas/MapaImpacto";
 import MudancaForm from "@/components/mudancas/MudancaForm";
+import MudancaView from "@/components/mudancas/MudancaView";
 import { Button } from "@/components/ui/button";
 import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
@@ -17,7 +18,6 @@ import DateRangePicker from "@/components/ui/DateRangePicker";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/use-toast";
-
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 const ORIGEM_COLORS = {
@@ -132,11 +132,21 @@ export default function GestaoMudancas() {
     setShowForm(true);
   };
 
+  const handleNew = () => {
+    setEditing(null);
+    setShowForm(true);
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditing(null);
+  };
+
   function SortIcon({ col }) {
-    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 inline ml-1 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+    if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 inline ml-1 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />;
     return sortDir === "asc"
       ? <ArrowUp className="w-3 h-3 inline ml-1 text-primary" />
-      : <ArrowDown className="w-3 h-3 inline ml-1 text-primary" />
+      : <ArrowDown className="w-3 h-3 inline ml-1 text-primary" />;
   }
 
   if (!selectedProjectId) {
@@ -157,126 +167,137 @@ export default function GestaoMudancas() {
               <Upload className="w-4 h-4 mr-2" />
               Importar / Exportar
             </Button>
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditing(null); setShowForm(true); }}>
+            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleNew}>
               <Plus className="w-4 h-4 mr-2" /> Nova Mudança
             </Button>
           </div>
         }
       />
+
       <div className="flex-1 overflow-auto p-6 space-y-6">
-
-      {/* Filtros */}
-      <FilterToolbar
-        active={!!busca || !!periodo?.from || Object.values(filtros).some(a => a?.length > 0)}
-        onClearAll={() => { setBusca(""); setPeriodo(null); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
-      >
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-          <input
-            className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
-            placeholder="Buscar por título..."
-            value={busca}
-            onChange={e => setBusca(e.target.value)}
+        {/* Filtros */}
+        <FilterToolbar
+          active={!!busca || !!periodo?.from || Object.values(filtros).some(a => a?.length > 0)}
+          onClearAll={() => { setBusca(""); setPeriodo(null); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+        >
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            <input
+              className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
+              placeholder="Buscar por título..."
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+            />
+          </div>
+          <FilterBar
+            key={filterKey}
+            storageKey={FILTROS_KEY}
+            filters={[
+              { key: "status", label: "Status", options: STATUS_OPTIONS },
+              { key: "origem", label: "Origem", options: ["Contratada", "Contratante"] },
+            ]}
+            onChange={setFiltros}
           />
-        </div>
-        <FilterBar
-          key={filterKey}
-          storageKey={FILTROS_KEY}
-          filters={[
-            { key: "status", label: "Status", options: STATUS_OPTIONS },
-            { key: "origem", label: "Origem", options: ["Contratada", "Contratante"] },
-          ]}
-          onChange={setFiltros}
-        />
-        <DateRangePicker
-          label="Data Registro"
-          value={periodo}
-          onChange={setPeriodo}
-          onClear={() => setPeriodo(null)}
-        />
-      </FilterToolbar>
+          <DateRangePicker
+            label="Data Registro"
+            value={periodo}
+            onChange={setPeriodo}
+            onClear={() => setPeriodo(null)}
+          />
+        </FilterToolbar>
 
-      {/* Dashboard Executivo (KPIs) */}
-      {mudancas.length > 0 && <DashboardExecutivo mudancas={mudancas} />}
+        {/* KPIs */}
+        {mudancas.length > 0 && <MudancasResumo mudancas={mudancas} />}
 
-      {/* Formulário */}
-      {showForm && (
-        <MudancaForm
-          mudanca={editing}
-          onSubmit={handleSubmit}
-          onCancel={() => { setShowForm(false); setEditing(null); }}
-          isSubmitting={createMut.isPending || updateMut.isPending}
-          pleitos={pleitos}
-        />
-      )}
-
-      {/* Tabela */}
-      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted">
-                <th onClick={() => handleSort("titulo")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Título<SortIcon col="titulo" /></th>
-                <th onClick={() => handleSort("origem")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Origem<SortIcon col="origem" /></th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Categorias</th>
-                <th onClick={() => handleSort("impacto_custo")} className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Impacto Custo<SortIcon col="impacto_custo" /></th>
-                <th onClick={() => handleSort("impacto_prazo_dias")} className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Impacto Prazo<SortIcon col="impacto_prazo_dias" /></th>
-                <th onClick={() => handleSort("status")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Status<SortIcon col="status" /></th>
-                <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Responsável<SortIcon col="responsavel" /></th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading && <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
-              {isError && <tr><td colSpan={8} className="py-10 text-center text-status-critical text-sm">Erro ao carregar mudanças. Verifique sua conexão e tente novamente.</td></tr>}
-              {!isLoading && !isError && filtered.length === 0 && (
-                <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">Nenhuma mudança encontrada</td></tr>
-              )}
-              {mudancasSorted.map((m, i) => (
-                <tr key={m.id} className={`border-b border-border hover:bg-muted/40 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
-                  <td className="px-4 py-3 max-w-xs">
-                    <div className="font-medium text-foreground line-clamp-1">{m.titulo}</div>
-                    {m.data_ocorrencia && <div className="text-xs text-muted-foreground">{formatDate(m.data_ocorrencia)}</div>}
-                  </td>
-                  <td className="px-4 py-3">
-                    {m.origem && (
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ORIGEM_COLORS[m.origem] || "bg-muted text-muted-foreground"}`}>
-                        {m.origem}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-1 flex-wrap">
-                      {(m.categorias || []).map(cat => (
-                        <span key={cat} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{cat}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium" style={{ color: m.impacto_custo > 0 ? "#ef4444" : m.impacto_custo < 0 ? "#16a34a" : undefined }}>
-                    {fmtCurrency(m.impacto_custo)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-xs text-muted-foreground">
-                    {m.impacto_prazo_dias != null && m.impacto_prazo_dias !== "" ? `${m.impacto_prazo_dias > 0 ? "+" : ""}${m.impacto_prazo_dias}d` : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <StatusBadge status={m.status} />
-                  </td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground">{m.responsavel || "—"}</td>
-                  <td className="px-4 py-3">
-                    <RowActions
-                      onView={() => setViewItem(m)}
-                      onEdit={() => handleEdit(m)}
-                      onDelete={() => deleteMut.mutate(m.id)}
-                      deleteDescription="A mudança será excluída permanentemente."
-                    />
-                  </td>
+        {/* Tabela */}
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted">
+                  <th onClick={() => handleSort("titulo")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Título<SortIcon col="titulo" /></th>
+                  <th onClick={() => handleSort("origem")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Origem<SortIcon col="origem" /></th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground">Categorias</th>
+                  <th onClick={() => handleSort("impacto_custo")} className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Impacto Custo<SortIcon col="impacto_custo" /></th>
+                  <th onClick={() => handleSort("impacto_prazo_dias")} className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Prazo<SortIcon col="impacto_prazo_dias" /></th>
+                  <th onClick={() => handleSort("status")} className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Status<SortIcon col="status" /></th>
+                  <th onClick={() => handleSort("responsavel")} className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground cursor-pointer select-none group">Responsável<SortIcon col="responsavel" /></th>
+                  <th className="px-4 py-3" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {isLoading && <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">Carregando...</td></tr>}
+                {isError && <tr><td colSpan={8} className="py-10 text-center text-status-critical text-sm">Erro ao carregar mudanças. Verifique sua conexão e tente novamente.</td></tr>}
+                {!isLoading && !isError && filtered.length === 0 && (
+                  <tr><td colSpan={8} className="py-10 text-center text-muted-foreground">Nenhuma mudança encontrada</td></tr>
+                )}
+                {mudancasSorted.map((m, i) => (
+                  <tr key={m.id} className={`border-b border-border hover:bg-muted/40 ${i % 2 === 0 ? "" : "bg-muted/10"}`}>
+                    <td className="px-4 py-3 max-w-xs">
+                      <div className="font-medium text-foreground line-clamp-1">{m.titulo}</div>
+                      {m.data_ocorrencia && <div className="text-xs text-muted-foreground">{formatDate(m.data_ocorrencia)}</div>}
+                    </td>
+                    <td className="px-4 py-3">
+                      {m.origem && (
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ORIGEM_COLORS[m.origem] || "bg-muted text-muted-foreground"}`}>
+                          {m.origem}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1 flex-wrap">
+                        {(m.categorias || []).map(cat => (
+                          <span key={cat} className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{cat}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className={`px-4 py-3 text-right font-medium ${m.impacto_custo > 0 ? "text-status-critical" : m.impacto_custo < 0 ? "text-status-positive" : ""}`}>
+                      {fmtCurrency(m.impacto_custo)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                      {m.impacto_prazo_dias != null && m.impacto_prazo_dias !== "" ? `${m.impacto_prazo_dias > 0 ? "+" : ""}${m.impacto_prazo_dias}d` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <StatusBadge status={m.status} />
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{m.responsavel || "—"}</td>
+                    <td className="px-4 py-3">
+                      <RowActions
+                        onView={() => setViewItem(m)}
+                        onEdit={() => handleEdit(m)}
+                        onDelete={() => deleteMut.mutate(m.id)}
+                        deleteDescription="A mudança será excluída permanentemente."
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* Mapa de Impacto */}
+        {mudancas.length > 0 && <MapaImpacto mudancas={mudancas} />}
       </div>
-    </div>
+
+      {/* Modais */}
+      <MudancaForm
+        key={editing?.id || "new"}
+        open={showForm}
+        onOpenChange={(o) => { if (!o) handleFormClose(); }}
+        mudanca={editing}
+        onSubmit={handleSubmit}
+        onCancel={handleFormClose}
+        isSubmitting={createMut.isPending || updateMut.isPending}
+        pleitos={pleitos}
+      />
+
+      <MudancaView
+        mudanca={viewItem}
+        open={!!viewItem}
+        onClose={() => setViewItem(null)}
+      />
+
       <ImportExportDialog
         open={showImportExport}
         onOpenChange={setShowImportExport}
@@ -286,23 +307,6 @@ export default function GestaoMudancas() {
         onExport={() => filtered}
         onImport={(row) => createMut.mutateAsync({ ...row, projeto_id: selectedProjectId })}
       />
-      {viewItem && (
-        <DetailDialog
-          open={!!viewItem}
-          onOpenChange={(o) => !o && setViewItem(null)}
-          title={viewItem.titulo || "Mudança"}
-          sections={[
-            { label: "Título", value: viewItem.titulo, full: true },
-            { label: "Origem", value: viewItem.origem },
-            { label: "Status", value: viewItem.status },
-            { label: "Responsável", value: viewItem.responsavel },
-            { label: "Data ocorrência", value: formatDate(viewItem.data_ocorrencia) },
-            { label: "Impacto custo", value: viewItem.impacto_custo != null ? `R$ ${viewItem.impacto_custo}` : null },
-            { label: "Impacto prazo", value: viewItem.impacto_prazo_dias != null ? `${viewItem.impacto_prazo_dias > 0 ? "+" : ""}${viewItem.impacto_prazo_dias}d` : null },
-            { label: "Descrição", value: viewItem.descricao, full: true },
-          ]}
-        />
-      )}
     </div>
   );
 }

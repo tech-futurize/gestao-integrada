@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { ArrowRightLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRightLeft } from "lucide-react";
-import CloseButton from "@/components/ui/CloseButton";
+import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
+import MultiSelectDropdown from "@/components/ui/MultiSelectDropdown";
 import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
 
-export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting, pleitos = [] }) {
+export default function MudancaForm({ open, onOpenChange, mudanca, onSubmit, onCancel, isSubmitting, pleitos = [] }) {
   const { data: categoriasNomes = [], isPending: categoriasPending } = useCategoriasImpacto();
+
   const [formData, setFormData] = useState({
     titulo: mudanca?.titulo || "",
     descricao: mudanca?.descricao || "",
@@ -28,13 +27,10 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
   });
   const [categorias, setCategorias] = useState(mudanca?.categorias || []);
 
-  const toggleCategoria = (cat) =>
-    setCategorias(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]);
-
   const set = (k, v) => setFormData(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSave = () => {
+    if (!formData.titulo.trim()) return;
     onSubmit({
       ...formData,
       categorias,
@@ -44,175 +40,189 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
   };
 
   return (
-    <Card className="border-0 shadow-lg">
-      <CardHeader className="border-b bg-muted/40">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
-            <ArrowRightLeft className="w-5 h-5 text-muted-foreground" />
-            {mudanca ? "Editar Mudança" : "Registrar Nova Mudança"}
-          </CardTitle>
-          <CloseButton onClick={onCancel} />
+    <FormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={ArrowRightLeft}
+      title={mudanca ? "Editar Mudança" : "Nova Mudança"}
+      maxWidth="max-w-3xl"
+      onClose={onCancel}
+      onSave={handleSave}
+      saving={isSubmitting}
+      saveLabel={mudanca ? "Salvar" : "Criar Mudança"}
+      saveDisabled={!formData.titulo.trim()}
+    >
+      {/* Identificação */}
+      <SectionDivider label="Identificação" />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-1.5 md:col-span-2">
+          <Label>Título *</Label>
+          <Input
+            value={formData.titulo}
+            onChange={(e) => set("titulo", e.target.value)}
+            placeholder="Título resumido da mudança..."
+          />
         </div>
-      </CardHeader>
-      <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-1.5">
+          <Label>Data do Registro</Label>
+          <Input type="date" value={formData.data_ocorrencia} onChange={(e) => set("data_ocorrencia", e.target.value)} />
+        </div>
+      </div>
 
-          {/* Identificação */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2 md:col-span-2">
-              <Label>Título da Mudança *</Label>
-              <Input value={formData.titulo} onChange={(e) => set("titulo", e.target.value)} placeholder="Título resumido..." required />
-            </div>
-            <div className="space-y-2">
-              <Label>Data do Registro</Label>
-              <Input type="date" value={formData.data_ocorrencia} onChange={(e) => set("data_ocorrencia", e.target.value)} />
-            </div>
-          </div>
-
-          {/* Pleito Vinculado */}
-          {pleitos.length > 0 && (
-            <div className="space-y-2">
-              <Label>Pleito Vinculado</Label>
-              <Select
-                value={formData.pleito_id || "__none__"}
-                onValueChange={(v) => set("pleito_id", v === "__none__" ? null : v)}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Origem */}
+        <div className="space-y-1.5">
+          <Label>Origem</Label>
+          <div className="flex gap-2">
+            {["Contratada", "Contratante"].map((op) => (
+              <button
+                key={op}
+                type="button"
+                onClick={() => set("origem", op)}
+                className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-semibold transition-all ${
+                  formData.origem === op
+                    ? op === "Contratada"
+                      ? "border-status-info bg-status-info/10 text-status-info"
+                      : "border-status-attention bg-status-attention/10 text-status-attention"
+                    : "border-border bg-background text-muted-foreground hover:border-foreground/30"
+                }`}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Nenhum" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Nenhum</SelectItem>
-                  {pleitos.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.titulo || "(sem título)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+                {op}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* Origem (toggle) */}
-          <div className="space-y-2">
-            <Label>Origem da Mudança</Label>
-            <div className="flex gap-3">
-              {["Contratada", "Contratante"].map((op) => (
-                <button key={op} type="button"
-                  onClick={() => set("origem", op)}
-                  className={`flex-1 py-2 px-4 rounded-lg border-2 text-sm font-semibold transition-all ${
-                    formData.origem === op
-                      ? op === "Contratada"
-                        ? "border-status-info bg-status-info text-white"
-                        : "border-ocre bg-ocre text-white"
-                      : "border-border bg-background text-muted-foreground hover:border-foreground/40"
-                  }`}>
-                  {op}
-                </button>
+        {/* Status */}
+        <div className="space-y-1.5">
+          <Label>Status</Label>
+          <Select value={formData.status} onValueChange={(v) => set("status", v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {["Identificada", "Em Análise", "Aprovada", "Rejeitada", "Implementada"].map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
-            </div>
-          </div>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          {/* Categorias (tags) */}
-          <div className="space-y-2">
-            <Label>Categorias de Impacto</Label>
-            {categoriasPending ? (
-              <p className="text-xs text-muted-foreground">Carregando categorias...</p>
-            ) : (
-              <div className="flex gap-2 flex-wrap">
-                {categoriasNomes.map((cat) => (
-                  <button key={cat} type="button" onClick={() => toggleCategoria(cat)}>
-                    <Badge variant="outline" className={`cursor-pointer text-sm px-3 py-1 transition-all ${
-                      categorias.includes(cat)
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background text-muted-foreground border-border hover:border-foreground/40"
-                    }`}>
-                      {categorias.includes(cat) ? "✓ " : ""}{cat}
-                    </Badge>
-                  </button>
-                ))}
-                {categoriasNomes.length === 0 && (
-                  <p className="text-xs text-muted-foreground italic">Nenhuma categoria cadastrada para este projeto.</p>
-                )}
-              </div>
-            )}
-          </div>
+      {pleitos.length > 0 && (
+        <div className="space-y-1.5">
+          <Label>Pleito Vinculado</Label>
+          <Select
+            value={formData.pleito_id || "__none__"}
+            onValueChange={(v) => set("pleito_id", v === "__none__" ? null : v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Nenhum" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Nenhum</SelectItem>
+              {pleitos.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.titulo || "(sem título)"}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
-          {/* Descrição */}
-          <div className="space-y-2">
-            <Label>Descrição Técnica da Mudança *</Label>
-            <Textarea value={formData.descricao} onChange={(e) => set("descricao", e.target.value)}
-              placeholder="Justificativa técnica e contexto da mudança..." rows={4} required />
-          </div>
+      {/* Responsável */}
+      <div className="space-y-1.5">
+        <Label>Responsável</Label>
+        <Input value={formData.responsavel} onChange={(e) => set("responsavel", e.target.value)} placeholder="Nome" />
+      </div>
 
-          {/* Impactos - Antes vs Depois */}
-          <div className="p-4 bg-muted rounded-lg border space-y-4">
-            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Métricas de Impacto</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>Impacto Financeiro (R$)</Label>
-                <Input type="number" step="0.01" value={formData.impacto_custo}
-                  onChange={(e) => set("impacto_custo", e.target.value)}
-                  placeholder="+150000 ou -50000" />
-                <p className="text-xs text-muted-foreground">Positivo = acréscimo | Negativo = redução</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Impacto em Prazo (dias)</Label>
-                <Input type="number" value={formData.impacto_prazo_dias}
-                  onChange={(e) => set("impacto_prazo_dias", e.target.value)}
-                  placeholder="+15 ou -5" />
-                <p className="text-xs text-muted-foreground">Positivo = atraso | Negativo = antecipação</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={formData.status} onValueChange={(v) => set("status", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Identificada">Identificada</SelectItem>
-                    <SelectItem value="Em Análise">Em Análise</SelectItem>
-                    <SelectItem value="Aprovada">Aprovada</SelectItem>
-                    <SelectItem value="Rejeitada">Rejeitada</SelectItem>
-                    <SelectItem value="Implementada">Implementada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Impacto no Escopo (o que entra ou sai)</Label>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={formData.impacto_escopo_tipo === "Adição"}
-                    onChange={(e) => set("impacto_escopo_tipo", e.target.checked ? "Adição" : null)}
-                    className="w-4 h-4 rounded border-border accent-primary"
-                  />
-                  <span className="text-sm font-medium text-foreground">Adição</span>
-                </label>
-              </div>
-              <Textarea value={formData.impacto_escopo} onChange={(e) => set("impacto_escopo", e.target.value)}
-                placeholder="Descreva o que é adicionado ou removido do escopo..." rows={2} />
-            </div>
-          </div>
+      {/* Categorias */}
+      <SectionDivider label="Categorias" />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Responsável</Label>
-              <Input value={formData.responsavel} onChange={(e) => set("responsavel", e.target.value)} placeholder="Nome" />
-            </div>
-            <div className="space-y-2">
-              <Label>Observações</Label>
-              <Input value={formData.observacoes} onChange={(e) => set("observacoes", e.target.value)} placeholder="Observações adicionais" />
-            </div>
-          </div>
+      <div className="space-y-1.5">
+        <Label>Categorias de Impacto</Label>
+        {categoriasPending ? (
+          <p className="text-xs text-muted-foreground">Carregando categorias...</p>
+        ) : categoriasNomes.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic">Nenhuma categoria cadastrada para este projeto.</p>
+        ) : (
+          <MultiSelectDropdown
+            label="Selecionar categorias"
+            options={categoriasNomes}
+            selected={categorias}
+            onChange={setCategorias}
+            onClear={() => setCategorias([])}
+          />
+        )}
+      </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-            <Button type="submit" variant="save" disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : mudanca ? "Salvar" : "Criar Mudança"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      {/* Descrição */}
+      <div className="space-y-1.5">
+        <Label>Descrição Técnica *</Label>
+        <Textarea
+          value={formData.descricao}
+          onChange={(e) => set("descricao", e.target.value)}
+          placeholder="Justificativa técnica e contexto da mudança..."
+          rows={3}
+        />
+      </div>
+
+      {/* Impactos */}
+      <SectionDivider label="Impactos" />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Financeiro (R$)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={formData.impacto_custo}
+            onChange={(e) => set("impacto_custo", e.target.value)}
+            placeholder="+150000 ou -50000"
+          />
+          <p className="text-xs text-muted-foreground">+ acréscimo · − redução</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Prazo (dias)</Label>
+          <Input
+            type="number"
+            value={formData.impacto_prazo_dias}
+            onChange={(e) => set("impacto_prazo_dias", e.target.value)}
+            placeholder="+15 ou -5"
+          />
+          <p className="text-xs text-muted-foreground">+ atraso · − antecipação</p>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Label>Impacto no Escopo</Label>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={formData.impacto_escopo_tipo === "Adição"}
+              onChange={(e) => set("impacto_escopo_tipo", e.target.checked ? "Adição" : null)}
+              className="w-4 h-4 rounded border-border accent-primary"
+            />
+            <span className="text-sm text-foreground">Adição</span>
+          </label>
+        </div>
+        <Textarea
+          value={formData.impacto_escopo}
+          onChange={(e) => set("impacto_escopo", e.target.value)}
+          placeholder="O que entra ou sai do escopo..."
+          rows={2}
+        />
+      </div>
+
+      {formData.observacoes !== undefined && (
+        <div className="space-y-1.5">
+          <Label>Observações</Label>
+          <Input
+            value={formData.observacoes}
+            onChange={(e) => set("observacoes", e.target.value)}
+            placeholder="Observações adicionais"
+          />
+        </div>
+      )}
+    </FormDialog>
   );
 }
