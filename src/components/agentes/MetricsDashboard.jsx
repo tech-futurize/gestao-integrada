@@ -8,6 +8,13 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
+async function fetchUsdBrl() {
+  const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+  if (!res.ok) throw new Error('cotação indisponível');
+  const json = await res.json();
+  return Number(json.USDBRL.bid);
+}
+
 const AGENT_COLORS = {
   'supabase-analyst-agent': '#26405d',
   'business-analyst-agent': '#c35e1e',
@@ -25,6 +32,12 @@ function getInitials(email = '') {
 
 function formatUSD(val) {
   return `$${Number(val ?? 0).toFixed(4)}`;
+}
+
+function formatBRL(usd, rate) {
+  if (!rate) return null;
+  const brl = Number(usd ?? 0) * rate;
+  return brl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 });
 }
 
 function aggregateByDay(logs) {
@@ -93,6 +106,13 @@ const ModelBarLabel = ({ x, y, width, value }) => (
 export default function MetricsDashboard() {
   const [dateFrom, setDateFrom] = useState(defaultDateFrom);
   const [dateTo, setDateTo] = useState(defaultDateTo);
+
+  const { data: usdBrl, isError: rateError } = useQuery({
+    queryKey: ['usd-brl-rate'],
+    queryFn: fetchUsdBrl,
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+  });
 
   const { data: agentes = [] } = useQuery({
     queryKey: ['agentes'],
@@ -189,9 +209,18 @@ export default function MetricsDashboard() {
           <p className="text-xs opacity-65 font-bold uppercase tracking-widest mb-1">
             Custo Total — {new Date(dateTo).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
           </p>
-          <p className="text-3xl font-extrabold leading-tight mb-1">{formatUSD(totalCusto)}</p>
+          {usdBrl ? (
+            <>
+              <p className="text-3xl font-extrabold leading-tight">{formatBRL(totalCusto, usdBrl)}</p>
+              <p className="text-xs opacity-55 mt-0.5 mb-1">{formatUSD(totalCusto)} · cotação R$ {usdBrl.toFixed(2)}/USD</p>
+            </>
+          ) : (
+            <p className="text-3xl font-extrabold leading-tight mb-1">{formatUSD(totalCusto)}</p>
+          )}
           <p className="text-xs opacity-70">
             {totalExecucoes.toLocaleString('pt-BR')} execuções · {totalTokens.toLocaleString('pt-BR')} tokens no período
+            {!rateError && !usdBrl && <span className="opacity-50"> · carregando cotação…</span>}
+            {rateError && <span className="opacity-50"> · cotação indisponível</span>}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 text-center">
@@ -207,7 +236,9 @@ export default function MetricsDashboard() {
           </div>
           <div className="bg-white/10 rounded-lg px-4 py-3">
             <p className="text-xs opacity-65 mb-1">custo médio</p>
-            <p className="text-sm font-extrabold">{formatUSD(custoMedio)}</p>
+            <p className="text-sm font-extrabold">
+              {usdBrl ? formatBRL(custoMedio, usdBrl) : formatUSD(custoMedio)}
+            </p>
           </div>
         </div>
       </div>
@@ -272,7 +303,9 @@ export default function MetricsDashboard() {
                           <p className="text-xs font-semibold text-foreground leading-tight">{item.nome}</p>
                           <p className="text-xs text-muted-foreground">
                             {item.execucoes} exec ·{' '}
-                            <span className="font-semibold" style={{ color }}>{formatUSD(item.custo)}</span>
+                            <span className="font-semibold" style={{ color }}>
+                              {usdBrl ? formatBRL(item.custo, usdBrl) : formatUSD(item.custo)}
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -344,7 +377,7 @@ export default function MetricsDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold truncate">{user.email}</p>
                       <p className="text-xs text-muted-foreground">
-                        {user.execucoes} exec · {formatUSD(user.custo)}
+                        {user.execucoes} exec · {usdBrl ? formatBRL(user.custo, usdBrl) : formatUSD(user.custo)}
                       </p>
                     </div>
                   </div>
