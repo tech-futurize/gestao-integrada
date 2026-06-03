@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ShieldAlert, AlertCircle, Clock, DollarSign } from "lucide-react";
-import { SectionHeader, KpiCard } from "@/components/dashboard/DashboardPrimitives";
+import { SectionHeader, KpiCard, formatMilhoes } from "@/components/dashboard/DashboardPrimitives";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -35,13 +35,6 @@ const SEVERIDADE_FAIXAS = [
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatMilhoes(value) {
-  if (!value && value !== 0) return "—";
-  if (value >= 1e6) return `R$ ${(value / 1e6).toFixed(1)}M`;
-  if (value >= 1e3) return `R$ ${(value / 1e3).toFixed(0)}k`;
-  return `R$ ${value.toFixed(0)}`;
-}
 
 function sumField(arr, field) {
   return arr.reduce((acc, r) => acc + (Number(r[field]) || 0), 0);
@@ -180,22 +173,27 @@ function CategoriasDonut({ data }) {
 
   return (
     <div className="flex items-center gap-3">
-      <PieChart width={140} height={140}>
-        <Pie
-          data={data}
-          cx={65}
-          cy={65}
-          innerRadius={50}
-          outerRadius={80}
-          dataKey="value"
-          stroke="none"
-        >
-          {data.map((entry) => (
-            <Cell key={entry.name} fill={entry.color} />
-          ))}
-        </Pie>
-        <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v, n) => [v, n]} />
-      </PieChart>
+      <div className="flex-shrink-0">
+        <ResponsiveContainer width={140} height={140}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={45}
+              outerRadius={68}
+              dataKey="value"
+              nameKey="name"
+              stroke="none"
+            >
+              {data.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={{ fontSize: 12 }} formatter={(v, n) => [v, n]} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
       {/* Legenda lateral */}
       <div className="flex flex-col gap-1 min-w-0">
         {data.map((entry) => (

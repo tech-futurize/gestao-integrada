@@ -29,6 +29,7 @@ import {
   SectionHeader,
   KpiCard,
   SubSectionBand,
+  formatMilhoes,
 } from "@/components/dashboard/DashboardPrimitives";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -43,13 +44,6 @@ function formatMes(dateStr) {
   if (!dateStr) return "";
   const date = new Date(dateStr + "T00:00:00");
   return date.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
-}
-
-function formatMilhoes(value) {
-  if (!value && value !== 0) return "—";
-  if (value >= 1e6) return `R$ ${(value / 1e6).toFixed(1)}M`;
-  if (value >= 1e3) return `R$ ${(value / 1e3).toFixed(0)}k`;
-  return `R$ ${value.toFixed(0)}`;
 }
 
 function formatHH(value) {

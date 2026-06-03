@@ -1,17 +1,10 @@
-// DashboardPrimitives.jsx — Componentes base reutilizáveis do dashboard redesenhado
-// Sem lógica de dados, sem react-router-dom, sem seções específicas.
-
-// ── COLORS ───────────────────────────────────────────────────────────────────
-export const COLORS = [
-  "#26405d",
-  "#c35e1e",
-  "#00a49a",
-  "#3b82f6",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#14b8a6",
-];
+// ── FORMAT HELPERS ────────────────────────────────────────────────────────────
+export function formatMilhoes(value) {
+  if (!value && value !== 0) return "—";
+  if (value >= 1e6) return `R$ ${(value / 1e6).toFixed(1)}M`;
+  if (value >= 1e3) return `R$ ${(value / 1e3).toFixed(0)}k`;
+  return `R$ ${value.toFixed(0)}`;
+}
 
 // ── SECTION HEADER ────────────────────────────────────────────────────────────
 // Props: { title, icon: Icon, color, subtitle }

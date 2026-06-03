@@ -31,16 +31,8 @@ import {
   SectionHeader,
   KpiCard,
   SubSectionBand,
+  formatMilhoes,
 } from "@/components/dashboard/DashboardPrimitives";
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatMilhoes(value) {
-  if (!value && value !== 0) return "—";
-  if (value >= 1e6) return `R$ ${(value / 1e6).toFixed(1)}M`;
-  if (value >= 1e3) return `R$ ${(value / 1e3).toFixed(0)}k`;
-  return `R$ ${value.toFixed(0)}`;
-}
 
 // ── Donut genérico com legenda lateral ───────────────────────────────────────
 
@@ -52,12 +44,13 @@ function DonutComLegenda({ data, innerRadius = 50, outerRadius = 80 }) {
         <ResponsiveContainer width={170} height={170}>
           <PieChart>
             <Pie
-              data={pieData.length > 0 ? pieData : [{ count: 1 }]}
+              data={pieData.length > 0 ? pieData : [{ count: 1, label: "Sem dados" }]}
               cx="50%"
               cy="50%"
               innerRadius={innerRadius}
               outerRadius={outerRadius}
               dataKey="count"
+              nameKey="label"
               stroke="none"
             >
               {pieData.length > 0 ? (
@@ -538,7 +531,7 @@ export default function AdmContratualSection({ projetoId }) {
     enabled: !!projetoId,
   });
   const { data: medicoes = [], isError: isErrorMed } = useQuery({
-    queryKey: ["medicoes_adm_dash", projetoId],
+    queryKey: ["medicoes_dash", projetoId],
     queryFn: () => entities.Medicao.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });

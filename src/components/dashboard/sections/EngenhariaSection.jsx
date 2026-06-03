@@ -13,7 +13,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Ruler, CheckCircle, AlertCircle } from "lucide-react";
+import { Ruler, CheckCircle, AlertCircle, BarChart2 } from "lucide-react";
 import { SectionHeader, KpiCard } from "@/components/dashboard/DashboardPrimitives";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -25,8 +25,6 @@ const ETAPAS = [
   { label: "Comentários do Cliente", color: "#c35e1e" },
   { label: "Aprovado", color: "#00a49a" },
 ];
-
-const ETAPA_COLOR = Object.fromEntries(ETAPAS.map((e) => [e.label, e.color]));
 
 const MODULE_COLOR = "#00a49a";
 
@@ -83,12 +81,13 @@ function DonutChart({ data }) {
         <ResponsiveContainer width={180} height={180}>
           <PieChart>
             <Pie
-              data={pieData.length > 0 ? pieData : [{ value: 1 }]}
+              data={pieData.length > 0 ? pieData : [{ value: 1, label: "Sem dados" }]}
               cx="50%"
               cy="50%"
               innerRadius={55}
               outerRadius={85}
               dataKey="value"
+              nameKey="label"
               stroke="none"
             >
               {pieData.length > 0 ? (
@@ -221,7 +220,7 @@ export default function EngenhariaSection({ projetoId }) {
                 <KpiCard
                   label="Progresso médio"
                   value={`${progressoMedio}%`}
-                  icon={Ruler}
+                  icon={BarChart2}
                   color="#3b82f6"
                 />
                 <KpiCard
