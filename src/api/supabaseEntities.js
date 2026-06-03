@@ -36,6 +36,8 @@ const TABLE_MAP = {
   AgenteUsoLog: 'agente_uso_logs',
   ModeloPreco: 'modelo_precos',
   ProviderConfig: 'provider_configs',
+  FormularioDigital:  'formularios_digitais',
+  FormularioResposta: 'formulario_respostas',
 };
 
 function createEntityClient(tableName) {
