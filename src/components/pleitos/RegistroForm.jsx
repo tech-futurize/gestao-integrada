@@ -197,7 +197,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
                 placeholder="Avaliação preliminar do impacto..." rows={2} className="resize-none" />
             </div>
             <div className="space-y-2">
-              <Label>Áreas de Impacto</Label>
+              <Label>Categorias de Impacto</Label>
               {categoriasPending ? (
                 <p className="text-xs text-muted-foreground">Carregando categorias...</p>
               ) : (
