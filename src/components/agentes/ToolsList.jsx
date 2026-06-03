@@ -21,9 +21,6 @@ export default function ToolsList() {
     queryFn: () => entities.AgenteTool.list(),
   });
 
-  const systemTools = allTools.filter((t) => t.is_system);
-  const customTools = allTools.filter((t) => !t.is_system);
-
   const saveMutation = useMutation({
     mutationFn: (form) => {
       const { id, ...data } = form;
@@ -72,95 +69,73 @@ export default function ToolsList() {
     return <p className="text-destructive text-sm text-center py-8">Erro ao carregar tools. Tente recarregar.</p>;
   }
 
+  // Sistema primeiro, depois SQL por nome
+  const sorted = [...allTools].sort((a, b) => {
+    if (a.is_system === b.is_system) return a.nome.localeCompare(b.nome);
+    return a.is_system ? -1 : 1;
+  });
+
   return (
-    <div className="space-y-6">
-
-      {/* ── Tools de Sistema ─────────────────────────────── */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-base font-semibold">Tools de Sistema</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Capacidades nativas do executor de dados.</p>
-          </div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold">Tools disponíveis</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {allTools.filter(t => t.is_system).length} de sistema · {allTools.filter(t => !t.is_system).length} SQL customizadas
+          </p>
         </div>
-
-        {systemTools.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma tool de sistema encontrada.</p>
-        ) : (
-          <div className="space-y-2">
-            {systemTools.map((tool) => (
-              <Card key={tool.id} className="border-0 shadow-sm bg-muted/30">
-                <CardContent className="p-4 flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[hsl(210_62%_16%/10%)] flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Wrench size={15} className="text-[hsl(210_62%_30%)]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-sm font-semibold">{tool.nome}</span>
-                      <Badge variant="secondary" className="text-xs">Sistema</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{tool.descricao}</p>
-                  </div>
-                  <RowActions
-                    onEdit={() => handleEdit(tool)}
-                    onDelete={() => deleteMutation.mutate(tool.id)}
-                  />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleNew}>
+          <Plus size={14} className="mr-1.5" /> Nova tool
+        </Button>
       </div>
 
-      {/* ── Tools SQL Customizadas ────────────────────────── */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-base font-semibold">Tools SQL Customizadas</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Ferramentas SQL criadas para consultas específicas</p>
-          </div>
-          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleNew}>
-            <Plus size={14} className="mr-1.5" /> Nova tool
-          </Button>
+      {sorted.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
+          <Code2 size={24} className="mx-auto mb-2 opacity-30" />
+          <p>Nenhuma tool encontrada.</p>
         </div>
-
-        {customTools.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
-            <Code2 size={24} className="mx-auto mb-2 opacity-30" />
-            <p>Nenhuma tool customizada criada.</p>
-            <p className="text-xs mt-1">Clique em "Nova tool" para criar uma consulta SQL reutilizável.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {customTools.map((tool) => (
-              <Card key={tool.id} className="border-0 shadow-sm">
-                <CardContent className="p-4 flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Code2 size={16} className="text-muted-foreground" />
+      ) : (
+        <div className="space-y-2">
+          {sorted.map((tool) => (
+            <Card key={tool.id} className={`border-0 shadow-sm ${tool.is_system ? 'bg-muted/30' : ''}`}>
+              <CardContent className="p-4 flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                  tool.is_system ? 'bg-blue-500/10' : 'bg-muted'
+                }`}>
+                  {tool.is_system
+                    ? <Wrench size={15} className="text-blue-600 dark:text-blue-400" />
+                    : <Code2 size={16} className="text-muted-foreground" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="font-mono text-sm font-semibold">{tool.nome}</span>
+                    {tool.is_system
+                      ? <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-300 border-0">Sistema</Badge>
+                      : <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-0">SQL</Badge>
+                    }
+                    {!tool.ativo && <Badge variant="secondary" className="text-xs">Inativa</Badge>}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-sm font-semibold">{tool.nome}</span>
-                      {!tool.ativo && <Badge variant="secondary" className="text-xs">Inativa</Badge>}
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{tool.descricao}</p>
+                  {!tool.is_system && tool.parametros?.length > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {tool.parametros.map((p, i) => (
+                        <Badge key={i} variant="outline" className="text-xs font-mono">
+                          ${i + 1}: {p.nome} ({p.tipo})
+                        </Badge>
+                      ))}
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{tool.descricao}</p>
-                    {tool.parametros?.length > 0 && (
-                      <div className="flex gap-1 flex-wrap">
-                        {tool.parametros.map((p, i) => (
-                          <Badge key={i} variant="outline" className="text-xs font-mono">
-                            ${i + 1}: {p.nome} ({p.tipo})
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <RowActions onEdit={() => handleEdit(tool)} />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+                  )}
+                </div>
+                <RowActions
+                  onEdit={() => handleEdit(tool)}
+                  onDelete={tool.is_system ? undefined : () => deleteMutation.mutate(tool.id)}
+                />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <ToolEditor
         open={editorOpen}

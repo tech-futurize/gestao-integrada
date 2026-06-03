@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Lock } from 'lucide-react';
 
 const PARAM_TIPOS = [
   { value: 'string', label: 'Texto (string)' },
@@ -15,6 +16,22 @@ const PARAM_TIPOS = [
   { value: 'uuid',   label: 'UUID' },
 ];
 
+// Descrição interna de cada tool de sistema — lida pelo desenvolvedor/admin, não pelo LLM
+const SYSTEM_BEHAVIOR = {
+  'get-schema': `Chama a RPC get_db_schema() no Supabase (SECURITY DEFINER).
+Retorna lista de todas as tabelas visíveis, com colunas, tipos de dados e constraints (PK, FK, NOT NULL).
+Usado para que o LLM conheça a estrutura do banco antes de construir queries.`,
+  'execute-sql': `Chama a RPC exec_readonly_sql(query TEXT) no Supabase (SECURITY DEFINER).
+Somente SELECT é permitido — qualquer tentativa de DML (INSERT, UPDATE, DELETE) ou DDL (DROP, ALTER) é bloqueada por regex antes de chegar ao banco.
+Retorna as linhas resultantes como JSON.`,
+  'analyze-table': `Executa SELECT COUNT(*) FROM <tabela> no banco.
+Retorna o número total de registros da tabela informada pelo LLM.
+Útil para saber se uma tabela está vazia ou para calibrar o escopo de uma query.`,
+  'query-database': `Delega a consulta ao agente supabase-analyst-agent (Analista de Dados).
+Usado por outros agentes que precisam de dados mas não executam SQL diretamente.
+O agente de destino recebe a pergunta em linguagem natural e retorna o resultado.`,
+};
+
 const EMPTY = {
   nome: '', descricao: '', sql_template: '', parametros: [], ativo: true,
 };
@@ -22,6 +39,7 @@ const EMPTY = {
 export default function ToolEditor({ open, onOpenChange, tool, onSave, saving }) {
   const [form, setForm] = useState(EMPTY);
   const isEditing = !!tool?.id;
+  const isSystemTool = !!tool?.is_system;
 
   useEffect(() => {
     setForm(tool ? { ...EMPTY, ...tool, parametros: tool.parametros ?? [] } : EMPTY);
@@ -38,15 +56,28 @@ export default function ToolEditor({ open, onOpenChange, tool, onSave, saving })
   const removeParam = (i) =>
     set('parametros', form.parametros.filter((_, idx) => idx !== i));
 
-  const isSystemTool = !!tool?.is_system;
   const canSave = form.nome.trim() && form.descricao.trim() && (isSystemTool || form.sql_template.trim());
+
+  const behavior = isSystemTool ? (SYSTEM_BEHAVIOR[tool?.tool_key ?? tool?.nome] ?? null) : null;
 
   return (
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEditing ? `Editar Tool: ${form.nome}` : 'Nova Tool SQL'}
-      subtitle={isSystemTool ? 'Tool nativa do executor. Edite nome e descrição conforme necessário.' : 'Tools SQL são chamadas pelo LLM para consultar dados específicos.'}
+      title={
+        isEditing
+          ? <span className="flex items-center gap-2">
+              {isSystemTool && <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-300 border-0">Sistema</Badge>}
+              {!isSystemTool && <Badge variant="secondary" className="text-xs bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-0">SQL</Badge>}
+              {form.nome}
+            </span>
+          : 'Nova Tool SQL'
+      }
+      subtitle={
+        isSystemTool
+          ? 'Tool nativa do executor. Edite a descrição que o LLM usa para decidir quando chamá-la.'
+          : 'Tools SQL são chamadas pelo LLM para consultar dados específicos.'
+      }
       onSave={() => onSave(form)}
       saving={saving}
       saveDisabled={!canSave}
@@ -54,6 +85,7 @@ export default function ToolEditor({ open, onOpenChange, tool, onSave, saving })
       maxWidth="max-w-2xl"
     >
       <div className="space-y-4">
+
         {/* Nome */}
         <div className="space-y-1">
           <Label>Nome da Tool *</Label>
@@ -64,7 +96,7 @@ export default function ToolEditor({ open, onOpenChange, tool, onSave, saving })
             className="font-mono"
             disabled={isEditing}
           />
-          <p className="text-xs text-muted-foreground">Identificador único, usado internamente.</p>
+          <p className="text-xs text-muted-foreground">Identificador único, usado internamente pelo LLM.</p>
         </div>
 
         {/* Descrição para o LLM */}
@@ -77,27 +109,49 @@ export default function ToolEditor({ open, onOpenChange, tool, onSave, saving })
             placeholder="Busca contratos ativos do projeto. Use quando o usuário pedir contratos vigentes ou em andamento."
           />
           <p className="text-xs text-muted-foreground">
-            Descreva <strong>quando</strong> o LLM deve usar esta tool. Seja preciso — o modelo decide com base neste texto.
+            Descreva <strong>quando</strong> o LLM deve usar esta tool. O modelo decide com base neste texto.
           </p>
         </div>
 
-        {/* SQL Template — oculto para tools de sistema */}
-        {!isSystemTool && <div className="space-y-1">
-          <Label>SQL Template (somente SELECT) *</Label>
-          <Textarea
-            value={form.sql_template}
-            onChange={e => set('sql_template', e.target.value)}
-            rows={6}
-            className="font-mono text-xs resize-y"
-            placeholder={`SELECT id, titulo, valor\nFROM contratos\nWHERE projeto_id = $1\n  AND status = 'ativo'\nORDER BY created_at DESC`}
-          />
-          <p className="text-xs text-muted-foreground">
-            Use <code className="bg-muted px-1 rounded">$1</code>, <code className="bg-muted px-1 rounded">$2</code>... para parâmetros.
-            Somente SELECT — DML/DDL são bloqueados automaticamente.
-          </p>
-        </div>}
+        {/* Comportamento interno — apenas tools de sistema */}
+        {isSystemTool && (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <Label>Comportamento interno</Label>
+              <Lock size={12} className="text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">(somente leitura)</span>
+            </div>
+            <Textarea
+              value={behavior ?? 'Implementação não documentada.'}
+              readOnly
+              rows={5}
+              className="font-mono text-xs resize-none bg-muted/50 text-muted-foreground cursor-default"
+            />
+            <p className="text-xs text-muted-foreground">
+              O que esta tool executa internamente no servidor. Não editável — definido no código da Edge Function.
+            </p>
+          </div>
+        )}
 
-        {/* Parâmetros — oculto para tools de sistema */}
+        {/* SQL Template — apenas tools SQL customizadas */}
+        {!isSystemTool && (
+          <div className="space-y-1">
+            <Label>SQL Template (somente SELECT) *</Label>
+            <Textarea
+              value={form.sql_template}
+              onChange={e => set('sql_template', e.target.value)}
+              rows={6}
+              className="font-mono text-xs resize-y"
+              placeholder={`SELECT id, titulo, valor\nFROM contratos\nWHERE projeto_id = $1\n  AND status = 'ativo'\nORDER BY created_at DESC`}
+            />
+            <p className="text-xs text-muted-foreground">
+              Use <code className="bg-muted px-1 rounded">$1</code>, <code className="bg-muted px-1 rounded">$2</code>... para parâmetros.
+              Somente SELECT — DML/DDL são bloqueados automaticamente.
+            </p>
+          </div>
+        )}
+
+        {/* Parâmetros — apenas tools SQL customizadas */}
         {!isSystemTool && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
