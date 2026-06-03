@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Edit, DollarSign, Calendar, User, Building, Download } from "lucide-react";
 import ConfirmDeleteButton from "@/components/ui/ConfirmDeleteButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, addDaysToDate } from "@/lib/dateUtils";
 import ContratoExportDialog from "@/components/contratos/ContratoExportDialog";
 import ContratoVisaoGeral from "@/components/contratos/ContratoVisaoGeral";
 import ContratoPQP from "@/components/contratos/ContratoPQP";
@@ -16,13 +16,6 @@ import ContratoAditivos from "@/components/contratos/ContratoAditivos";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 const CONCLUIDAS = ["Concluído", "Aprovada", "Paga"];
-
-function addDaysToDate(dateStr, days) {
-  if (!dateStr || !days) return null;
-  const d = new Date(dateStr + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
-}
 
 export default function ContratoDetalhes({ contrato, onBack, onEdit, onDelete }) {
   const [showExport, setShowExport] = useState(false);
@@ -68,7 +61,7 @@ export default function ContratoDetalhes({ contrato, onBack, onEdit, onDelete })
               <h3 className="text-xl font-bold text-foreground">{contrato.objeto}</h3>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-ocre">{fmt(contrato.valor_total)}</p>
+              <p className="text-2xl font-bold text-status-positive">{fmt(contrato.valor_total)}</p>
               <p className="text-sm text-muted-foreground">Valor Total</p>
             </div>
           </div>
@@ -91,18 +84,23 @@ export default function ContratoDetalhes({ contrato, onBack, onEdit, onDelete })
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-muted-foreground" />
               <div>
-                <p className="text-xs text-muted-foreground">Início → Término Original</p>
-                <p className="text-sm font-semibold text-foreground">{(formatDate(contrato.data_inicio) || "—")} → {(formatDate(contrato.data_fim) || "—")}</p>
-                {terminoAtual !== contrato.data_fim && (
-                  <p className="text-xs text-status-attention font-semibold">Término Atual: {(formatDate(terminoAtual) || "—")}</p>
-                )}
+                <p className="text-xs text-muted-foreground">Início → Término</p>
+                <p className="text-sm font-semibold text-foreground">{(formatDate(contrato.data_inicio) || "—")} → {(formatDate(terminoAtual) || "—")}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-muted-foreground" />
               <div>
                 <p className="text-xs text-muted-foreground">Saldo</p>
-                <p className={`text-sm font-semibold ${saldo >= 0 ? "text-status-positive" : "text-status-critical"}`}>{fmt(saldo)}</p>
+                <p className="text-sm font-semibold text-status-critical">{fmt(saldo)}</p>
+                {aditivos.filter((a) => a.status === "Assinado").length > 0 && (
+                  <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded text-xs bg-muted text-muted-foreground">
+                    <span className="font-semibold text-foreground">
+                      {aditivos.filter((a) => a.status === "Assinado").length}
+                    </span>
+                    {" "}aditivo{aditivos.filter((a) => a.status === "Assinado").length !== 1 ? "s" : ""} assinado{aditivos.filter((a) => a.status === "Assinado").length !== 1 ? "s" : ""}
+                  </span>
+                )}
               </div>
             </div>
           </div>
