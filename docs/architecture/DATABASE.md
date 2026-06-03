@@ -555,25 +555,27 @@ Gestão de mudanças de escopo, prazo e valor do contrato.
 ---
 
 ### riscos (alterada)
-Gestão de riscos do projeto.
+Gestão de riscos do projeto. Cada risco é classificado como Ameaça ou Oportunidade.
 
 | Coluna | Tipo | Notas |
 |--------|------|-------|
 | projeto_id | UUID FK → projetos | CASCADE |
 | codigo | TEXT | |
 | descricao | TEXT NOT NULL | |
-| categoria | TEXT | Sincronizada com `src/lib/categorias.js` |
-| probabilidade | TEXT | Baixa / Média / Alta |
-| impacto_nivel | TEXT | Baixa / Média / Alta |
-| impactos | JSONB | Array com 0..3 valores: 'Escopo', 'Prazo', 'Valor' |
-| escopo_texto | TEXT | |
-| prazo_dias | INTEGER | |
-| valor_impacto | NUMERIC | |
-| score | NUMERIC | |
-| status | TEXT | |
+| categoria | TEXT | Técnico / Financeiro / Prazo / Segurança / Regulatório / Ambiental / Outros |
+| probabilidade | TEXT | Muito Baixa / Baixa / Média / Alta / Muito Alta |
+| impacto | TEXT | Muito Baixo / Baixo / Médio / Alto / Muito Alto |
+| score | NUMERIC | pesoProbabilidade × pesoImpacto (1–25) |
+| status | TEXT | Ativo / Mitigado / Encerrado / Cancelado |
 | responsavel | TEXT | |
-| mitigacao | TEXT | |
-| residual | TEXT | |
+| mitigacao | TEXT | Plano de resposta |
+| residual | TEXT | Nível de risco residual |
+| impactos | JSONB | Array com 0..3 valores: 'Escopo', 'Prazo', 'Valor' |
+| areas_impacto | JSONB | Áreas de impacto (referência a CategoriaImpacto) |
+| escopo_texto | TEXT | Descrição do impacto no escopo |
+| prazo_dias | NUMERIC | Impacto em prazo (dias) — base para cálculo |
+| valor_impacto | NUMERIC | Impacto financeiro (R$) — base para cálculo |
+| classificacao | TEXT | 'Ameaça' (default) ou 'Oportunidade' |
 
 ---
 

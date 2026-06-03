@@ -3,6 +3,9 @@ export const CATEGORIAS_RISCO = [
   "Regulatório", "Ambiental", "Outros",
 ];
 
+export const CLASSIFICACOES = ["Ameaça", "Oportunidade"];
+export const NIVEL_OPTIONS   = ["Baixo", "Médio", "Alto"];
+
 export const CAT_COLORS = {
   "Técnico":     "#3b82f6",
   "Financeiro":  "#f59e0b",
@@ -69,6 +72,25 @@ export function getScoreLevel(score) {
   if (score >= 6)  return "medium";
   return "low";
 }
+
+/** @param {number} score @returns {"Alto"|"Médio"|"Baixo"} */
+export function getNivelLabel(score) {
+  const l = getScoreLevel(score);
+  return l === "high" ? "Alto" : l === "medium" ? "Médio" : "Baixo";
+}
+
+export const FATOR_PROBABILIDADE = {
+  "Muito Baixa": 0.10, "Baixa": 0.30, "Média": 0.50, "Alta": 0.70, "Muito Alta": 0.90,
+};
+export const fatorProbabilidade = (prob) => FATOR_PROBABILIDADE[prob] ?? 0;
+
+/** valor_impacto (R$) × fator de probabilidade */
+export const calcImpactoFinanceiro = (valorImpacto, prob) =>
+  (Number(valorImpacto) || 0) * fatorProbabilidade(prob);
+
+/** prazo_dias × fator de probabilidade */
+export const calcImpactoPrazo = (prazoDias, prob) =>
+  (Number(prazoDias) || 0) * fatorProbabilidade(prob);
 
 /**
  * Formata o label de um risco para exibição em selects.

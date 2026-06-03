@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { labelRisco, labelMudanca } from "@/utils/riscosUtils";
+import { labelRisco, CLASSIFICACOES } from "@/utils/riscosUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RowActions from "@/components/ui/RowActions";
-import { Plus, CheckCircle2, Clock, X } from "lucide-react";
+import FilterBar from "@/components/ui/FilterBar";
+import FilterToolbar from "@/components/ui/FilterToolbar";
+import { Plus, CheckCircle2, Clock, X, Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -18,6 +20,8 @@ import { useSortTable } from "@/hooks/useSortTable";
 import { SortableTableHead } from "@/components/ui/SortableTableHead";
 import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+const STATUS_ACAO = ["Pendente", "Em Andamento", "Concluída", "Atrasada", "Cancelada"];
 
 const emptyForm = {
   descricao: "",
@@ -28,28 +32,29 @@ const emptyForm = {
   status: "Pendente",
   observacoes: "",
   registro_risco_id: null,
-  registro_mudanca_id: null,
 };
 
-function getVinculoLabel(acao, riscos, mudancas) {
+function getVinculoLabel(acao, riscos) {
   if (acao.registro_risco_id) {
     const r = riscos.find(x => x.id === acao.registro_risco_id);
-    return { label: r ? labelRisco(r) : "Risco", tipo: "risco" };
+    return r ? labelRisco(r) : "Risco";
   }
-  if (acao.registro_mudanca_id) {
-    const m = mudancas.find(x => x.id === acao.registro_mudanca_id);
-    return { label: m ? labelMudanca(m) : "Mudança", tipo: "mudanca" };
-  }
-  return { label: "—", tipo: null };
+  return "—";
 }
 
 export default function PlanoAcao({ projectId }) {
-  const [showForm, setShowForm] = useState(false);
-  const [editingAcao, setEditingAcao] = useState(null);
-  const [formData, setFormData] = useState(emptyForm);
-  const [vinculoTipo, setVinculoTipo] = useState("risco");
+  const [showForm, setShowForm]           = useState(false);
+  const [editingAcao, setEditingAcao]     = useState(null);
+  const [formData, setFormData]           = useState(emptyForm);
+  const [filtros, setFiltros]             = useState({});
+  const [filterKey, setFilterKey]         = useState(0);
+  const [buscaResp, setBuscaResp]         = useState("");
+  const [periodoInicio, setPeriodoInicio] = useState("");
+  const [periodoFim, setPeriodoFim]       = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const FILTROS_KEY = "plano-acao-filtros";
 
   const { data: acoes = [], isPending: isLoadingAcoes, isError: isErrorAcoes } = useQuery({
     queryKey: ["acoes", projectId],
@@ -57,19 +62,53 @@ export default function PlanoAcao({ projectId }) {
     enabled: !!projectId,
   });
 
-  const { sortedData: acoesSorted, sortKey, sortDir, handleSort } = useSortTable(acoes, { defaultKey: "descricao" });
-
   const { data: riscos = [] } = useQuery({
     queryKey: ["riscos", projectId],
     queryFn: () => entities.Risco.filter({ projeto_id: projectId }),
     enabled: !!projectId,
   });
 
-  const { data: mudancas = [] } = useQuery({
-    queryKey: ["mudancas_contratuais", projectId],
-    queryFn: () => entities.MudancaContratual.filter({ projeto_id: projectId }),
-    enabled: !!projectId,
-  });
+  const riscoById = useMemo(() => {
+    const map = {};
+    riscos.forEach(r => { map[r.id] = r; });
+    return map;
+  }, [riscos]);
+
+  const acoesCalc = useMemo(() => acoes.map(a => ({
+    ...a,
+    _classificacao: a.registro_risco_id ? (riscoById[a.registro_risco_id]?.classificacao || null) : null,
+  })), [acoes, riscoById]);
+
+  const responsaveisDistintos = useMemo(() =>
+    [...new Set(acoes.map(a => a.responsavel).filter(Boolean))].sort(),
+  [acoes]);
+
+  const filtered = useMemo(() => {
+    const statusFiltro = filtros.status         || [];
+    const classFiltro  = filtros.classificacao  || [];
+    let r = acoesCalc;
+
+    if (buscaResp) {
+      const b = buscaResp.toLowerCase();
+      r = r.filter(a => a.responsavel?.toLowerCase().includes(b));
+    }
+    if (statusFiltro.length  > 0) r = r.filter(a => statusFiltro.includes(a.status));
+    if (classFiltro.length   > 0) r = r.filter(a => classFiltro.includes(a._classificacao));
+
+    if (periodoInicio || periodoFim) {
+      r = r.filter(a => {
+        const inicio = a.data_inicio_prevista || "";
+        const fim    = a.data_fim_prevista    || "";
+        const dentroInicio = inicio && (!periodoInicio || inicio >= periodoInicio) && (!periodoFim || inicio <= periodoFim);
+        const dentroFim    = fim    && (!periodoInicio || fim    >= periodoInicio) && (!periodoFim || fim    <= periodoFim);
+        return dentroInicio || dentroFim;
+      });
+    }
+
+    return r;
+  }, [acoesCalc, buscaResp, filtros, periodoInicio, periodoFim]);
+
+  const { sortedData: acoesSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "descricao" });
 
   const createAcaoMutation = useMutation({
     mutationFn: (data) => entities.Acao.create({ ...data, projeto_id: projectId }),
@@ -103,9 +142,8 @@ export default function PlanoAcao({ projectId }) {
   const handleSubmit = () => {
     const payload = {
       ...formData,
-      projeto_id: projectId,
-      registro_risco_id:   vinculoTipo === "risco"   ? formData.registro_risco_id   : null,
-      registro_mudanca_id: vinculoTipo === "mudanca" ? formData.registro_mudanca_id : null,
+      projeto_id:        projectId,
+      registro_risco_id: formData.registro_risco_id,
     };
     if (editingAcao) updateAcaoMutation.mutate({ id: editingAcao.id, data: payload });
     else createAcaoMutation.mutate(payload);
@@ -115,36 +153,41 @@ export default function PlanoAcao({ projectId }) {
     setShowForm(false);
     setEditingAcao(null);
     setFormData(emptyForm);
-    setVinculoTipo("risco");
   };
 
   const handleEdit = (acao) => {
     setEditingAcao(acao);
     setFormData({
-      descricao: acao.descricao || "",
-      formato_tratativa: acao.formato_tratativa || "Reunião",
+      descricao:            acao.descricao            || "",
+      formato_tratativa:    acao.formato_tratativa    || "Reunião",
       data_inicio_prevista: acao.data_inicio_prevista || "",
-      data_fim_prevista: acao.data_fim_prevista || "",
-      responsavel: acao.responsavel || "",
-      status: acao.status || "Pendente",
-      observacoes: acao.observacoes || "",
-      registro_risco_id: acao.registro_risco_id || null,
-      registro_mudanca_id: acao.registro_mudanca_id || null,
+      data_fim_prevista:    acao.data_fim_prevista    || "",
+      responsavel:          acao.responsavel          || "",
+      status:               acao.status               || "Pendente",
+      observacoes:          acao.observacoes          || "",
+      registro_risco_id:    acao.registro_risco_id    || null,
     });
-    setVinculoTipo(acao.registro_mudanca_id ? "mudanca" : "risco");
     setShowForm(true);
   };
 
-  const acoesCompletas = acoes.filter((a) => a.status === "Concluída").length;
-  const acoesPendentes = acoes.filter((a) => ["Pendente", "Em Andamento"].includes(a.status)).length;
-  const acoesAtrasadas = acoes.filter((a) => a.status === "Atrasada").length;
+  const acoesCompletas = acoes.filter(a => a.status === "Concluída").length;
+  const acoesPendentes = acoes.filter(a => ["Pendente", "Em Andamento"].includes(a.status)).length;
+  const acoesAtrasadas = acoes.filter(a => a.status === "Atrasada").length;
+
+  const temFiltroAtivo = buscaResp || periodoInicio || periodoFim ||
+    Object.values(filtros).some(a => a?.length > 0);
+
+  const limparFiltros = () => {
+    setBuscaResp(""); setPeriodoInicio(""); setPeriodoFim("");
+    setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1);
+  };
 
   return (
     <div className="space-y-6 p-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KPICard label="Pendentes" value={acoesPendentes} icon={<Clock />} accent="text-status-attention" />
-        <KPICard label="Concluídas" value={acoesCompletas} icon={<CheckCircle2 />} accent="text-status-positive" />
-        <KPICard label="Atrasadas" value={acoesAtrasadas} icon={<X />} accent="text-status-critical" />
+        <KPICard label="Pendentes"  value={acoesPendentes} icon={<Clock />}         accent="text-status-attention" />
+        <KPICard label="Concluídas" value={acoesCompletas} icon={<CheckCircle2 />}  accent="text-status-positive"  />
+        <KPICard label="Atrasadas"  value={acoesAtrasadas} icon={<X />}             accent="text-status-critical"  />
       </div>
 
       <Card className="border-0 shadow-md">
@@ -154,7 +197,7 @@ export default function PlanoAcao({ projectId }) {
             Plano de Ação
           </CardTitle>
           <Button
-            onClick={() => { setEditingAcao(null); setFormData(emptyForm); setVinculoTipo("risco"); setShowForm(true); }}
+            onClick={() => { setEditingAcao(null); setFormData(emptyForm); setShowForm(true); }}
             size="sm"
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
@@ -162,7 +205,53 @@ export default function PlanoAcao({ projectId }) {
             Nova Ação
           </Button>
         </CardHeader>
+
         <CardContent>
+          {/* Filtros */}
+          <div className="mb-4">
+            <FilterToolbar active={temFiltroAtivo} onClearAll={limparFiltros}>
+              {/* Busca por responsável */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                <input
+                  className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-44 bg-background text-foreground"
+                  placeholder="Responsável..."
+                  value={buscaResp}
+                  onChange={e => setBuscaResp(e.target.value)}
+                />
+              </div>
+
+              {/* Filtros de Status e Ameaça/Oportunidade */}
+              <FilterBar
+                key={filterKey}
+                storageKey={FILTROS_KEY}
+                filters={[
+                  { key: "status",         label: "Status",             options: STATUS_ACAO    },
+                  { key: "classificacao",  label: "Ameaça/Oportunidade", options: CLASSIFICACOES },
+                ]}
+                onChange={setFiltros}
+              />
+
+              {/* Filtro de período */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Período:</span>
+                <Input
+                  type="date"
+                  value={periodoInicio}
+                  onChange={e => setPeriodoInicio(e.target.value)}
+                  className="h-8 w-36 text-xs"
+                />
+                <span className="text-xs text-muted-foreground">até</span>
+                <Input
+                  type="date"
+                  value={periodoFim}
+                  onChange={e => setPeriodoFim(e.target.value)}
+                  className="h-8 w-36 text-xs"
+                />
+              </div>
+            </FilterToolbar>
+          </div>
+
           {isLoadingAcoes ? (
             <div className="text-center py-12 text-muted-foreground">Carregando...</div>
           ) : isErrorAcoes ? (
@@ -174,22 +263,24 @@ export default function PlanoAcao({ projectId }) {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted">
-                    <SortableTableHead columnKey="descricao" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Descrição</SortableTableHead>
-                    <TableHead>Vínculo</TableHead>
-                    <SortableTableHead columnKey="responsavel" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>
+                    <SortableTableHead columnKey="descricao"        sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Descrição</SortableTableHead>
+                    <TableHead>Risco Vinculado</TableHead>
+                    <SortableTableHead columnKey="responsavel"      sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>
                     <SortableTableHead columnKey="data_fim_prevista" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Previsão</SortableTableHead>
-                    <SortableTableHead columnKey="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
+                    <SortableTableHead columnKey="status"           sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
                     <TableHead className="w-16" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {acoesSorted.map((acao) => {
-                    const vinculo = getVinculoLabel(acao, riscos, mudancas);
-                    const vinculoStyle = vinculo.tipo === "risco"
-                      ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
-                      : vinculo.tipo === "mudanca"
-                      ? "bg-blue-500/10 text-blue-600 border-blue-500/20"
-                      : "";
+                  {acoesSorted.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                        Nenhuma ação encontrada com os filtros aplicados.
+                      </TableCell>
+                    </TableRow>
+                  ) : acoesSorted.map((acao) => {
+                    const vinculoLabel = getVinculoLabel(acao, riscos);
+                    const temVinculo   = !!acao.registro_risco_id;
                     return (
                       <TableRow key={acao.id} className="hover:bg-muted">
                         <TableCell className="max-w-sm">
@@ -197,9 +288,9 @@ export default function PlanoAcao({ projectId }) {
                           <p className="text-xs text-muted-foreground mt-0.5">{acao.formato_tratativa}</p>
                         </TableCell>
                         <TableCell>
-                          {vinculo.tipo ? (
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${vinculoStyle} max-w-[140px] truncate block`}>
-                              {vinculo.label}
+                          {temVinculo ? (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-700 border-amber-500/20 max-w-[160px] truncate block">
+                              {vinculoLabel}
                             </span>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
@@ -252,47 +343,21 @@ export default function PlanoAcao({ projectId }) {
           </>
         }
       >
-        <SectionDivider label="Vínculo" />
-        <div className="space-y-3">
-          <div className="flex gap-4">
-            {[["risco", "Risco"], ["mudanca", "Mudança"]].map(([tipo, label]) => (
-              <label key={tipo} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="vinculo-tipo"
-                  value={tipo}
-                  checked={vinculoTipo === tipo}
-                  onChange={() => {
-                    setVinculoTipo(tipo);
-                    setFormData(f => ({ ...f, registro_risco_id: null, registro_mudanca_id: null }));
-                  }}
-                />
-                <span className="text-sm">{label}</span>
-              </label>
-            ))}
-          </div>
+        <SectionDivider label="Risco Associado" />
+        <div className="space-y-2">
+          <Label>Risco</Label>
           <Select
-            value={
-              vinculoTipo === "risco"
-                ? (formData.registro_risco_id || "__none__")
-                : (formData.registro_mudanca_id || "__none__")
-            }
-            onValueChange={(v) => {
-              const id = v === "__none__" ? null : v;
-              setFormData(f =>
-                vinculoTipo === "risco"
-                  ? { ...f, registro_risco_id: id, registro_mudanca_id: null }
-                  : { ...f, registro_risco_id: null, registro_mudanca_id: id }
-              );
-            }}
+            value={formData.registro_risco_id || "__none__"}
+            onValueChange={(v) => setFormData(f => ({ ...f, registro_risco_id: v === "__none__" ? null : v }))}
           >
-            <SelectTrigger><SelectValue placeholder="Selecione o vínculo..." /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Selecione o risco..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">Nenhum</SelectItem>
-              {vinculoTipo === "risco"
-                ? riscos.map(r => <SelectItem key={r.id} value={r.id}>{labelRisco(r)}</SelectItem>)
-                : mudancas.map(m => <SelectItem key={m.id} value={m.id}>{labelMudanca(m)}</SelectItem>)
-              }
+              {riscos.map(r => (
+                <SelectItem key={r.id} value={r.id}>
+                  {`[${r.classificacao || "Ameaça"}] ${labelRisco(r)}`}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -335,9 +400,11 @@ export default function PlanoAcao({ projectId }) {
           </div>
           <div className="space-y-1 col-span-2">
             <Label>Responsável</Label>
-            <Input value={formData.responsavel}
+            <Input
+              value={formData.responsavel}
               onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })}
-              placeholder="Nome do responsável" />
+              placeholder="Nome do responsável"
+            />
           </div>
         </div>
 
@@ -348,17 +415,18 @@ export default function PlanoAcao({ projectId }) {
             <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["Pendente", "Em Andamento", "Concluída", "Atrasada", "Cancelada"].map(v => (
-                  <SelectItem key={v} value={v}>{v}</SelectItem>
-                ))}
+                {STATUS_ACAO.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label>Observações</Label>
-            <Textarea value={formData.observacoes}
+            <Textarea
+              value={formData.observacoes}
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-              placeholder="Observações adicionais..." rows={2} />
+              placeholder="Observações adicionais..."
+              rows={2}
+            />
           </div>
         </div>
       </FormDialog>
