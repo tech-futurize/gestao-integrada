@@ -17,7 +17,6 @@ import { formatDate } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +56,36 @@ const DIMENSION_COLORS = {
   Resolvido:        { text: "text-green-400",  bar: "#4ade80" },
 };
 
-const STATUS_ORDER = ["Registrado", "Em Análise", "Resolvido", "Fechado"];
+const STATUS_ORDER = ["Registrado", "Em Análise", "Resolvido"];
+
+const STATUS_SECTION_COLORS = {
+  "Registrado": {
+    text: "text-blue-600 dark:text-blue-400",
+    bar:  "bg-blue-500 dark:bg-blue-400",
+    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  },
+  "Em Análise": {
+    text: "text-amber-600 dark:text-amber-400",
+    bar:  "bg-amber-500 dark:bg-amber-400",
+    badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  },
+  "Resolvido": {
+    text: "text-green-600 dark:text-green-400",
+    bar:  "bg-green-500 dark:bg-green-400",
+    badge: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  },
+};
+
+const NIVEL_COLORS = {
+  "Baixa": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  "Média": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  "Alta":  "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+};
+
+const RESP_COLORS = {
+  "Contratada":  "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  "Contratante": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+};
 
 const REGISTRO_COLUMNS = [
   { key: "tipo_registro",       label: "Tipo",            type: "string" },
@@ -149,7 +177,9 @@ export default function Registros() {
   };
 
   const baseList = useMemo(
-    () => incidentes.filter((i) => i.tipo_registro !== "RDO"),
+    () => incidentes
+      .filter((i) => i.tipo_registro !== "RDO")
+      .map((i) => i.status === "Fechado" ? { ...i, status: "Resolvido" } : i),
     [incidentes]
   );
 
@@ -378,7 +408,7 @@ export default function Registros() {
                   storageKey={FILTROS_KEY}
                   filters={[
                     { key: "tipo",             label: "Tipo",             options: ["Ata de Reunião", "E-mail", "Notificação"] },
-                    { key: "status",           label: "Status",           options: ["Registrado", "Em Análise", "Resolvido", "Fechado"] },
+                    { key: "status",           label: "Status",           options: ["Registrado", "Em Análise", "Resolvido"] },
                     { key: "responsabilidade", label: "Responsabilidade", options: ["Contratada", "Contratante"] },
                   ]}
                   onChange={setFiltros}
@@ -486,6 +516,11 @@ export default function Registros() {
             <div className="space-y-6">
               {groupedByStatus.map(({ status, items }) => {
                 const isCollapsed = collapsed.has(status);
+                const secColors = STATUS_SECTION_COLORS[status] || {
+                  text: "text-muted-foreground",
+                  bar: "bg-border",
+                  badge: "bg-muted text-muted-foreground",
+                };
                 return (
                   <div key={status}>
                     {/* Cabeçalho da seção */}
@@ -494,17 +529,17 @@ export default function Registros() {
                       className="w-full flex items-center gap-2 py-2 px-1 mb-3 text-left group"
                     >
                       {isCollapsed ? (
-                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+                        <ChevronRight className={`w-4 h-4 ${secColors.text} shrink-0`} />
                       ) : (
-                        <ChevronDown className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+                        <ChevronDown className={`w-4 h-4 ${secColors.text} shrink-0`} />
                       )}
-                      <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-foreground transition-colors">
+                      <span className={`text-sm font-bold uppercase tracking-wider ${secColors.text}`}>
                         {status}
                       </span>
-                      <span className="ml-1 text-xs font-bold text-muted-foreground bg-muted/60 rounded-full px-2 py-0.5">
+                      <span className={`ml-1 text-xs font-bold rounded-full px-2 py-0.5 ${secColors.badge}`}>
                         {items.length}
                       </span>
-                      <div className="flex-1 h-px bg-border ml-2" />
+                      <div className={`flex-1 h-px ${secColors.bar} ml-2 opacity-40`} />
                     </button>
 
                     {/* Grid de cards */}
@@ -534,8 +569,8 @@ export default function Registros() {
                               </div>
 
                               {/* Card Body */}
-                              <div className="px-4 py-2 flex-1 space-y-1">
-                                <p className="text-sm text-foreground line-clamp-3 leading-relaxed">
+                              <div className="px-4 py-2 flex-1 space-y-2">
+                                <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
                                   {inc.descricao ||
                                     inc.ocorrencias || (
                                       <span className="text-muted-foreground italic">
@@ -543,12 +578,30 @@ export default function Registros() {
                                       </span>
                                     )}
                                 </p>
+                                {(inc.probabilidade || inc.gravidade || inc.responsabilidade) && (
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {inc.responsabilidade && (
+                                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${RESP_COLORS[inc.responsabilidade] || "bg-muted text-muted-foreground"}`}>
+                                        {inc.responsabilidade}
+                                      </span>
+                                    )}
+                                    {inc.probabilidade && (
+                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${NIVEL_COLORS[inc.probabilidade] || "bg-muted text-muted-foreground"}`}>
+                                        P: {inc.probabilidade}
+                                      </span>
+                                    )}
+                                    {inc.gravidade && (
+                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${NIVEL_COLORS[inc.gravidade] || "bg-muted text-muted-foreground"}`}>
+                                        I: {inc.gravidade}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
 
                               {/* Card Footer */}
                               <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30 gap-2">
-                                <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                                  <StatusBadge status={inc.status || "—"} className="shrink-0" />
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
                                   {inc.responsavel_registro && (
                                     <span className="text-xs text-muted-foreground truncate">
                                       {inc.responsavel_registro}
