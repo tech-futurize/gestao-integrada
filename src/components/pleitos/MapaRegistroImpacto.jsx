@@ -7,7 +7,7 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
 } from "recharts";
-import { IMPACT_CATEGORIES as CATEGORIES } from "@/lib/constants";
+import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
 
 
 const VISIBLE_WEEKS = 12;
@@ -59,6 +59,8 @@ export default function MapaRegistroImpacto({ incidentes }) {
   const [drilldown, setDrilldown] = useState(null);
   const [responsabilidadeFiltro, setResponsabilidadeFiltro] = useState(null); // null = todos
 
+  const { data: categorias = [] } = useCategoriasImpacto();
+
   const anchorWeek = useMemo(() => getMonday(subWeeks(new Date(), 8)), []);
   const [offsetWeeks, setOffsetWeeks] = useState(0);
 
@@ -82,7 +84,7 @@ export default function MapaRegistroImpacto({ incidentes }) {
   }, [todasOcorrencias, responsabilidadeFiltro]);
 
   const heatmapData = useMemo(() => {
-    return CATEGORIES.map(cat => {
+    return categorias.map(cat => {
       const cells = visibleWeeks.map((weekStart) => {
         const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
         const matching = ocorrenciasFiltradas.filter(i => {
@@ -94,7 +96,7 @@ export default function MapaRegistroImpacto({ incidentes }) {
       });
       return { category: cat, cells };
     });
-  }, [ocorrenciasFiltradas, visibleWeeks]);
+  }, [categorias, ocorrenciasFiltradas, visibleWeeks]);
 
   const getDrilldownRegistros = () => {
     if (!drilldown) return [];
