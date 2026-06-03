@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ChevronRight, ChevronDown, Upload, Plus } from "lucide-react";
+import { ChevronRight, ChevronDown, Download, Plus } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import {
   computeItemValues, computeTotais, buildTreeFromFlat, flattenLeaves,
@@ -26,6 +26,20 @@ const PQP_IMPORT_COLUMNS = [
   { key: "unidade", label: "Unidade", type: "string" },
   { key: "qtd_contratual", label: "Quantidade", type: "number" },
   { key: "preco_unitario", label: "Preço unitário", type: "number" },
+];
+
+const MEDICAO_IMPORT_COLUMNS = [
+  { key: "item",       label: "Item (EAP)",  type: "string", required: true },
+  { key: "qtd_medida", label: "Qtd. medida", type: "number" },
+];
+
+const MEDICAO_EXPORT_COLUMNS = [
+  { key: "item",           label: "Item (EAP)"      },
+  { key: "descricao",      label: "Descrição"       },
+  { key: "unidade",        label: "Unidade"         },
+  { key: "qtd_contratual", label: "Qtd. Contratual" },
+  { key: "qtd_acumulada",  label: "Qtd. Acumulada"  },
+  { key: "qtd_medida",     label: "Qtd. medida"     },
 ];
 
 const isLeaf = (n) => !n.children || n.children.length === 0;
@@ -87,6 +101,16 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
     importBuffer.current.push(row);
     onChange?.(buildTreeFromFlat(importBuffer.current));
   };
+
+  const handleImportRowMedicao = (row) => {
+    importBuffer.current.push(row);
+    let updated = itens;
+    importBuffer.current.forEach((r) => {
+      updated = updateNode(updated, r.item, { qtd_medida: r.qtd_medida ?? 0 });
+    });
+    onChange?.(updated);
+  };
+
   const openImport = () => { importBuffer.current = []; setShowImport(true); };
 
   return (
@@ -96,7 +120,7 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
         {!readOnly && (
           <>
             <Button type="button" size="sm" variant="outline" onClick={openImport}>
-              <Upload className="w-3.5 h-3.5 mr-1.5" /> Importar Excel/CSV
+              <Download className="w-3.5 h-3.5 mr-1.5" /> Exportar / Importar
             </Button>
             {!isMedicao && (
               <Button type="button" size="sm" variant="outline" onClick={addItemRaiz}>
@@ -127,7 +151,7 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
           <span className="text-sm">Nenhum item na planilha ainda</span>
           {!readOnly && (
             <Button type="button" size="sm" variant="outline" onClick={openImport}>
-              <Upload className="w-3.5 h-3.5 mr-1.5" /> Importar Excel/CSV
+              <Download className="w-3.5 h-3.5 mr-1.5" /> Exportar / Importar
             </Button>
           )}
         </div>
@@ -262,17 +286,23 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
         <ImportExportDialog
           open={showImport}
           onOpenChange={setShowImport}
-          title="Importar PQP"
+          title={isMedicao ? "Exportar / Importar Medição" : "Importar PQP"}
           exportOnly={false}
-          exportFileName="pqp"
-          columns={PQP_IMPORT_COLUMNS}
+          exportFileName={isMedicao ? "medicao" : "pqp"}
+          columns={isMedicao ? MEDICAO_IMPORT_COLUMNS : PQP_IMPORT_COLUMNS}
+          exportColumns={isMedicao ? MEDICAO_EXPORT_COLUMNS : undefined}
           onExport={() =>
             flattenLeaves(itens).map((f) => ({
-              item: f.item, descricao: f.descricao, unidade: f.unidade,
-              qtd_contratual: f.qtd_contratual, preco_unitario: f.preco_unitario,
+              item: f.item,
+              descricao: f.descricao,
+              unidade: f.unidade,
+              qtd_contratual: f.qtd_contratual,
+              preco_unitario: f.preco_unitario,
+              qtd_acumulada: f.qtd_acumulada ?? 0,
+              qtd_medida: f.qtd_medida ?? 0,
             }))
           }
-          onImport={handleImportRow}
+          onImport={isMedicao ? handleImportRowMedicao : handleImportRow}
         />
       )}
     </div>
