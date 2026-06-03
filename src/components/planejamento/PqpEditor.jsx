@@ -196,7 +196,7 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
                                 type="number"
                                 value={node.qtd_medida ?? ""}
                                 onChange={(e) => editLeafNum(node.item, "qtd_medida", e.target.value)}
-                                className="h-7 w-24 text-right text-xs ml-auto"
+                                className="h-7 w-24 text-right text-xs ml-auto [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                             )
                           ) : "—"}
