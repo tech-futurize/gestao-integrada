@@ -10,7 +10,8 @@ import RespostaView from "@/components/formularios/renderer/RespostaView";
 
 function formatAnswer(field, val) {
   if (val === undefined || val === null || val === "") return "—";
-  if (field.type === "multiple_choice" && Array.isArray(val)) {
+  if (field.type === "multiple_choice") {
+    if (!Array.isArray(val)) return "—";
     return val.map(v => field.options?.find(o => o.value === v)?.label || v).join(", ") || "—";
   }
   if (field.type === "single_choice" || field.type === "dropdown") {
