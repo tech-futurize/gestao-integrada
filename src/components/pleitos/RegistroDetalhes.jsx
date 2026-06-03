@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Edit, Download, Trash2, Paperclip, Link2, X as XIcon } from "lucide-react";
-import { formatDate, formatDateTime } from "@/lib/dateUtils";
+import { formatDate } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -34,8 +34,13 @@ import { supabase } from "@/lib/supabaseClient";
 
 const TIPO_COLORS = {
   "Ata de Reunião": "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-  "E-mail": "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-  Notificação: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+  "E-mail":         "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+  Notificação:      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+};
+
+const RESP_COLORS = {
+  "Contratada":  "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  "Contratante": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
 };
 
 function exportarXLS(registro) {
@@ -44,20 +49,16 @@ function exportarXLS(registro) {
     wb,
     XLSX.utils.json_to_sheet([
       { Campo: "Tipo",               Valor: registro.tipo_registro },
-      { Campo: "Data/Hora",          Valor: registro.data_hora },
+      { Campo: "Data",               Valor: registro.data_hora },
       { Campo: "Responsável",        Valor: registro.responsavel_registro },
       { Campo: "Descrição",          Valor: registro.descricao },
       { Campo: "Impacto Preliminar", Valor: registro.impacto_preliminar },
-      { Campo: "Probabilidade",      Valor: registro.probabilidade },
-      { Campo: "Gravidade",          Valor: registro.gravidade },
       { Campo: "Responsabilidade",   Valor: registro.responsabilidade },
       { Campo: "Status",             Valor: registro.status },
     ]),
     "Detalhes"
   );
-  const slug = (registro.tipo_registro ?? "registro")
-    .replace(/[^a-z0-9]/gi, "-")
-    .toLowerCase();
+  const slug = (registro.tipo_registro ?? "registro").replace(/[^a-z0-9]/gi, "-").toLowerCase();
   XLSX.writeFile(wb, `${slug}-${registro.id.slice(0, 8)}.xlsx`);
 }
 
@@ -66,6 +67,17 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function SectionDivider({ label }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-border" />
+    </div>
+  );
 }
 
 export default function RegistroDetalhes({ registro, onBack }) {
@@ -123,13 +135,10 @@ export default function RegistroDetalhes({ registro, onBack }) {
           .from("registros-anexos")
           .upload(path, file, { upsert: false });
         if (error) throw new Error(`Erro ao enviar ${file.name}: ${error.message}`);
-        const { data: urlData } = supabase.storage
-          .from("registros-anexos")
-          .getPublicUrl(path);
+        const { data: urlData } = supabase.storage.from("registros-anexos").getPublicUrl(path);
         uploaded.push({ nome: file.name, url: urlData.publicUrl, path, tipo: file.type, tamanho: file.size });
       }
-      const updatedAnexos = [...(registro.anexos || []), ...uploaded];
-      updateMutation.mutate({ id: registro.id, data: { anexos: updatedAnexos } });
+      updateMutation.mutate({ id: registro.id, data: { anexos: [...(registro.anexos || []), ...uploaded] } });
     } catch (err) {
       toast({ title: "Erro ao enviar arquivo", description: err.message, variant: "destructive" });
     } finally {
@@ -139,11 +148,11 @@ export default function RegistroDetalhes({ registro, onBack }) {
 
   const handleRemoveAnexo = async (anexo) => {
     const storagePath = anexo.path || anexo.url.split("/registros-anexos/")[1];
-    if (storagePath) {
-      await supabase.storage.from("registros-anexos").remove([storagePath]);
-    }
-    const updatedAnexos = (registro.anexos || []).filter(a => a.url !== anexo.url);
-    updateMutation.mutate({ id: registro.id, data: { anexos: updatedAnexos } });
+    if (storagePath) await supabase.storage.from("registros-anexos").remove([storagePath]);
+    updateMutation.mutate({
+      id: registro.id,
+      data: { anexos: (registro.anexos || []).filter(a => a.url !== anexo.url) },
+    });
   };
 
   const toggleModalTarefa = (id) => {
@@ -167,8 +176,7 @@ export default function RegistroDetalhes({ registro, onBack }) {
     (t.nome || t.titulo || t.descricao || "").toLowerCase().includes(modalSearch.toLowerCase())
   );
 
-  const tipoClass =
-    TIPO_COLORS[registro.tipo_registro] || "bg-muted text-muted-foreground";
+  const tipoClass = TIPO_COLORS[registro.tipo_registro] || "bg-muted text-muted-foreground";
   const anexos = registro.anexos || [];
   const vinculos = registro.atividades_vinculadas || [];
 
@@ -180,7 +188,7 @@ export default function RegistroDetalhes({ registro, onBack }) {
 
   return (
     <div className="p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
 
         {/* Cabeçalho */}
         <div className="flex items-start gap-4">
@@ -191,25 +199,13 @@ export default function RegistroDetalhes({ registro, onBack }) {
             <h2 className="text-2xl font-bold text-foreground">
               {registro.tipo_registro || "Registro"}
             </h2>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <StatusBadge status={registro.status} />
-              <Badge variant="outline" className={`text-xs font-semibold ${tipoClass}`}>
-                {registro.tipo_registro}
-              </Badge>
-              {registro.responsabilidade && (
-                <Badge variant="outline">{registro.responsabilidade}</Badge>
-              )}
-              <span className="text-sm text-muted-foreground">
-                {formatDate(registro.data_hora)}
-              </span>
+              <span className="text-sm text-muted-foreground">{formatDate(registro.data_hora)}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => exportarXLS(registro)}
-            >
+            <Button variant="outline" size="sm" onClick={() => exportarXLS(registro)}>
               <Download className="w-4 h-4 mr-2" />
               Exportar XLS
             </Button>
@@ -226,28 +222,12 @@ export default function RegistroDetalhes({ registro, onBack }) {
           </div>
         </div>
 
-        {/* Formulário de edição inline */}
-        {showEditForm && (
-          <RegistroForm
-            key={registro.id}
-            incidente={registro}
-            casos={[]}
-            tarefas={tarefas}
-            selectedProjectId={selectedProjectId}
-            onSubmit={(data) =>
-              updateMutation.mutate({ id: registro.id, data })
-            }
-            onCancel={() => setShowEditForm(false)}
-            isSubmitting={updateMutation.isPending}
-          />
-        )}
-
         {/* Abas */}
         <div className="flex gap-1 border-b border-border pb-0">
           {abas.map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key)}
+              onClick={() => { setActiveTab(key); setShowEditForm(false); }}
               className={`px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors
                 ${activeTab === key
                   ? "bg-card border border-b-card border-border text-foreground -mb-px"
@@ -258,79 +238,135 @@ export default function RegistroDetalhes({ registro, onBack }) {
           ))}
         </div>
 
-        {/* Aba Detalhes */}
+        {/* ── Aba Detalhes ── */}
         {activeTab === "detalhes" && (
-          <Card className="border-0 shadow-md">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Informações do Registro</CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-foreground"
-                  onClick={() => setShowEditForm(true)}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Editar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {registro.descricao && (
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-muted-foreground">Descrição</label>
-                    <p className="mt-2 text-foreground whitespace-pre-wrap">{registro.descricao}</p>
+          showEditForm ? (
+            <RegistroForm
+              key={registro.id}
+              incidente={registro}
+              casos={[]}
+              tarefas={tarefas}
+              selectedProjectId={selectedProjectId}
+              onSubmit={(data) => updateMutation.mutate({ id: registro.id, data })}
+              onCancel={() => setShowEditForm(false)}
+              isSubmitting={updateMutation.isPending}
+            />
+          ) : (
+            <Card className="border-0 shadow-md">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle>Informações do Registro</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-foreground"
+                    onClick={() => setShowEditForm(true)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6 pt-4">
+
+                {/* Seção — Identificação */}
+                <div className="space-y-4">
+                  <SectionDivider label="Identificação" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        Tipo de Registro
+                      </p>
+                      <Badge variant="outline" className={`text-xs font-semibold ${tipoClass}`}>
+                        {registro.tipo_registro || "—"}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        Data
+                      </p>
+                      <p className="text-sm text-foreground font-medium">
+                        {formatDate(registro.data_hora) || "—"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        Responsável
+                      </p>
+                      <p className="text-sm text-foreground font-medium">
+                        {registro.responsavel_registro || "—"}
+                      </p>
+                    </div>
                   </div>
-                )}
-                {registro.impacto_preliminar && (
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Impacto Preliminar
-                    </label>
-                    <p className="mt-2 text-foreground whitespace-pre-wrap">
-                      {registro.impacto_preliminar}
-                    </p>
+                </div>
+
+                {/* Seção — Conteúdo */}
+                <div className="space-y-4">
+                  <SectionDivider label="Conteúdo" />
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        Descrição
+                      </p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                        {registro.descricao || (
+                          <span className="italic text-muted-foreground">Sem descrição</span>
+                        )}
+                      </p>
+                    </div>
+                    {registro.impacto_preliminar && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                          Avaliação de Impacto
+                        </p>
+                        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                          {registro.impacto_preliminar}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Probabilidade</label>
-                  <p className="mt-2 text-foreground">{registro.probabilidade || "—"}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Gravidade</label>
-                  <p className="mt-2 text-foreground">{registro.gravidade || "—"}</p>
+
+                {/* Seção — Classificação */}
+                <div className="space-y-4">
+                  <SectionDivider label="Classificação" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        Responsabilidade
+                      </p>
+                      {registro.responsabilidade ? (
+                        <Badge
+                          variant="outline"
+                          className={`text-xs font-semibold ${RESP_COLORS[registro.responsabilidade] || "bg-muted text-muted-foreground"}`}
+                        >
+                          {registro.responsabilidade}
+                        </Badge>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">—</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                        Status
+                      </p>
+                      <StatusBadge status={registro.status} />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Responsabilidade</label>
-                  <p className="mt-2 text-foreground">{registro.responsabilidade || "—"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Responsável</label>
-                  <p className="mt-2 text-foreground">{registro.responsavel_registro || "—"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Tipo</label>
-                  <p className="mt-2 text-foreground">{registro.tipo_registro || "—"}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Data/Hora</label>
-                  <p className="mt-2 text-foreground">
-                    {formatDateTime(registro.data_hora) || formatDate(registro.data_hora) || "—"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
+              </CardContent>
+            </Card>
+          )
         )}
 
-        {/* Aba Anexos */}
+        {/* ── Aba Anexos ── */}
         {activeTab === "anexos" && (
           <Card className="border-0 shadow-md">
-            <CardHeader>
+            <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Paperclip className="w-5 h-5 text-blue-600" />
+                  <Paperclip className="w-5 h-5 text-blue-500" />
                   Anexos
                 </CardTitle>
                 <Button
@@ -352,10 +388,11 @@ export default function RegistroDetalhes({ registro, onBack }) {
                 />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {anexos.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum anexo neste registro.
+                <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+                  <Paperclip className="w-8 h-8 opacity-30" />
+                  <p className="text-sm">Nenhum anexo neste registro.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -396,13 +433,13 @@ export default function RegistroDetalhes({ registro, onBack }) {
           </Card>
         )}
 
-        {/* Aba Vínculos */}
+        {/* ── Aba Vínculos ── */}
         {activeTab === "vinculos" && (
           <Card className="border-0 shadow-md">
-            <CardHeader>
+            <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Link2 className="w-5 h-5 text-green-600" />
+                  <Link2 className="w-5 h-5 text-green-500" />
                   Vínculos
                 </CardTitle>
                 <Button
@@ -418,10 +455,11 @@ export default function RegistroDetalhes({ registro, onBack }) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               {vinculos.length === 0 && !registro.pleito_id ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum vínculo neste registro.
+                <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
+                  <Link2 className="w-8 h-8 opacity-30" />
+                  <p className="text-sm">Nenhum vínculo neste registro.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
