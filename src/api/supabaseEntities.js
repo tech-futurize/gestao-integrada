@@ -29,6 +29,7 @@ const TABLE_MAP = {
   Funcao: 'funcoes',
   TipoEquipamento: 'tipos_equipamento',
   PacoteSuprimento: 'pacotes_suprimento',
+  CategoriaImpacto: 'categorias_impacto',
   Agente: 'agentes',
   AgenteSystemTool: 'agente_system_tools',
   AgenteTool: 'agente_tools',
