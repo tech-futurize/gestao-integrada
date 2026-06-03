@@ -7,16 +7,12 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "concurrently --names \"VITE,MASTRA\" --prefix-colors \"cyan,magenta\" --kill-others-on-fail \"npm run dev:vite\" \"npm run dev:mastra\"",
-    "dev:vite": "vite",
-    "dev:mastra": "npm --prefix agents-mastra run dev",
+    "dev": "vite",
     "build": "vite build",
-    "build:mastra": "npm --prefix agents-mastra run build",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "vite preview",
-    "postinstall": "npm --prefix agents-mastra install"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

@@ -78,13 +78,20 @@ export default function AgenteChat({ agent }) {
     const startTime = Date.now();
 
     try {
-      const response = await fetch(`/mastra-api/api/agents/${agent.id}/stream`, {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const response = await fetch(`${supabaseUrl}/functions/v1/agent-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabaseKey}`,
+          "apikey": supabaseKey,
+        },
         body: JSON.stringify({
+          agentSlug: agent.id,
           messages: buildApiMessages(messages, text),
-          threadId,
-          resourceId: "user-session",
+          projectId: selectedProjectId,
+          userEmail: user?.email,
         }),
         signal: controller.signal,
       });

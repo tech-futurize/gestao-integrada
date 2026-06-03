@@ -28,13 +28,6 @@ export default defineConfig(({ mode }) => {
       port: 8080,
       open: true,
       allowedHosts: true,
-      proxy: {
-        '/mastra-api': {
-          target: 'http://localhost:4111',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/mastra-api/, ''),
-        },
-      },
       watch: {
         usePolling: false,
       }
