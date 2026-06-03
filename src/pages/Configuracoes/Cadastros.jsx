@@ -6,6 +6,7 @@ import Funcoes from "./Funcoes";
 import Equipamentos from "./Equipamentos";
 import Pacotes from "./Pacotes";
 import CategoriaImpactoList from "@/components/cadastros/CategoriaImpactoList";
+import FormulariosCadastroList from "@/components/cadastros/FormulariosCadastroList";
 
 const TABS = [
   { key: "unidades",     label: "Unidades de Medida" },
@@ -14,6 +15,7 @@ const TABS = [
   { key: "equipamentos", label: "Equipamentos" },
   { key: "pacotes",      label: "Pacotes" },
   { key: "categorias",   label: "Categorias de Impacto" },
+  { key: "formularios",  label: "Formulários" },
 ];
 
 export default function Cadastros() {
@@ -48,6 +50,7 @@ export default function Cadastros() {
           {activeTab === "equipamentos" && <Equipamentos asTab />}
           {activeTab === "pacotes"      && <Pacotes asTab />}
           {activeTab === "categorias"   && <CategoriaImpactoList />}
+          {activeTab === "formularios"  && <FormulariosCadastroList />}
         </div>
       </div>
     </div>
