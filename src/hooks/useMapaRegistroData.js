@@ -31,7 +31,7 @@ export function normalizarRdos(rdos) {
       if (categorias.length === 0) return;
       resultado.push({
         id: `rdo-${rdo.id}-${idx}`,
-        data_hora: rdo.data ? `${rdo.data}T00:00:00` : null,
+        data_hora: rdo.data ? `${rdo.data}T00:00:00` : "",
         impacto_ocorrencia: categorias,
         responsabilidade: ocorr.responsabilidade ?? "",
         descricao: ocorr.descricao ?? "",
@@ -73,23 +73,22 @@ export function normalizarMudancas(mudancas) {
 
 export default function useMapaRegistroData(selectedProjectId) {
   const enabled = !!selectedProjectId;
-  const filter = { projeto_id: selectedProjectId };
 
   const { data: registros = [], isPending: pendingReg, isError: errReg } = useQuery({
     queryKey: ["registros", selectedProjectId],
-    queryFn: () => entities.Registro.filter(filter),
+    queryFn: () => entities.Registro.filter({ projeto_id: selectedProjectId }),
     enabled,
   });
 
   const { data: rdos = [], isPending: pendingRdo, isError: errRdo } = useQuery({
     queryKey: ["rdos", selectedProjectId],
-    queryFn: () => entities.Rdo.filter(filter),
+    queryFn: () => entities.Rdo.filter({ projeto_id: selectedProjectId }),
     enabled,
   });
 
   const { data: mudancas = [], isPending: pendingMud, isError: errMud } = useQuery({
     queryKey: ["mudancas_contratuais", selectedProjectId],
-    queryFn: () => entities.MudancaContratual.filter(filter),
+    queryFn: () => entities.MudancaContratual.filter({ projeto_id: selectedProjectId }),
     enabled,
   });
 

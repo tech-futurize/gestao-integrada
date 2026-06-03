@@ -128,6 +128,18 @@ describe("normalizarRdos", () => {
     ];
     expect(normalizarRdos(rdos)).toEqual([]);
   });
+
+  it("retorna data_hora string vazia quando rdo.data está ausente", () => {
+    const rdos = [
+      {
+        id: "r1",
+        numero: "001",
+        area: "",
+        ocorrencias: [{ descricao: "X", categorias: ["Escopo"], responsabilidade: "" }],
+      },
+    ];
+    expect(normalizarRdos(rdos)[0].data_hora).toBe("");
+  });
 });
 
 // ── normalizarMudancas ───────────────────────────────────────────────────────
