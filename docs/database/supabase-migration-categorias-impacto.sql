@@ -7,16 +7,20 @@ CREATE TABLE IF NOT EXISTS categorias_impacto (
   id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   nome       text        NOT NULL,
   projeto_id uuid        NOT NULL REFERENCES projetos(id) ON DELETE CASCADE,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
 -- 2. RLS
 ALTER TABLE categorias_impacto ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "usuarios autenticados acesso total" ON categorias_impacto;
 CREATE POLICY "usuarios autenticados acesso total"
   ON categorias_impacto
-  FOR ALL
-  USING (auth.role() = 'authenticated');
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- 2b. Índice em projeto_id
+CREATE INDEX IF NOT EXISTS idx_categorias_impacto_projeto ON categorias_impacto(projeto_id);
 
 -- 3. Função de seed (dispara ao criar novo projeto)
 CREATE OR REPLACE FUNCTION seed_categorias_impacto()
