@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { VincularAtividadesDialog } from "./VincularAtividadesDialog";
 
 const DISCIPLINAS = ["Mecânica", "Elétrica", "Estrutura Metálica", "Tubulação", "Instrumentação", "Civil", "Pintura"];
-const CARGOS = ["Encarregado", "Soldador", "Caldeireiro", "Eletricista", "Instrumentista", "Ajudante", "Operador de Máquina", "Pedreiro"];
-const EQUIPAMENTOS_LISTA = ["Guindaste", "Retroescavadeira", "Compressor", "Andaime", "Caminhão", "Gerador", "Perfuratriz", "Munck"];
 const CATEGORIAS_OCORRENCIA = ["Engenharia", "Suprimentos", "Planejamento", "Construção", "Contratos", "Qualidade/SSMA"];
 
 const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-background text-foreground";
@@ -24,6 +23,7 @@ function emptyRdo() {
     numero: "",
     data: new Date().toISOString().split("T")[0],
     area: "",
+    equipe: "",
     disciplinas: [],
     clima: {
       manha: { ...EMPTY_TURNO },
@@ -38,18 +38,6 @@ function emptyRdo() {
   };
 }
 
-function ClimaBtn({ label, icon: Icon, active, onClick, color }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${active ? "border-transparent text-white" : "border-border text-muted-foreground bg-background"}`}
-      style={active ? { backgroundColor: color } : {}}
-    >
-      {Icon && <Icon className="w-3.5 h-3.5" />}{label}
-    </button>
-  );
-}
 
 async function uploadFiles(projectId, rdoId, files) {
   const uploaded = [];
@@ -71,6 +59,32 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
   const { toast } = useToast();
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
+
+  const { data: funcoes = [] } = useQuery({
+    queryKey: ["funcoes"],
+    queryFn: () => entities.Funcao.list({ ativo: true }),
+  });
+  const { data: tiposEquipamento = [] } = useQuery({
+    queryKey: ["tipos_equipamento"],
+    queryFn: () => entities.TipoEquipamento.list({ ativo: true }),
+  });
+  const { data: rdosCount = 0 } = useQuery({
+    queryKey: ["rdos_count", selectedProjectId],
+    queryFn: () => entities.Rdo.count({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId && !rdo,
+  });
+
+  useEffect(() => {
+    if (!rdo && rdosCount >= 0) {
+      set("numero", `RDO-${String(rdosCount + 1).padStart(3, "0")}`);
+    }
+  }, [rdosCount]);
+
+  const areaOptions = useMemo(
+    () => [...new Set((tarefas || []).map(t => t.area).filter(Boolean))].sort(),
+    [tarefas]
+  );
+
   const [pendingFiles, setPendingFiles] = useState([]);
   const [vincularDialog, setVincularDialog] = useState(null);
   const [openPanels, setOpenPanels] = useState({ mdo: true, equip: false, ativ: false, evid: false, ocorr: false });
@@ -81,6 +95,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
       numero: rdo.numero || "",
       data: rdo.data || new Date().toISOString().split("T")[0],
       area: rdo.area || "",
+      equipe: rdo.equipe || "",
       disciplinas: rdo.disciplinas || [],
       clima: {
         manha: { ...EMPTY_TURNO, ...(rdo.clima?.manha ?? {}) },
@@ -128,19 +143,12 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
   const removePendingFile = idx => setPendingFiles(prev => prev.filter((_, i) => i !== idx));
   const removeExistingEvidencia = idx => set("evidencias", form.evidencias.filter((_, i) => i !== idx));
 
-  const openVincular = field => {
-    const currentIds = field === "root"
-      ? form.atividades_vinculadas
-      : (form.ocorrencias[field]?.atividades_vinculadas || []);
-    setVincularDialog({ field, currentIds });
+  const openVincular = () => {
+    setVincularDialog({ currentIds: form.atividades_vinculadas });
   };
 
   const confirmVincular = ids => {
-    if (vincularDialog.field === "root") {
-      set("atividades_vinculadas", ids);
-    } else {
-      setOcorrencia(vincularDialog.field, "atividades_vinculadas", ids);
-    }
+    set("atividades_vinculadas", ids);
     setVincularDialog(null);
   };
 
@@ -152,6 +160,20 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
   const handleSave = async () => {
     if (!form.data) {
       toast({ title: "Data obrigatória", variant: "destructive" });
+      return;
+    }
+    if (form.disciplinas.length === 0) {
+      toast({ title: "Selecione ao menos uma disciplina", variant: "destructive" });
+      return;
+    }
+    const mdoInvalido = form.mao_de_obra.some(m => !m.funcao || !m.quantidade);
+    if (mdoInvalido) {
+      toast({ title: "Mão de obra incompleta", description: "Função e quantidade são obrigatórias em todas as linhas.", variant: "destructive" });
+      return;
+    }
+    const equipInvalido = form.equipamentos.some(e => !e.nome || !e.quantidade);
+    if (equipInvalido) {
+      toast({ title: "Equipamentos incompletos", description: "Equipamento e quantidade são obrigatórios em todas as linhas.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -209,25 +231,70 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
 
         <div className="p-6 space-y-5">
 
-          {/* Cabeçalho */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {/* Cabeçalho — linha 1: número (read-only) + data + área */}
+          <div className="grid grid-cols-[auto_1fr_1fr] gap-3 items-end">
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Nº RDO</label>
-              <input className={inputCls} placeholder="RDO-001" value={form.numero} onChange={e => set("numero", e.target.value)} />
+              <div className="h-9 px-3 flex items-center rounded-lg border border-border bg-muted text-sm font-mono font-bold text-foreground whitespace-nowrap min-w-[6rem]">
+                {form.numero || "—"}
+              </div>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Data</label>
-              <input type="date" className={inputCls} value={form.data} onChange={e => set("data", e.target.value)} />
+              <label className="text-xs text-muted-foreground mb-1 block">
+                Data <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                className="w-full h-9 border border-border rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-background text-foreground"
+                value={form.data}
+                onChange={e => set("data", e.target.value)}
+                required
+              />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Área</label>
-              <input className={inputCls} placeholder="Área A" value={form.area} onChange={e => set("area", e.target.value)} />
+              {areaOptions.length > 0 ? (
+                <select
+                  className="w-full h-9 border border-border rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-background text-foreground"
+                  value={form.area}
+                  onChange={e => set("area", e.target.value)}
+                >
+                  <option value="">Selecione...</option>
+                  {areaOptions.map(a => <option key={a} value={a}>{a}</option>)}
+                  {form.area && !areaOptions.includes(form.area) && (
+                    <option value={form.area}>{form.area}</option>
+                  )}
+                </select>
+              ) : (
+                <input
+                  className="w-full h-9 border border-border rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-background text-foreground"
+                  placeholder="Área"
+                  value={form.area}
+                  onChange={e => set("area", e.target.value)}
+                />
+              )}
             </div>
+          </div>
+
+          {/* Cabeçalho — linha 2: equipe */}
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Equipe</label>
+            <input
+              className="w-full h-9 border border-border rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-background text-foreground"
+              placeholder="Nome da equipe ou responsável (opcional)"
+              value={form.equipe}
+              onChange={e => set("equipe", e.target.value)}
+            />
           </div>
 
           {/* Disciplinas */}
           <div>
-            <label className="text-xs text-muted-foreground mb-2 block">Disciplinas</label>
+            <label className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+              Disciplinas <span className="text-red-500">*</span>
+              {form.disciplinas.length === 0 && (
+                <span className="text-red-400 font-normal">(ao menos uma obrigatória)</span>
+              )}
+            </label>
             <div className="flex flex-wrap gap-2">
               {DISCIPLINAS.map(d => (
                 <button key={d} type="button" onClick={() => toggleDisciplina(d)}
@@ -240,35 +307,47 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
 
           {/* Condições Climáticas */}
           <div>
-            <p className="text-xs font-semibold text-foreground uppercase tracking-wide mb-3">Condições Climáticas por Turno</p>
-            <div className="space-y-3">
+            <p className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">Condições Climáticas por Turno</p>
+            <div className="grid grid-cols-3 gap-2">
               {[{ key: "manha", label: "Manhã" }, { key: "tarde", label: "Tarde" }, { key: "noite", label: "Noite" }].map(turno => {
                 const t = form.clima[turno.key];
                 return (
-                  <div key={turno.key} className="p-3 border border-border rounded-xl space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 accent-blue-500"
+                  <div key={turno.key} className="border border-border rounded-lg p-2.5 space-y-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input type="checkbox" className="w-3.5 h-3.5 accent-blue-500"
                         checked={t.ativo}
                         onChange={e => setClimaTurno(turno.key, "ativo", e.target.checked)} />
-                      <span className="text-sm font-medium text-foreground">{turno.label}</span>
+                      <span className="text-xs font-semibold text-foreground">{turno.label}</span>
                     </label>
                     {t.ativo && (
-                      <div className="pl-6 space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-muted-foreground w-20 shrink-0">Condição:</span>
-                          <ClimaBtn label="Sol" icon={Sun} active={t.condicao === "Sol"} color="#f59e0b"
-                            onClick={() => setClimaTurno(turno.key, "condicao", t.condicao === "Sol" ? "" : "Sol")} />
-                          <ClimaBtn label="Nublado" icon={Cloud} active={t.condicao === "Nublado"} color="#6b7280"
-                            onClick={() => setClimaTurno(turno.key, "condicao", t.condicao === "Nublado" ? "" : "Nublado")} />
-                          <ClimaBtn label="Chuva" icon={CloudRain} active={t.condicao === "Chuva"} color="#3b82f6"
-                            onClick={() => setClimaTurno(turno.key, "condicao", t.condicao === "Chuva" ? "" : "Chuva")} />
+                      <div className="space-y-1.5">
+                        <div className="flex gap-1">
+                          {[
+                            { val: "Sol", icon: Sun, color: "#f59e0b" },
+                            { val: "Nublado", icon: Cloud, color: "#6b7280" },
+                            { val: "Chuva", icon: CloudRain, color: "#3b82f6" },
+                          ].map(({ val, icon: Icon, color }) => (
+                            <button key={val} type="button"
+                              onClick={() => setClimaTurno(turno.key, "condicao", t.condicao === val ? "" : val)}
+                              title={val}
+                              className={`flex-1 flex items-center justify-center py-1 rounded border transition-all ${t.condicao === val ? "border-transparent text-white" : "border-border text-muted-foreground bg-background hover:bg-muted"}`}
+                              style={t.condicao === val ? { backgroundColor: color } : {}}>
+                              <Icon className="w-3.5 h-3.5" />
+                            </button>
+                          ))}
                         </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-muted-foreground w-20 shrink-0">Praticab.:</span>
-                          <ClimaBtn label="Praticável" icon={CheckCircle} active={t.praticabilidade === "Praticável"} color="#16a34a"
-                            onClick={() => setClimaTurno(turno.key, "praticabilidade", t.praticabilidade === "Praticável" ? "" : "Praticável")} />
-                          <ClimaBtn label="Impraticável" icon={XCircle} active={t.praticabilidade === "Impraticável"} color="#dc2626"
-                            onClick={() => setClimaTurno(turno.key, "praticabilidade", t.praticabilidade === "Impraticável" ? "" : "Impraticável")} />
+                        <div className="flex gap-1">
+                          {[
+                            { val: "Praticável", icon: CheckCircle, color: "#16a34a", label: "Prat." },
+                            { val: "Impraticável", icon: XCircle, color: "#dc2626", label: "Impr." },
+                          ].map(({ val, icon: Icon, color, label }) => (
+                            <button key={val} type="button"
+                              onClick={() => setClimaTurno(turno.key, "praticabilidade", t.praticabilidade === val ? "" : val)}
+                              className={`flex-1 flex items-center justify-center gap-0.5 py-1 rounded border text-xs font-medium transition-all ${t.praticabilidade === val ? "border-transparent text-white" : "border-border text-muted-foreground bg-background hover:bg-muted"}`}
+                              style={t.praticabilidade === val ? { backgroundColor: color } : {}}>
+                              <Icon className="w-3 h-3" />{label}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     )}
@@ -283,23 +362,34 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
             <PanelHeader label="Mão de Obra" panelKey="mdo" icon={Users} />
             {openPanels.mdo && (
               <div className="border border-border rounded-xl p-4 space-y-2">
+                {form.mao_de_obra.length > 0 && (
+                  <div className="grid grid-cols-[1fr_1fr_5rem_1.5rem] gap-2 px-1 mb-1">
+                    <span className="text-xs text-muted-foreground">Nome <span className="text-muted-foreground/50">(opcional)</span></span>
+                    <span className="text-xs text-muted-foreground">Função <span className="text-red-500">*</span></span>
+                    <span className="text-xs text-muted-foreground text-center">Qtd</span>
+                    <span />
+                  </div>
+                )}
                 {form.mao_de_obra.map((m, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <input className={`${inputCls} flex-1`} placeholder="Nome ou empresa" value={m.nome}
+                  <div key={i} className="grid grid-cols-[1fr_1fr_5rem_1.5rem] gap-2 items-center">
+                    <input className={inputCls} placeholder="Nome (opcional)" value={m.nome}
                       onChange={e => setMdo(i, "nome", e.target.value)} />
-                    <select className={`${inputCls} flex-1`} value={m.funcao}
+                    <select className={`${inputCls} ${!m.funcao ? "border-red-300 focus:ring-red-100" : ""}`} value={m.funcao}
                       onChange={e => setMdo(i, "funcao", e.target.value)}>
                       <option value="">Função...</option>
-                      {CARGOS.map(c => <option key={c}>{c}</option>)}
+                      {funcoes.map(f => <option key={f.id} value={f.nome}>{f.nome}</option>)}
                     </select>
-                    <input type="number" min={1} className={`${inputCls} w-20`} placeholder="Qtd" value={m.quantidade}
+                    <input
+                      type="number" min={1} inputMode="numeric"
+                      className={`${inputCls} text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                      placeholder="1" value={m.quantidade}
                       onChange={e => setMdo(i, "quantidade", e.target.value)} />
-                    <button onClick={() => removeMdo(i)} className="text-red-400 hover:text-red-600 shrink-0">
+                    <button type="button" onClick={() => removeMdo(i)} className="text-muted-foreground hover:text-red-500 transition-colors">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
-                <button onClick={addMdo} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                <button type="button" onClick={addMdo} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
                   <Plus className="w-3 h-3" />Adicionar função
                 </button>
               </div>
@@ -311,35 +401,46 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
             <PanelHeader label="Equipamentos" panelKey="equip" icon={Truck} />
             {openPanels.equip && (
               <div className="border border-border rounded-xl p-4 space-y-2">
+                {form.equipamentos.length > 0 && (
+                  <div className="grid grid-cols-[1fr_1fr_5rem_1.5rem] gap-2 px-1 mb-1">
+                    <span className="text-xs text-muted-foreground">Equipamento <span className="text-red-500">*</span></span>
+                    <span className="text-xs text-muted-foreground">TAG <span className="text-muted-foreground/50">(opcional)</span></span>
+                    <span className="text-xs text-muted-foreground text-center">Qtd <span className="text-red-500">*</span></span>
+                    <span />
+                  </div>
+                )}
                 {form.equipamentos.map((eq, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <select className={`${inputCls} flex-1`} value={eq.nome}
+                  <div key={i} className="grid grid-cols-[1fr_1fr_5rem_1.5rem] gap-2 items-center">
+                    <select className={`${inputCls} ${!eq.nome ? "border-red-300 focus:ring-red-100" : ""}`} value={eq.nome}
                       onChange={e => setEquip(i, "nome", e.target.value)}>
                       <option value="">Equipamento...</option>
-                      {EQUIPAMENTOS_LISTA.map(e => <option key={e}>{e}</option>)}
+                      {tiposEquipamento.map(t => <option key={t.id} value={t.nome}>{t.nome}</option>)}
                     </select>
-                    <input className={`${inputCls} flex-1`} placeholder="TAG ou identificação" value={eq.identificacao}
+                    <input className={inputCls} placeholder="TAG ou identificação" value={eq.identificacao}
                       onChange={e => setEquip(i, "identificacao", e.target.value)} />
-                    <input type="number" min={1} className={`${inputCls} w-20`} placeholder="Qtd" value={eq.quantidade}
+                    <input
+                      type="number" min={1} inputMode="numeric"
+                      className={`${inputCls} text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                      placeholder="1" value={eq.quantidade}
                       onChange={e => setEquip(i, "quantidade", e.target.value)} />
-                    <button onClick={() => removeEquip(i)} className="text-red-400 hover:text-red-600 shrink-0">
+                    <button type="button" onClick={() => removeEquip(i)} className="text-muted-foreground hover:text-red-500 transition-colors">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
-                <button onClick={addEquip} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                <button type="button" onClick={addEquip} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
                   <Plus className="w-3 h-3" />Adicionar equipamento
                 </button>
               </div>
             )}
           </div>
 
-          {/* Atividades Produzidas */}
+          {/* Atividades */}
           <div className="space-y-2">
-            <PanelHeader label="Atividades Produzidas" panelKey="ativ" icon={ClipboardList} />
+            <PanelHeader label="Atividades" panelKey="ativ" icon={ClipboardList} />
             {openPanels.ativ && (
               <div className="border border-border rounded-xl p-4 space-y-3">
-                <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => openVincular("root")}>
+                <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => openVincular()}>
                   <Link2 className="w-4 h-4" />Vincular Atividades
                 </Button>
                 {form.atividades_vinculadas.length > 0 && (
@@ -409,25 +510,6 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => openVincular(i)}>
-                        <Link2 className="w-4 h-4" />Vincular Atividades
-                      </Button>
-                      {(oc.atividades_vinculadas || []).length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {oc.atividades_vinculadas.map((id, idx) => (
-                            <span key={id} className="inline-flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">
-                              {atividadeNome(id)}
-                              <button type="button"
-                                onClick={() => setOcorrencia(i, "atividades_vinculadas", oc.atividades_vinculadas.filter((_, j) => j !== idx))}
-                                className="ml-0.5 hover:text-red-500">
-                                <X className="w-3 h-3" />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 ))}
                 <button onClick={addOcorrencia}
@@ -494,6 +576,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
           onConfirm={confirmVincular}
           tarefas={tarefas || []}
           selectedIds={vincularDialog.currentIds}
+          selectedProjectId={selectedProjectId}
         />
       )}
     </div>

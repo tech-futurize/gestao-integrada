@@ -135,7 +135,6 @@ Relatórios Diários de Obra — desacoplado de `registros`.
 | equipamentos | JSONB | Array `[{nome, identificacao, quantidade}]` |
 | atividades_vinculadas | JSONB | Array de IDs de atividades_cronograma |
 | ocorrencias | JSONB | Array de ocorrências com atividades_vinculadas próprias |
-| impactos | JSONB | |
 | evidencias | JSONB | URLs do Supabase Storage (bucket `rdo-evidencias`) |
 
 ---
