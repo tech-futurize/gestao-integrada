@@ -1,0 +1,77 @@
+import {
+  FileText,
+  Package,
+  CalendarClock,
+  Boxes,
+  BarChart3,
+  TrendingUp,
+  Receipt,
+  AlertTriangle,
+  FileEdit,
+} from "lucide-react";
+
+export const MODULOS_VINCULAVEIS = [
+  {
+    entidade: "DocumentoEngenharia",
+    titulo: "Documentos de Engenharia",
+    icon: FileText,
+    getLabel: (r) => [r.tag_id, r.titulo].filter(Boolean).join(" — "),
+    searchFields: ["tag_id", "titulo"],
+  },
+  {
+    entidade: "ItemMAS",
+    titulo: "Itens de Suprimento",
+    icon: Package,
+    getLabel: (r) => [r.numero_sc, r.descricao].filter(Boolean).join(" — "),
+    searchFields: ["numero_sc", "descricao"],
+  },
+  {
+    entidade: "TarefaCronograma",
+    titulo: "Cronograma",
+    icon: CalendarClock,
+    getLabel: (r) => [r.codigo_wbs, r.nome].filter(Boolean).join(" — "),
+    searchFields: ["codigo_wbs", "nome"],
+  },
+  {
+    entidade: "Commodity",
+    titulo: "Take-off",
+    icon: Boxes,
+    getLabel: (r) => [r.codigo, r.descricao].filter(Boolean).join(" — "),
+    searchFields: ["codigo", "descricao"],
+  },
+  {
+    entidade: "Histograma",
+    titulo: "Histograma",
+    icon: BarChart3,
+    getLabel: (r) => [r.nome_recurso, r.mes_referencia].filter(Boolean).join(" — "),
+    searchFields: ["nome_recurso", "mes_referencia"],
+  },
+  {
+    entidade: "AvancoFisico",
+    titulo: "Avanços",
+    icon: TrendingUp,
+    getLabel: (r) => r.mes_referencia ?? r.id,
+    searchFields: ["mes_referencia"],
+  },
+  {
+    entidade: "Faturamento",
+    titulo: "Faturamento",
+    icon: Receipt,
+    getLabel: (r) => [r.numero, r.mes_referencia].filter(Boolean).join(" — "),
+    searchFields: ["numero", "mes_referencia"],
+  },
+  {
+    entidade: "Risco",
+    titulo: "Riscos",
+    icon: AlertTriangle,
+    getLabel: (r) => [r.codigo, r.descricao].filter(Boolean).join(" — "),
+    searchFields: ["codigo", "descricao"],
+  },
+  {
+    entidade: "MudancaContratual",
+    titulo: "Mudanças",
+    icon: FileEdit,
+    getLabel: (r) => r.titulo ?? r.id,
+    searchFields: ["titulo"],
+  },
+];

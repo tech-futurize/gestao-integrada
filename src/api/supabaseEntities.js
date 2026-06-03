@@ -4,6 +4,7 @@ const TABLE_MAP = {
   Projeto: 'projetos',
   Registro: 'registros',
   Pleito: 'pleitos',
+  PleitoVinculo: 'pleito_vinculos',
   Acao: 'acoes',
   Financeiro: 'financeiros',
   Histograma: 'histogramas',
