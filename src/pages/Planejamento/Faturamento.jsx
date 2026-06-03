@@ -162,7 +162,7 @@ export default function Faturamento() {
             filters={[{ key: "status", label: "Status", options: ["Elaboração", "Concluído"] }]}
             onChange={setFiltros}
           />
-          <DateRangePicker label="Mês de referência" value={periodo} onChange={setPeriodo} onClear={() => setPeriodo(null)} />
+          <DateRangePicker label="Período" value={periodo} onChange={setPeriodo} onClear={() => setPeriodo(null)} />
         </FilterToolbar>
 
         <FaturamentoList
