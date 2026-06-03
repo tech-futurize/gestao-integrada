@@ -120,7 +120,7 @@ export default function Pleitos() {
     if (carregando) {
       return (
         <div className="flex flex-col h-full">
-          <PageHeader />
+          <PageHeader detail="Carregando..." />
           <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             Carregando pleito...
@@ -132,7 +132,7 @@ export default function Pleitos() {
     if (!pleitoSelecionado) {
       return (
         <div className="flex flex-col h-full">
-          <PageHeader />
+          <PageHeader detail="Não encontrado" />
           <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground">
             <p className="text-sm">Pleito não encontrado.</p>
             <Button variant="outline" size="sm" onClick={() => navigate("/admin-contratual/pleitos")}>
@@ -145,16 +145,11 @@ export default function Pleitos() {
 
     return (
       <div className="flex flex-col h-full">
-        <PageHeader />
+        <PageHeader detail={pleitoSelecionado.titulo} />
         <div className="flex-1 overflow-auto">
           <PleitoDetalhes
             pleito={pleitoSelecionado}
             onBack={() => navigate("/admin-contratual/pleitos")}
-            onEdit={(pleito) => {
-              setEditingPleito(pleito);
-              setShowForm(true);
-              navigate("/admin-contratual/pleitos");
-            }}
           />
         </div>
       </div>
