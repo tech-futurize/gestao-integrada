@@ -195,7 +195,7 @@ export default function HeatmapDrilldown({ open, onClose, category, weekLabel, r
 
   if (!open) return null;
 
-  const realRegistros = registros.filter((r) => r.id);
+  const realRegistros = registros;
 
   return (
     <>

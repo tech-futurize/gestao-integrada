@@ -238,6 +238,7 @@ export default function MapaRegistroImpacto({ incidentes }) {
       </div>
 
       <HeatmapDrilldown
+        key={drilldown ? `${drilldown.category}-${drilldown.weekIdx}` : "closed"}
         open={!!drilldown}
         onClose={() => setDrilldown(null)}
         category={drilldown?.category}

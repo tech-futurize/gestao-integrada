@@ -140,6 +140,11 @@ describe("normalizarRdos", () => {
     ];
     expect(normalizarRdos(rdos)[0].data_hora).toBe("");
   });
+
+  it("não quebra quando rdo.ocorrencias é null", () => {
+    const rdos = [{ id: "r1", numero: "001", data: "2024-01-01", area: "" }];
+    expect(normalizarRdos(rdos)).toEqual([]);
+  });
 });
 
 // ── normalizarMudancas ───────────────────────────────────────────────────────
