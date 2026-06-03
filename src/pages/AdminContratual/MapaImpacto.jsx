@@ -1,20 +1,14 @@
-import { entities } from "@/api/supabaseEntities";
-import { useQuery } from "@tanstack/react-query";
 import { MapPin } from "lucide-react";
 import MapaRegistroImpacto from "@/components/pleitos/MapaRegistroImpacto";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProject } from "@/lib/ProjectContext";
+import useMapaRegistroData from "@/hooks/useMapaRegistroData";
 
 export default function MapaImpacto() {
   const { selectedProjectId } = useProject();
-
-  const { data: incidentes = [], isPending, isError } = useQuery({
-    queryKey: ["registros", selectedProjectId],
-    queryFn: () => entities.Registro.filter({ projeto_id: selectedProjectId }),
-    enabled: !!selectedProjectId,
-  });
+  const { incidentes, isPending, isError } = useMapaRegistroData(selectedProjectId);
 
   if (!selectedProjectId) {
     return (
