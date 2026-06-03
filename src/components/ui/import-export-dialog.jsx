@@ -48,6 +48,7 @@ export function ImportExportDialog({
   onExport,
   exportFileName = "export",
   columns = [],
+  exportColumns,
   title = "Importar / Exportar",
   exportOnly = false,
 }) {
@@ -156,9 +157,10 @@ export function ImportExportDialog({
     const data = onExport();
     if (!data || data.length === 0) return;
 
+    const colsForExport = exportColumns ?? columns;
     const exportData = data.map((item) => {
       const row = {};
-      columns.forEach(({ key, label }) => {
+      colsForExport.forEach(({ key, label }) => {
         row[label] = item[key] ?? "";
       });
       return row;
