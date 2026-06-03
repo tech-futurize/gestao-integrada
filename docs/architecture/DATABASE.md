@@ -83,6 +83,29 @@ Entidade raiz. Todos os dados são filtrados por `projeto_id`.
 | responsavel_geral | TEXT | |
 | valor_contrato | NUMERIC | |
 
+### Tabela `projetos` — colunas adicionadas (m19)
+
+| Coluna | Tipo | Bloco | Observação |
+|---|---|---|---|
+| `cliente_cnpj` | text | Comercial | |
+| `cliente_contato` | text | Comercial | |
+| `contrato_objeto` | text | Comercial | Objeto/escopo do contrato |
+| `moeda` | text | Comercial | Default 'BRL' |
+| `regime_execucao` | text | Comercial | EPC / EPCM / Turnkey / Outro |
+| `data_base_orcamento` | date | Comercial | |
+| `bdi_percentual` | numeric | Orçamento | BDI em % (ex: 25.50) |
+| `encargos_sociais_percentual` | numeric | Orçamento | Encargos sociais em % |
+| `regime_tributario` | text | Orçamento | Lucro Real / Presumido / Simples |
+| `retencao_percentual` | numeric | Orçamento | Retenção contratual em % |
+| `local_cidade` | text | Local/Prazo | |
+| `local_uf` | text | Local/Prazo | Sigla UF (2 chars) |
+| `local_endereco` | text | Local/Prazo | |
+| `prazo_contratual_dias` | integer | Local/Prazo | |
+| `data_inicio_efetivo` | date | Local/Prazo | Data de início efetivo (pode diferir de data_inicio) |
+| `gestor_contrato` | text | Equipe | |
+| `projeto_pai_id` | uuid | Vínculos | FK → projetos(id) ON DELETE SET NULL; para lotes |
+| `pqp_mestra` | jsonb | PQ-mestra | Default '[]'; árvore EAP — mesma estrutura de contratos.itens |
+
 ---
 
 ### documentos_contratuais
@@ -603,6 +626,7 @@ Look-ahead de 6 semanas — vínculo obrigatório com o cronograma.
 | 2026-05-27 | `supabase-migration-m8-avanco.sql` | M8 — Adiciona `semana_iso TEXT` e `avanco_projetado NUMERIC`; converte histórico; depreca `mes_referencia` | `avanco_fisico` |
 | 2026-05-28 | `supabase-migration-m6-6wla-v2.sql` | M6 — Adiciona `adicionado_manualmente BOOLEAN NOT NULL DEFAULT FALSE` em `itens_6wla` | `itens_6wla` |
 | 2026-06-02 | `supabase-migration-m9-financeiro-projetado.sql` | M9 — Adiciona `faturamento_projetado NUMERIC DEFAULT 0`; habilita aba Avanço Financeiro com 3 séries | `financeiros` |
+| 2026-06-03 | `supabase-migration-m19-projeto-completo.sql` | M19 — Adiciona 18 colunas à tabela `projetos`: blocos Comercial, Orçamento, Local/Prazo, Equipe, Vínculos e PQ-mestra | `projetos` |
 
 ---
 
