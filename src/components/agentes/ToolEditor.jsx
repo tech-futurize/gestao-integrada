@@ -38,14 +38,15 @@ export default function ToolEditor({ open, onOpenChange, tool, onSave, saving })
   const removeParam = (i) =>
     set('parametros', form.parametros.filter((_, idx) => idx !== i));
 
-  const canSave = form.nome.trim() && form.descricao.trim() && form.sql_template.trim();
+  const isSystemTool = !!tool?.is_system;
+  const canSave = form.nome.trim() && form.descricao.trim() && (isSystemTool || form.sql_template.trim());
 
   return (
     <FormDialog
       open={open}
       onOpenChange={onOpenChange}
       title={isEditing ? `Editar Tool: ${form.nome}` : 'Nova Tool SQL'}
-      subtitle="Tools SQL são chamadas pelo LLM para consultar dados específicos."
+      subtitle={isSystemTool ? 'Tool nativa do executor. Edite nome e descrição conforme necessário.' : 'Tools SQL são chamadas pelo LLM para consultar dados específicos.'}
       onSave={() => onSave(form)}
       saving={saving}
       saveDisabled={!canSave}
@@ -80,8 +81,8 @@ export default function ToolEditor({ open, onOpenChange, tool, onSave, saving })
           </p>
         </div>
 
-        {/* SQL Template */}
-        <div className="space-y-1">
+        {/* SQL Template — oculto para tools de sistema */}
+        {!isSystemTool && <div className="space-y-1">
           <Label>SQL Template (somente SELECT) *</Label>
           <Textarea
             value={form.sql_template}
@@ -94,63 +95,65 @@ export default function ToolEditor({ open, onOpenChange, tool, onSave, saving })
             Use <code className="bg-muted px-1 rounded">$1</code>, <code className="bg-muted px-1 rounded">$2</code>... para parâmetros.
             Somente SELECT — DML/DDL são bloqueados automaticamente.
           </p>
-        </div>
+        </div>}
 
-        {/* Parâmetros */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>Parâmetros</Label>
-            <Button type="button" variant="outline" size="sm" onClick={addParam}>
-              <Plus size={12} className="mr-1" /> Adicionar
-            </Button>
-          </div>
-          {form.parametros.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">Sem parâmetros. Adicione caso o SQL use $1, $2...</p>
-          ) : (
-            <div className="space-y-2">
-              {form.parametros.map((param, i) => (
-                <div key={i} className="grid grid-cols-[1fr_140px_2fr_32px] gap-2 items-start p-2 rounded-md border border-border bg-muted/20">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">${i + 1} Nome</p>
-                    <Input
-                      value={param.nome}
-                      onChange={e => updateParam(i, 'nome', e.target.value)}
-                      placeholder="projeto_id"
-                      className="text-xs font-mono h-8"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Tipo</p>
-                    <Select value={param.tipo} onValueChange={v => updateParam(i, 'tipo', v)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {PARAM_TIPOS.map(t => <SelectItem key={t.value} value={t.value} className="text-xs">{t.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Descrição para o LLM</p>
-                    <Input
-                      value={param.descricao}
-                      onChange={e => updateParam(i, 'descricao', e.target.value)}
-                      placeholder="UUID do projeto ativo"
-                      className="text-xs h-8"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 mt-5 text-muted-foreground hover:text-destructive"
-                    onClick={() => removeParam(i)}
-                  >
-                    <Trash2 size={13} />
-                  </Button>
-                </div>
-              ))}
+        {/* Parâmetros — oculto para tools de sistema */}
+        {!isSystemTool && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Parâmetros</Label>
+              <Button type="button" variant="outline" size="sm" onClick={addParam}>
+                <Plus size={12} className="mr-1" /> Adicionar
+              </Button>
             </div>
-          )}
-        </div>
+            {form.parametros.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">Sem parâmetros. Adicione caso o SQL use $1, $2...</p>
+            ) : (
+              <div className="space-y-2">
+                {form.parametros.map((param, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_140px_2fr_32px] gap-2 items-start p-2 rounded-md border border-border bg-muted/20">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">${i + 1} Nome</p>
+                      <Input
+                        value={param.nome}
+                        onChange={e => updateParam(i, 'nome', e.target.value)}
+                        placeholder="projeto_id"
+                        className="text-xs font-mono h-8"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Tipo</p>
+                      <Select value={param.tipo} onValueChange={v => updateParam(i, 'tipo', v)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {PARAM_TIPOS.map(t => <SelectItem key={t.value} value={t.value} className="text-xs">{t.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Descrição para o LLM</p>
+                      <Input
+                        value={param.descricao}
+                        onChange={e => updateParam(i, 'descricao', e.target.value)}
+                        placeholder="UUID do projeto ativo"
+                        className="text-xs h-8"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 mt-5 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeParam(i)}
+                    >
+                      <Trash2 size={13} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Status */}
         <div className="flex items-center gap-2">

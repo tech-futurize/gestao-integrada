@@ -57,11 +57,8 @@ export const navigationGroups = [
   {
     title: "Agentes de IA",
     icon: Bot,
-    children: [
-      { title: "Executor de Dados", path: "/agentes/executor" },
-      { title: "Analista de Negócio", path: "/agentes/analista-negocio" },
-      { title: "Analista Contratual", path: "/agentes/analista-contratual" },
-    ],
+    // children são carregados dinamicamente do banco em Layout.jsx (apenas agentes ativos)
+    children: [],
   },
   {
     title: "Configurações",

@@ -38,11 +38,11 @@ function aggregateByDay(logs) {
   return Object.values(acc).sort((a, b) => a.day.localeCompare(b.day));
 }
 
-function aggregateByAgent(logs) {
+function aggregateByAgent(logs, agentNames = {}) {
   const acc = {};
   for (const log of logs) {
     const slug = log.agente_slug ?? 'desconhecido';
-    if (!acc[slug]) acc[slug] = { slug, execucoes: 0, custo: 0 };
+    if (!acc[slug]) acc[slug] = { slug, nome: agentNames[slug] ?? slug, execucoes: 0, custo: 0 };
     acc[slug].execucoes += 1;
     acc[slug].custo += Number(log.custo_usd ?? 0);
   }
@@ -94,6 +94,12 @@ export default function MetricsDashboard() {
   const [dateFrom, setDateFrom] = useState(defaultDateFrom);
   const [dateTo, setDateTo] = useState(defaultDateTo);
 
+  const { data: agentes = [] } = useQuery({
+    queryKey: ['agentes'],
+    queryFn: () => entities.Agente.list({}, { pageSize: 100 }),
+  });
+  const agentNames = Object.fromEntries(agentes.map(a => [a.slug, a.nome]));
+
   const { data: logs = [], isPending, isError } = useQuery({
     queryKey: ['agente-uso-logs', dateFrom, dateTo],
     queryFn: () => entities.AgenteUsoLog.list(),
@@ -130,7 +136,7 @@ export default function MetricsDashboard() {
     : null;
 
   const byDay    = useMemo(() => aggregateByDay(logs), [logs]);
-  const byAgent  = useMemo(() => aggregateByAgent(logs), [logs]);
+  const byAgent  = useMemo(() => aggregateByAgent(logs, agentNames), [logs, agentNames]);
   const byModelo = useMemo(() => aggregateByModelo(logs), [logs]);
   const byUser   = useMemo(() => aggregateByUser(logs), [logs]);
 
@@ -259,12 +265,11 @@ export default function MetricsDashboard() {
                 {byAgent.map((item, idx) => {
                   const color = getAgentColor(item.slug, idx);
                   const pct = byAgent[0].execucoes > 0 ? (item.execucoes / byAgent[0].execucoes) * 100 : 0;
-                  const label = item.slug.replace('-agent', '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
                   return (
                     <div key={item.slug}>
                       <div className="flex items-start justify-between mb-1">
                         <div>
-                          <p className="text-xs font-semibold text-foreground leading-tight">{label}</p>
+                          <p className="text-xs font-semibold text-foreground leading-tight">{item.nome}</p>
                           <p className="text-xs text-muted-foreground">
                             {item.execucoes} exec ·{' '}
                             <span className="font-semibold" style={{ color }}>{formatUSD(item.custo)}</span>

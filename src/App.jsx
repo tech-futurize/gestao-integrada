@@ -42,9 +42,8 @@ const GestaoRiscos         = lazy(() => import('./pages/RiscosMudancas/GestaoRis
 const GestaoMudancas       = lazy(() => import('./pages/RiscosMudancas/GestaoMudancas'));
 
 // Agentes
-const ExecutorDados        = lazy(() => import('./pages/Agentes/ExecutorDados'));
-const AnalistaNegocio      = lazy(() => import('./pages/Agentes/AnalistaNegocio'));
-const AnalistaContratual   = lazy(() => import('./pages/Agentes/AnalistaContratual'));
+const AgenteViewer         = lazy(() => import('./pages/Agentes/AgenteViewer'));
+// Páginas legadas mantidas como redirects abaixo
 
 // Configurações
 const GerenciarProjeto     = lazy(() => import('./pages/Configuracoes/GerenciarProjeto'));
@@ -137,10 +136,12 @@ const AuthenticatedApp = () => (
     <Route path="/riscos-mudancas/gestao-riscos" element={wrap(GestaoRiscos, 'Riscos e Mudanças')} />
     <Route path="/riscos-mudancas/gestao-mudancas" element={wrap(GestaoMudancas, 'Riscos e Mudanças')} />
 
-    {/* Agentes de IA */}
-    <Route path="/agentes/executor" element={wrap(ExecutorDados, 'Agentes de IA')} />
-    <Route path="/agentes/analista-negocio" element={wrap(AnalistaNegocio, 'Agentes de IA')} />
-    <Route path="/agentes/analista-contratual" element={wrap(AnalistaContratual, 'Agentes de IA')} />
+    {/* Agentes de IA — rota genérica por slug */}
+    <Route path="/agentes/:slug" element={wrap(AgenteViewer, 'Agentes de IA')} />
+    {/* Redirects das rotas legadas para os slugs do banco */}
+    <Route path="/agentes/executor" element={<Navigate to="/agentes/supabase-analyst-agent" replace />} />
+    <Route path="/agentes/analista-negocio" element={<Navigate to="/agentes/business-analyst-agent" replace />} />
+    <Route path="/agentes/analista-contratual" element={<Navigate to="/agentes/contractual-analyst-agent" replace />} />
 
     {/* Configurações */}
     <Route path="/configuracoes/gerenciar-projeto" element={wrap(GerenciarProjeto, 'Configurações')} />
@@ -166,7 +167,7 @@ const AuthenticatedApp = () => (
     <Route path="/Pleitos" element={<Navigate to="/admin-contratual/pleitos" replace />} />
     <Route path="/GestaoMudancas" element={<Navigate to="/riscos-mudancas/gestao-mudancas" replace />} />
     <Route path="/GestaoRiscos" element={<Navigate to="/riscos-mudancas/gestao-riscos" replace />} />
-    <Route path="/Agente" element={<Navigate to="/agentes/executor" replace />} />
+    <Route path="/Agente" element={<Navigate to="/agentes/supabase-analyst-agent" replace />} />
     <Route path="/AgenteConfig" element={<Navigate to="/configuracoes/agentes-admin" replace />} />
     <Route path="/GerenciarProjeto" element={<Navigate to="/configuracoes/gerenciar-projeto" replace />} />
     <Route path="/Financeiro" element={<Navigate to="/planejamento/avancos" replace />} />

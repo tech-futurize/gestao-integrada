@@ -40,6 +40,16 @@ export default function ToolsList() {
     onError: (err) => toast({ title: 'Erro ao salvar tool', description: err.message, variant: 'destructive' }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id) => entities.AgenteTool.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agente-tools'] });
+      queryClient.invalidateQueries({ queryKey: ['agente-tool-links'] });
+      toast({ title: 'Tool excluída', variant: 'success' });
+    },
+    onError: (err) => toast({ title: 'Erro ao excluir', description: err.message, variant: 'destructive' }),
+  });
+
   const handleEdit = (tool) => {
     setEditingTool(tool);
     setEditorOpen(true);
@@ -70,7 +80,7 @@ export default function ToolsList() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-base font-semibold">Tools de Sistema</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Pré-definidas pelo sistema. Não editáveis.</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Capacidades nativas do executor de dados.</p>
           </div>
         </div>
 
@@ -91,6 +101,10 @@ export default function ToolsList() {
                     </div>
                     <p className="text-xs text-muted-foreground">{tool.descricao}</p>
                   </div>
+                  <RowActions
+                    onEdit={() => handleEdit(tool)}
+                    onDelete={() => deleteMutation.mutate(tool.id)}
+                  />
                 </CardContent>
               </Card>
             ))}

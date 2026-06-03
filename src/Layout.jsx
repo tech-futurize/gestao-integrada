@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { navigationGroups } from "@/lib/navigationConfig";
 import { usePermissionsMap } from "@/hooks/usePermissions";
+import { entities } from "@/api/supabaseEntities";
 import SidebarUserMenu from "@/components/ui/SidebarUserMenu";
 import {
   ChevronDown,
@@ -34,12 +35,27 @@ export default function Layout({ children }) {
   const { selectedProjectId, setSelectedProjectId } = useProject();
   const { permissoes, isAdmin } = usePermissionsMap();
 
+  const { data: agentesAtivos = [] } = useQuery({
+    queryKey: ['agentes-ativos-nav'],
+    queryFn: () => entities.Agente.filter({ ativo: true }),
+    staleTime: 60_000,
+  });
+
   const visibleNavigation = useMemo(() => {
-    if (isAdmin) return navigationGroups;
-    return navigationGroups.filter(group =>
-      permissoes[group.title]?.view === true
-    );
-  }, [permissoes, isAdmin]);
+    const groups = isAdmin
+      ? navigationGroups
+      : navigationGroups.filter(group => permissoes[group.title]?.view === true);
+
+    return groups.map(group => {
+      if (group.title !== 'Agentes de IA') return group;
+      return {
+        ...group,
+        children: agentesAtivos
+          .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+          .map(a => ({ title: a.nome, path: `/agentes/${a.slug}` })),
+      };
+    });
+  }, [permissoes, isAdmin, agentesAtivos]);
 
   const { data: projetosDB = [] } = useQuery({
     queryKey: ["projetos"],
@@ -57,11 +73,11 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     setFlyoutGroup(null);
-    const activeGroup = navigationGroups.find(
+    const activeGroup = visibleNavigation.find(
       (g) => g.children?.some((c) => c.path === location.pathname)
     );
     if (activeGroup) setOpenModule(activeGroup.title);
-  }, [location.pathname]);
+  }, [location.pathname, visibleNavigation]);
 
   const selectedProject = projetosDB.find(p => p.id === selectedProjectId) ?? null;
 
