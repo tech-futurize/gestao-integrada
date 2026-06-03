@@ -149,7 +149,7 @@ export default function MetricsDashboard() {
   const custoMedio     = totalExecucoes > 0 ? totalCusto / totalExecucoes : 0;
 
   const { data: prevLogs = [] } = useQuery({
-    queryKey: ['agente-uso-logs-prev', dateFrom, dateTo],
+    queryKey: ['agente-uso-logs-prev'],
     queryFn: () => entities.AgenteUsoLog.list(),
     select: (data) => {
       const from = new Date(dateFrom);

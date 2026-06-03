@@ -49,11 +49,12 @@ export default function Pleitos() {
   });
 
   // Fallback para deep-link: busca o pleito diretamente se ainda não está na lista
+  const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pleitoIdParam ?? '');
   const pleitoNaLista = pleitoIdParam ? casos.find(c => c.id === pleitoIdParam) : null;
   const { data: pleitoFallback, isPending: fallbackPending } = useQuery({
     queryKey: ["pleito", pleitoIdParam],
     queryFn: () => entities.Pleito.filter({ id: pleitoIdParam }).then(r => r[0] ?? null),
-    enabled: !!pleitoIdParam && !isLoading && !pleitoNaLista,
+    enabled: isValidUUID && !isLoading && !pleitoNaLista,
   });
   const pleitoSelecionado = pleitoNaLista ?? pleitoFallback ?? null;
 
@@ -115,7 +116,7 @@ export default function Pleitos() {
 
   // Renderizar detalhe quando há um ID na URL
   if (pleitoIdParam) {
-    const carregando = (isLoading || fallbackPending) && !pleitoSelecionado;
+    const carregando = isValidUUID && (isLoading || fallbackPending) && !pleitoSelecionado;
 
     if (carregando) {
       return (

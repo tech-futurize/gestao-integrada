@@ -57,6 +57,100 @@ const EMPTY = {
   sugestoes: [], ativo: true,
 };
 
+function StepIdentidade({ form, set, isEditing }) {
+  const PreviewIcon = resolveIcon(form.icone);
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-base font-bold text-foreground">Identidade & Apresentação</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Nome, ícone e como o agente aparece no chat</p>
+        </div>
+        <div className="flex items-center gap-2 pt-0.5">
+          <Switch checked={form.ativo} onCheckedChange={v => set('ativo', v)} id="sw-ativo" />
+          <label htmlFor="sw-ativo" className={`text-sm font-medium cursor-pointer ${form.ativo ? 'text-green-600' : 'text-muted-foreground'}`}>
+            {form.ativo ? 'Ativo' : 'Inativo'}
+          </label>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label>Nome *</Label>
+          <Input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Analista de Dados" />
+        </div>
+        <div className="space-y-1">
+          <Label>Slug / endpoint {isEditing && <span className="text-muted-foreground">(imutável)</span>}</Label>
+          <Input
+            value={form.slug}
+            onChange={e => !isEditing && set('slug', e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
+            placeholder="analista-dados"
+            disabled={isEditing}
+            className={isEditing ? 'font-mono text-muted-foreground bg-muted' : 'font-mono'}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <Label>Descrição</Label>
+        <Input value={form.descricao} onChange={e => set('descricao', e.target.value)} placeholder="Para que serve este agente?" />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Ícone</Label>
+        <div className="grid grid-cols-5 gap-2" role="group" aria-label="Selecionar ícone">
+          {ICON_OPTIONS.map(({ value, Icon }) => {
+            const active = form.icone === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => set('icone', value)}
+                className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border transition-all ${
+                  active
+                    ? 'border-[hsl(210_62%_16%)] bg-[hsl(210_62%_16%/8%)]'
+                    : 'border-border hover:border-muted-foreground/40 hover:bg-muted/50'
+                }`}
+              >
+                <Icon size={18} className={active ? 'text-[hsl(210_62%_16%)]' : 'text-muted-foreground'} />
+                <span className={`text-[10px] leading-none ${active ? 'text-[hsl(210_62%_16%)] font-semibold' : 'text-muted-foreground'}`}>{value}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex items-end gap-4">
+        <div className="flex-1 space-y-1">
+          <Label>Cor do agente</Label>
+          <div className="flex gap-2 items-center">
+            <input
+              type="color"
+              value={form.cor}
+              onChange={e => set('cor', e.target.value)}
+              className="h-9 w-12 rounded border border-border cursor-pointer p-0.5"
+            />
+            <Input value={form.cor} onChange={e => set('cor', e.target.value)} className="font-mono" />
+          </div>
+          <p className="text-xs text-muted-foreground">Aparece no ícone e card do agente</p>
+        </div>
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card min-w-[180px]">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: (form.cor || '#26405d') + '22' }}
+          >
+            <PreviewIcon size={18} style={{ color: form.cor || '#26405d' }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold truncate">{form.nome || 'Nome do agente'}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{form.descricao || 'Descrição'}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved }) {
   const [step, setStep] = useState(0);
   const [visited, setVisited] = useState(new Set([0]));
@@ -206,104 +300,7 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
     </div>
   );
 
-  // ── Passo 1: Identidade ─────────────────────────────────────────────────────
-  const StepIdentidade = () => {
-    const PreviewIcon = resolveIcon(form.icone);
-    return (
-      <div className="space-y-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-base font-bold text-foreground">Identidade & Apresentação</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Nome, ícone e como o agente aparece no chat</p>
-          </div>
-          <div className="flex items-center gap-2 pt-0.5">
-            <Switch checked={form.ativo} onCheckedChange={v => set('ativo', v)} id="sw-ativo" />
-            <label htmlFor="sw-ativo" className={`text-sm font-medium cursor-pointer ${form.ativo ? 'text-green-600' : 'text-muted-foreground'}`}>
-              {form.ativo ? 'Ativo' : 'Inativo'}
-            </label>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label>Nome *</Label>
-            <Input value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Analista de Dados" />
-          </div>
-          <div className="space-y-1">
-            <Label>Slug / endpoint {isEditing && <span className="text-muted-foreground">(imutável)</span>}</Label>
-            <Input
-              value={form.slug}
-              onChange={e => !isEditing && set('slug', e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
-              placeholder="analista-dados"
-              disabled={isEditing}
-              className={isEditing ? 'font-mono text-muted-foreground bg-muted' : 'font-mono'}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <Label>Descrição</Label>
-          <Input value={form.descricao} onChange={e => set('descricao', e.target.value)} placeholder="Para que serve este agente?" />
-        </div>
-
-        {/* Ícone — seletor visual */}
-        <div className="space-y-2">
-          <Label>Ícone</Label>
-          <div className="grid grid-cols-5 gap-2" role="group" aria-label="Selecionar ícone">
-            {ICON_OPTIONS.map(({ value, Icon }) => {
-              const active = form.icone === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => set('icone', value)}
-                  className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border transition-all ${
-                    active
-                      ? 'border-[hsl(210_62%_16%)] bg-[hsl(210_62%_16%/8%)]'
-                      : 'border-border hover:border-muted-foreground/40 hover:bg-muted/50'
-                  }`}
-                >
-                  <Icon size={18} className={active ? 'text-[hsl(210_62%_16%)]' : 'text-muted-foreground'} />
-                  <span className={`text-[10px] leading-none ${active ? 'text-[hsl(210_62%_16%)] font-semibold' : 'text-muted-foreground'}`}>{value}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Cor + preview */}
-        <div className="flex items-end gap-4">
-          <div className="flex-1 space-y-1">
-            <Label>Cor do agente</Label>
-            <div className="flex gap-2 items-center">
-              <input
-                type="color"
-                value={form.cor}
-                onChange={e => set('cor', e.target.value)}
-                className="h-9 w-12 rounded border border-border cursor-pointer p-0.5"
-              />
-              <Input value={form.cor} onChange={e => set('cor', e.target.value)} className="font-mono" />
-            </div>
-            <p className="text-xs text-muted-foreground">Aparece no ícone e card do agente</p>
-          </div>
-          {/* Mini-preview do card */}
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card min-w-[180px]">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: (form.cor || '#26405d') + '22' }}
-            >
-              <PreviewIcon size={18} style={{ color: form.cor || '#26405d' }} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold truncate">{form.nome || 'Nome do agente'}</p>
-              <p className="text-[10px] text-muted-foreground truncate">{form.descricao || 'Descrição'}</p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    );
-  };
+  // ── Passo 1: Identidade — componente definido fora para evitar remount a cada render
 
   // ── Passo 2: Modelo ─────────────────────────────────────────────────────────
   const StepModelo = () => (
@@ -524,7 +521,7 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
       {/* Conteúdo */}
       <div className="flex-1 overflow-auto p-6 md:p-8">
         <div className="max-w-3xl mx-auto">
-          {step === 0 && <StepIdentidade />}
+          {step === 0 && <StepIdentidade form={form} set={set} isEditing={isEditing} />}
           {step === 1 && <StepModelo />}
           {step === 2 && <StepPrompt />}
           {step === 3 && <StepTools />}

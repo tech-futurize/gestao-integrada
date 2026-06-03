@@ -64,7 +64,7 @@ export default function PleitoDetalhes({ pleito, onBack }) {
     enabled: !!pleito.id,
   });
 
-  const { data: vinculos = [] } = useQuery({
+  const { data: vinculos = [], isPending: vinculosPending } = useQuery({
     queryKey: ["pleito-vinculos", pleito.id],
     queryFn: () => entities.PleitoVinculo.filter({ pleito_id: pleito.id }),
     enabled: !!pleito.id,
@@ -112,6 +112,7 @@ export default function PleitoDetalhes({ pleito, onBack }) {
             <Button
               variant="outline"
               size="sm"
+              disabled={registrosPending || vinculosPending}
               onClick={() => exportarXLS(pleito, registros, vinculos)}
             >
               <Download className="w-4 h-4 mr-2" />

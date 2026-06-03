@@ -66,13 +66,12 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
   const totais = useMemo(() => computeTotais(itens), [itens]);
   const isMedicao = mode === "medicao";
 
-  const editLeaf = (code, key, raw) => {
-    const value = raw === "" ? 0 : Number(raw);
+  const editLeaf = (code, key, value) => {
     onChange?.(updateNode(itens, code, { [key]: value }));
   };
 
-  const editLeafStr = (code, key, value) => {
-    onChange?.(updateNode(itens, code, { [key]: value }));
+  const editLeafNum = (code, key, raw) => {
+    editLeaf(code, key, raw === "" ? 0 : Number(raw));
   };
 
   const addItemRaiz = () => {
@@ -176,7 +175,7 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
                       {leaf && !readOnly && !isMedicao ? (
                         <Input
                           value={node.descricao ?? ""}
-                          onChange={(e) => editLeafStr(node.item, "descricao", e.target.value)}
+                          onChange={(e) => editLeaf(node.item, "descricao", e.target.value)}
                           className="h-7 text-xs"
                           placeholder="Descrição"
                         />
@@ -196,7 +195,7 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
                               <Input
                                 type="number"
                                 value={node.qtd_medida ?? ""}
-                                onChange={(e) => editLeaf(node.item, "qtd_medida", e.target.value)}
+                                onChange={(e) => editLeafNum(node.item, "qtd_medida", e.target.value)}
                                 className="h-7 w-24 text-right text-xs ml-auto"
                               />
                             )
@@ -213,7 +212,7 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
                             readOnly ? node.unidade : (
                               <Input
                                 value={node.unidade ?? ""}
-                                onChange={(e) => editLeafStr(node.item, "unidade", e.target.value)}
+                                onChange={(e) => editLeaf(node.item, "unidade", e.target.value)}
                                 className="h-7 w-16 text-xs"
                                 placeholder="Un."
                               />
@@ -223,14 +222,14 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
                         <td className="px-2 py-1.5 text-right">
                           {leaf ? (
                             readOnly ? fmtNum(node.qtd_contratual) : (
-                              <Input type="number" value={node.qtd_contratual ?? ""} onChange={(e) => editLeaf(node.item, "qtd_contratual", e.target.value)} className="h-7 w-20 text-right text-xs ml-auto" />
+                              <Input type="number" value={node.qtd_contratual ?? ""} onChange={(e) => editLeafNum(node.item, "qtd_contratual", e.target.value)} className="h-7 w-20 text-right text-xs ml-auto" />
                             )
                           ) : "—"}
                         </td>
                         <td className="px-2 py-1.5 text-right">
                           {leaf ? (
                             readOnly ? fmtBRL(node.preco_unitario) : (
-                              <Input type="number" value={node.preco_unitario ?? ""} onChange={(e) => editLeaf(node.item, "preco_unitario", e.target.value)} className="h-7 w-24 text-right text-xs ml-auto" />
+                              <Input type="number" value={node.preco_unitario ?? ""} onChange={(e) => editLeafNum(node.item, "preco_unitario", e.target.value)} className="h-7 w-24 text-right text-xs ml-auto" />
                             )
                           ) : "—"}
                         </td>
