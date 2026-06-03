@@ -67,3 +67,11 @@ export function formatDateTime(val) {
     return "";
   }
 }
+
+// Soma `days` dias a uma data ISO (YYYY-MM-DD). Retorna string YYYY-MM-DD ou null.
+export function addDaysToDate(dateStr, days) {
+  if (!dateStr || !days) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
