@@ -5,7 +5,7 @@ import { Save, X } from "lucide-react";
 import { DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
 import { formatDate } from "@/lib/dateUtils";
 
-export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpdate }) {
+export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpdate, compact = false }) {
   const tarefaLabel = (id) => {
     if (!id) return "—";
     const t = tarefas.find(t => t.id === id);
@@ -27,75 +27,79 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
 
   return (
     <div className="space-y-5">
-      <DialogHeader>
-        <DialogTitle className="text-base">Histórico — {doc.tag_id}</DialogTitle>
-      </DialogHeader>
+      {!compact && (
+        <>
+          <DialogHeader>
+            <DialogTitle className="text-base">Histórico — {doc.tag_id}</DialogTitle>
+          </DialogHeader>
 
-      {/* Cabeçalho do documento */}
-      <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-        <div className="h-2" style={{ backgroundColor: discColor }} />
-        <div className="p-5 space-y-3">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <div className="text-xs font-bold" style={{ color: discColor }}>{doc.tag_id}</div>
-              <h2 className="text-lg font-bold mt-1 text-foreground">{doc.titulo}</h2>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <span className="text-xs font-bold rounded px-2 py-0.5 text-white" style={{ backgroundColor: discColor }}>{doc.disciplina}</span>
-              {doc.revisao_atual && (
-                <span className="text-xs font-semibold bg-muted text-muted-foreground rounded px-2 py-0.5">{doc.revisao_atual}</span>
+          {/* Cabeçalho do documento */}
+          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="h-2" style={{ backgroundColor: discColor }} />
+            <div className="p-5 space-y-3">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <div className="text-xs font-bold" style={{ color: discColor }}>{doc.tag_id}</div>
+                  <h2 className="text-lg font-bold mt-1 text-foreground">{doc.titulo}</h2>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <span className="text-xs font-bold rounded px-2 py-0.5 text-white" style={{ backgroundColor: discColor }}>{doc.disciplina}</span>
+                  {doc.revisao_atual && (
+                    <span className="text-xs font-semibold bg-muted text-muted-foreground rounded px-2 py-0.5">{doc.revisao_atual}</span>
+                  )}
+                  <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ backgroundColor: etapaCfg.bg, color: etapaCfg.text }}>{doc.etapa}</span>
+                </div>
+              </div>
+
+              {/* Info grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                {[
+                  { label: "Fornecedor", value: doc.fornecedor || "—" },
+                  { label: "Nº de Folhas", value: doc.num_folhas ? `A4 (${doc.num_folhas})` : "—" },
+                  { label: "Dt. Projetada", value: formatDate(doc.data_projetada) || "—" },
+                  { label: "Dt. Real", value: formatDate(doc.data_real) || "—" },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
+                    <div className="font-medium mt-0.5 text-foreground">{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Cronograma */}
+              {doc.id_cronograma && (
+                <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-border">
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">ID Cronograma</div>
+                    <div className="font-medium mt-0.5 text-foreground text-xs">{tarefaLabel(doc.id_cronograma)}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground uppercase tracking-wide">Dt. Cronograma</div>
+                    <div className="font-medium mt-0.5 text-foreground">{formatDate(doc.data_cronograma) || "—"}</div>
+                  </div>
+                </div>
               )}
-              <span className="text-xs font-semibold rounded-full px-2 py-0.5" style={{ backgroundColor: etapaCfg.bg, color: etapaCfg.text }}>{doc.etapa}</span>
-            </div>
-          </div>
 
-          {/* Info grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            {[
-              { label: "Fornecedor", value: doc.fornecedor || "—" },
-              { label: "Nº de Folhas", value: doc.num_folhas ? `A4 (${doc.num_folhas})` : "—" },
-              { label: "Dt. Projetada", value: formatDate(doc.data_projetada) || "—" },
-              { label: "Dt. Real", value: formatDate(doc.data_real) || "—" },
-            ].map(({ label, value }) => (
-              <div key={label}>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-                <div className="font-medium mt-0.5 text-foreground">{value}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Cronograma */}
-          {doc.id_cronograma && (
-            <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-border">
+              {/* Progresso */}
               <div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">ID Cronograma</div>
-                <div className="font-medium mt-0.5 text-foreground text-xs">{tarefaLabel(doc.id_cronograma)}</div>
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Progresso</span>
+                  <span className="font-bold">{doc.progresso || 0}%</span>
+                </div>
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(doc.progresso || 0, 100)}%`,
+                      backgroundColor: (doc.progresso || 0) >= 70 ? "#16a34a" : (doc.progresso || 0) >= 40 ? "#d97706" : "#dc2626",
+                    }}
+                  />
+                </div>
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">Dt. Cronograma</div>
-                <div className="font-medium mt-0.5 text-foreground">{formatDate(doc.data_cronograma) || "—"}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Progresso */}
-          <div>
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>Progresso</span>
-              <span className="font-bold">{doc.progresso || 0}%</span>
-            </div>
-            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${Math.min(doc.progresso || 0, 100)}%`,
-                  backgroundColor: (doc.progresso || 0) >= 70 ? "#16a34a" : (doc.progresso || 0) >= 40 ? "#d97706" : "#dc2626",
-                }}
-              />
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Timeline de etapas */}
       {doc.historico_etapas && doc.historico_etapas.length > 0 && (

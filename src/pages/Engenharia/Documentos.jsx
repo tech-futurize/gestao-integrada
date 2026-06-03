@@ -14,7 +14,6 @@ import DocDetalhe from "@/components/engenharia/DocDetalhe";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,10 +21,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import {
   FileText, Plus, Upload, TrendingUp, AlertTriangle, AlertCircle,
-  History, ArrowUpDown, ArrowUp, ArrowDown,
+  ArrowUpDown, ArrowUp, ArrowDown,
 } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
-import DetailDialog from "@/components/ui/DetailDialog";
 
 import { ETAPAS, DISCIPLINAS, DISC_COLORS, ETAPA_COLORS } from "@/lib/engenharia-constants";
 
@@ -63,7 +61,7 @@ const PER_PAGE = 10;
 
 function ProgressBar({ pct }) {
   return (
-    <div className="flex items-center gap-2 min-w-24">
+    <div className="flex items-center gap-2 w-24">
       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
         <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: "#16a34a" }} />
       </div>
@@ -83,8 +81,7 @@ export default function Documentos() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [showImportExport, setShowImportExport] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [historyDoc, setHistoryDoc] = useState(null);
-  const [viewItem, setViewItem] = useState(null);
+  const [activeTab, setActiveTab] = useState('dados');
 
   // Filtros e ordenação
   const [busca, setBusca] = useState("");
@@ -139,6 +136,7 @@ export default function Documentos() {
   });
 
   const handleOpenEdit = (doc) => {
+    setActiveTab('dados');
     setEditing(doc);
     setForm({
       tag_id: doc.tag_id || "",
@@ -158,6 +156,7 @@ export default function Documentos() {
   };
 
   const handleOpenNew = () => {
+    setActiveTab('dados');
     setEditing(null);
     setForm(EMPTY_FORM);
     setShowForm(true);
@@ -269,6 +268,8 @@ export default function Documentos() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paginated = docsSorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  const editingDoc = editing ? (docs.find(d => d.id === editing.id) || editing) : null;
 
   // KPIs
   const progGeral = docs.length ? Math.round(docs.reduce((s, d) => s + (d.progresso || 0), 0) / docs.length) : 0;
@@ -432,21 +433,9 @@ export default function Documentos() {
                       </td>
                       <td className="px-3 py-2.5">
                         <RowActions
-                          onView={() => setViewItem(doc)}
                           onEdit={canEdit ? () => handleOpenEdit(doc) : undefined}
                           onDelete={canDelete ? () => deleteMut.mutate(doc.id) : undefined}
                           deleteDescription={`${doc.tag_id} — ${doc.titulo} será excluído permanentemente.`}
-                          extra={
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setHistoryDoc(doc); }}
-                              className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                              title="Histórico"
-                              aria-label="Histórico"
-                            >
-                              <History className="w-3.5 h-3.5" />
-                            </button>
-                          }
                         />
                       </td>
                     </tr>
@@ -477,7 +466,7 @@ export default function Documentos() {
       {/* Modal Criação/Edição */}
       <FormDialog
         open={showForm}
-        onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); } }}
+        onOpenChange={(open) => { if (!open) { setShowForm(false); setEditing(null); setActiveTab('dados'); } }}
         icon={FileText}
         title={editing ? "Editar Documento" : "Novo Documento"}
         subtitle={editing ? `${editing.tag_id} — ${editing.titulo}` : "Engenharia de Documentos"}
@@ -490,13 +479,41 @@ export default function Documentos() {
             {form.etapa}
           </span>
         ) : undefined}
-        onClose={() => { setShowForm(false); setEditing(null); }}
+        onClose={() => { setShowForm(false); setEditing(null); setActiveTab('dados'); }}
         onSave={handleSubmit}
         saving={createMut.isPending || updateMut.isPending}
         saveLabel={editing ? "Salvar alterações" : "Criar documento"}
+        footer={activeTab === 'historico' ? (
+          <Button variant="outline" onClick={() => { setShowForm(false); setEditing(null); setActiveTab('dados'); }}>
+            Fechar
+          </Button>
+        ) : undefined}
       >
-          {/* Seções */}
+        {/* Abas — somente ao editar */}
+        {editing && (
+          <div className="-mx-6 -mt-5 px-2 border-b border-border flex">
+            {[
+              { key: 'dados', label: 'Dados' },
+              { key: 'historico', label: 'Histórico' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActiveTab(key)}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  activeTab === key
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
+        {activeTab === 'dados' ? (
+          <>
             {/* Identificação */}
             <div>
               <SectionDivider label="Identificação" className="mb-3" />
@@ -614,42 +631,19 @@ export default function Documentos() {
                 </div>
               </div>
             </div>
-
-      </FormDialog>
-
-      {/* Dialog Histórico (DocDetalhe) */}
-      <Dialog open={!!historyDoc} onOpenChange={(open) => { if (!open) setHistoryDoc(null); }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          {historyDoc && (
+          </>
+        ) : (
+          editingDoc && (
             <DocDetalhe
-              doc={historyDoc}
+              doc={editingDoc}
               tarefas={tarefas}
-              open={!!historyDoc}
-              onClose={() => setHistoryDoc(null)}
+              compact
               onUpdate={(id, data) => updateMut.mutate({ id, data })}
             />
-          )}
-        </DialogContent>
-      </Dialog>
+          )
+        )}
 
-      {viewItem && (
-        <DetailDialog
-          open={!!viewItem}
-          onOpenChange={(o) => !o && setViewItem(null)}
-          title={`${viewItem.tag_id || ""} — ${viewItem.titulo || ""}`}
-          sections={[
-            { label: "TAG / ID", value: viewItem.tag_id },
-            { label: "Disciplina", value: viewItem.disciplina },
-            { label: "Etapa", value: viewItem.etapa },
-            { label: "Progresso", value: viewItem.progresso != null ? `${viewItem.progresso}%` : null },
-            { label: "Fornecedor", value: viewItem.fornecedor },
-            { label: "Nº Folhas", value: viewItem.num_folhas },
-            { label: "Data prevista", value: formatDate(viewItem.data_projetada) },
-            { label: "Data real", value: formatDate(viewItem.data_real) },
-            { label: "Título", value: viewItem.titulo, full: true },
-          ]}
-        />
-      )}
+      </FormDialog>
 
       {/* Import/Export */}
       <ImportExportDialog

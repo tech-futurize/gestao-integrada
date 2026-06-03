@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Download, Trash2, Paperclip, Link2 } from "lucide-react";
+import { ArrowLeft, Edit, Download, Trash2, Paperclip, Link2, X as XIcon } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useToast } from "@/components/ui/use-toast";
@@ -19,8 +19,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import RegistroForm from "@/components/pleitos/RegistroForm";
 import { useProject } from "@/lib/ProjectContext";
+import { supabase } from "@/lib/supabaseClient";
 
 const TIPO_COLORS = {
   "Ata de Reunião": "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
@@ -51,10 +61,22 @@ function exportarXLS(registro) {
   XLSX.writeFile(wb, `${slug}-${registro.id.slice(0, 8)}.xlsx`);
 }
 
+function formatBytes(bytes) {
+  if (!bytes && bytes !== 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function RegistroDetalhes({ registro, onBack }) {
   const [activeTab, setActiveTab] = useState("detalhes");
   const [showEditForm, setShowEditForm] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [showAtivModal, setShowAtivModal] = useState(false);
+  const [modalSearch, setModalSearch] = useState("");
+  const [modalSelected, setModalSelected] = useState(new Set());
+  const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { selectedProjectId } = useProject();
@@ -86,6 +108,64 @@ export default function RegistroDetalhes({ registro, onBack }) {
     onError: (e) =>
       toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" }),
   });
+
+  const handleAddFile = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = "";
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const uploaded = [];
+      for (const file of files) {
+        const ext = file.name.split(".").pop();
+        const path = `${selectedProjectId}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage
+          .from("registros-anexos")
+          .upload(path, file, { upsert: false });
+        if (error) throw new Error(`Erro ao enviar ${file.name}: ${error.message}`);
+        const { data: urlData } = supabase.storage
+          .from("registros-anexos")
+          .getPublicUrl(path);
+        uploaded.push({ nome: file.name, url: urlData.publicUrl, path, tipo: file.type, tamanho: file.size });
+      }
+      const updatedAnexos = [...(registro.anexos || []), ...uploaded];
+      updateMutation.mutate({ id: registro.id, data: { anexos: updatedAnexos } });
+    } catch (err) {
+      toast({ title: "Erro ao enviar arquivo", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveAnexo = async (anexo) => {
+    const storagePath = anexo.path || anexo.url.split("/registros-anexos/")[1];
+    if (storagePath) {
+      await supabase.storage.from("registros-anexos").remove([storagePath]);
+    }
+    const updatedAnexos = (registro.anexos || []).filter(a => a.url !== anexo.url);
+    updateMutation.mutate({ id: registro.id, data: { anexos: updatedAnexos } });
+  };
+
+  const toggleModalTarefa = (id) => {
+    setModalSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleConfirmAtividades = () => {
+    const selecionadas = tarefas
+      .filter(t => modalSelected.has(t.id))
+      .map(t => ({ id: t.id, nome: t.nome || t.titulo || t.descricao || t.id }));
+    updateMutation.mutate({ id: registro.id, data: { atividades_vinculadas: selecionadas } });
+    setShowAtivModal(false);
+    setModalSearch("");
+  };
+
+  const tarefasFiltradas = tarefas.filter(t =>
+    (t.nome || t.titulo || t.descricao || "").toLowerCase().includes(modalSearch.toLowerCase())
+  );
 
   const tipoClass =
     TIPO_COLORS[registro.tipo_registro] || "bg-muted text-muted-foreground";
@@ -136,15 +216,6 @@ export default function RegistroDetalhes({ registro, onBack }) {
             <Button
               variant="outline"
               size="sm"
-              className="text-foreground"
-              onClick={() => setShowEditForm(true)}
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              Editar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               className="text-status-critical hover:bg-status-critical/10"
               onClick={() => setConfirmDelete(true)}
               disabled={deleteMutation.isPending}
@@ -191,7 +262,18 @@ export default function RegistroDetalhes({ registro, onBack }) {
         {activeTab === "detalhes" && (
           <Card className="border-0 shadow-md">
             <CardHeader>
-              <CardTitle>Informações do Registro</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Informações do Registro</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-foreground"
+                  onClick={() => setShowEditForm(true)}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -246,10 +328,29 @@ export default function RegistroDetalhes({ registro, onBack }) {
         {activeTab === "anexos" && (
           <Card className="border-0 shadow-md">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Paperclip className="w-5 h-5 text-blue-600" />
-                Anexos
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Paperclip className="w-5 h-5 text-blue-600" />
+                  Anexos
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Paperclip className="w-3.5 h-3.5 mr-1.5" />
+                  {uploading ? "Enviando..." : "Adicionar arquivo"}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.txt"
+                  onChange={handleAddFile}
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {anexos.length === 0 ? (
@@ -259,23 +360,35 @@ export default function RegistroDetalhes({ registro, onBack }) {
               ) : (
                 <div className="space-y-2">
                   {anexos.map((anexo, i) => (
-                    <a
+                    <div
                       key={i}
-                      href={anexo.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
                     >
-                      <Paperclip className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <span className="text-sm text-foreground truncate">
-                        {anexo.nome || `Anexo ${i + 1}`}
-                      </span>
-                      {anexo.tamanho && (
-                        <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                          {(anexo.tamanho / 1024).toFixed(0)} KB
+                      <a
+                        href={anexo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 flex-1 min-w-0"
+                      >
+                        <Paperclip className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="text-sm text-foreground truncate">
+                          {anexo.nome || `Anexo ${i + 1}`}
                         </span>
-                      )}
-                    </a>
+                        {anexo.tamanho && (
+                          <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                            {formatBytes(anexo.tamanho)}
+                          </span>
+                        )}
+                      </a>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveAnexo(anexo)}
+                      >
+                        <XIcon className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -287,10 +400,23 @@ export default function RegistroDetalhes({ registro, onBack }) {
         {activeTab === "vinculos" && (
           <Card className="border-0 shadow-md">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Link2 className="w-5 h-5 text-green-600" />
-                Vínculos
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Link2 className="w-5 h-5 text-green-600" />
+                  Vínculos
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setModalSelected(new Set((registro.atividades_vinculadas || []).map(v => v.id).filter(Boolean)));
+                    setShowAtivModal(true);
+                  }}
+                >
+                  <Link2 className="w-3.5 h-3.5 mr-1.5" />
+                  Vincular Atividades
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {vinculos.length === 0 && !registro.pleito_id ? (
@@ -314,7 +440,18 @@ export default function RegistroDetalhes({ registro, onBack }) {
                       className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
                     >
                       <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <span className="text-sm text-foreground truncate">{v.nome || v.id}</span>
+                      <span className="text-sm text-foreground truncate flex-1">{v.nome || v.id}</span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => {
+                          const updated = vinculos.filter((_, idx) => idx !== i);
+                          updateMutation.mutate({ id: registro.id, data: { atividades_vinculadas: updated } });
+                        }}
+                      >
+                        <XIcon className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -324,6 +461,58 @@ export default function RegistroDetalhes({ registro, onBack }) {
         )}
 
       </div>
+
+      {/* Dialog — Vincular Atividades */}
+      <Dialog open={showAtivModal} onOpenChange={(open) => { setShowAtivModal(open); if (!open) setModalSearch(""); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Vincular Atividades ao Cronograma</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              placeholder="Buscar tarefa..."
+              value={modalSearch}
+              onChange={(e) => setModalSearch(e.target.value)}
+            />
+            <div className="max-h-72 overflow-y-auto space-y-1 border rounded-md p-2">
+              {tarefasFiltradas.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  {tarefas.length === 0 ? "Nenhuma tarefa no cronograma" : "Nenhuma tarefa encontrada"}
+                </p>
+              ) : (
+                tarefasFiltradas.map(t => {
+                  const nome = t.nome || t.titulo || t.descricao || t.id;
+                  return (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-3 p-2 rounded hover:bg-muted cursor-pointer"
+                      onClick={() => toggleModalTarefa(t.id)}
+                    >
+                      <Checkbox
+                        checked={modalSelected.has(t.id)}
+                        onCheckedChange={() => toggleModalTarefa(t.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span className="text-sm">{nome}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {modalSelected.size} {modalSelected.size === 1 ? "atividade selecionada" : "atividades selecionadas"}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => { setShowAtivModal(false); setModalSearch(""); }}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={handleConfirmAtividades}>
+              Confirmar seleção
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirmação de exclusão */}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
