@@ -85,7 +85,7 @@ export default function FieldPropertiesEditor({ field, onUpdate }) {
     return (
       <div className="space-y-2 mt-2">
         <div>
-          <Label className="text-xs">Placeholder</Label>
+          <Label className="text-xs">Texto de exemplo</Label>
           <Input
             value={field.placeholder || ''}
             onChange={e => onUpdate({ placeholder: e.target.value })}
@@ -123,7 +123,7 @@ export default function FieldPropertiesEditor({ field, onUpdate }) {
   if (type === "email") {
     return (
       <div className="mt-2">
-        <Label className="text-xs">Placeholder</Label>
+        <Label className="text-xs">Texto de exemplo</Label>
         <Input
           value={field.placeholder || ''}
           onChange={e => onUpdate({ placeholder: e.target.value })}
@@ -138,7 +138,7 @@ export default function FieldPropertiesEditor({ field, onUpdate }) {
     return (
       <div className="space-y-2 mt-2">
         <div>
-          <Label className="text-xs">Placeholder</Label>
+          <Label className="text-xs">Texto de exemplo</Label>
           <Input
             value={field.placeholder || ''}
             onChange={e => onUpdate({ placeholder: e.target.value })}
