@@ -90,7 +90,7 @@ export default function Equipamentos({ asTab = false }) {
                 {showInativos ? "Ocultar inativos" : "Mostrar inativos"}
               </button>
             )}
-            <Button size="sm" onClick={openCreate} className="gap-1.5 text-xs">
+            <Button size="sm" variant="save" onClick={openCreate} className="gap-1.5 text-xs">
               <Plus className="w-4 h-4" /> Novo Tipo
             </Button>
           </div>

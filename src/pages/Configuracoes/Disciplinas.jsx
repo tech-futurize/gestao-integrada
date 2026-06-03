@@ -97,7 +97,7 @@ export default function Disciplinas({ asTab = false }) {
                 {showInativos ? "Ocultar inativas" : "Mostrar inativas"}
               </button>
             )}
-            <Button size="sm" onClick={openCreate} className="gap-1.5 text-xs">
+            <Button size="sm" variant="save" onClick={openCreate} className="gap-1.5 text-xs">
               <Plus className="w-4 h-4" /> Nova Disciplina
             </Button>
           </div>
