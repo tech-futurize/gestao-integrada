@@ -24,6 +24,7 @@ import { useToast } from "@/components/ui/use-toast";
 import PlanoAcao from "@/components/riscos/PlanoAcao";
 import RiscoHoverCard from "@/components/riscos/RiscoHoverCard";
 import { CATEGORIAS_RISCO as CATEGORIAS, CAT_COLORS, SCORE_COLORS, IMPACTO_DIMS, getScoreLevel, PROBABILIDADE_OPTIONS, IMPACTO_OPTIONS, STATUS_RISCO, STATUS_RISCO_COLORS, pesoProbabilidade, pesoImpacto, calcScoreRisco } from "@/utils/riscosUtils";
+import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
 
 const RISCO_COLUMNS = [
   { key: "codigo",         label: "Código",                    type: "string" },
@@ -86,6 +87,7 @@ const EMPTY_FORM = {
   codigo: "", descricao: "", categoria: "", probabilidade: "Média", impacto: "Médio",
   status: "Ativo", responsavel: "",
   impactos: [],
+  areas_impacto: [],
   escopo_texto: "", prazo_dias: "", valor_impacto: "",
 };
 
@@ -124,6 +126,8 @@ export default function GestaoRiscos() {
     enabled: !!selectedProjectId,
   });
 
+  const { data: categoriasNomes = [], isPending: categoriasPending } = useCategoriasImpacto();
+
   const createMut = useMutation({
     mutationFn: (data) => entities.Risco.create(data),
     onSuccess: () => {
@@ -160,6 +164,14 @@ export default function GestaoRiscos() {
           : [...current, dim],
       };
     });
+
+  const toggleAreaImpacto = (area) =>
+    setForm(f => ({
+      ...f,
+      areas_impacto: f.areas_impacto.includes(area)
+        ? f.areas_impacto.filter(a => a !== area)
+        : [...f.areas_impacto, area],
+    }));
 
   const filtered = useMemo(() => {
     const st = filtros.status || [];
@@ -204,6 +216,7 @@ export default function GestaoRiscos() {
       status: risco.status || "Ativo",
       responsavel: risco.responsavel || "",
       impactos: Array.isArray(risco.impactos) ? risco.impactos : [],
+      areas_impacto: Array.isArray(risco.areas_impacto) ? risco.areas_impacto : [],
       escopo_texto:  risco.escopo_texto  || "",
       prazo_dias:    risco.prazo_dias    ?? "",
       valor_impacto: risco.valor_impacto ?? "",
@@ -608,6 +621,29 @@ export default function GestaoRiscos() {
 
           <SectionDivider label="Impactos no Projeto" />
           <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>Áreas de Impacto</Label>
+              {categoriasPending ? (
+                <p className="text-xs text-muted-foreground">Carregando categorias...</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {categoriasNomes.map(area => (
+                    <button
+                      key={area}
+                      type="button"
+                      onClick={() => toggleAreaImpacto(area)}
+                      className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
+                        form.areas_impacto.includes(area)
+                          ? "border-transparent bg-primary text-primary-foreground"
+                          : "border-border text-muted-foreground bg-background hover:border-primary/50"
+                      }`}
+                    >
+                      {area}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="space-y-2">
               <Label>Dimensões de Impacto</Label>
               <div className="flex gap-4 flex-wrap">
