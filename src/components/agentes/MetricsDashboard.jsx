@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { entities } from '@/api/supabaseEntities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { X } from 'lucide-react';
+import { X, Bot, CalendarDays, Cpu, User } from 'lucide-react';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
   BarChart, Bar, Cell,
@@ -34,6 +34,7 @@ const PALETTE = ['#26405d', '#c35e1e', '#00a49a', '#3b82f6', '#f59e0b', '#8b5cf6
 const ACTIVE_COLOR = '#ef4444';
 
 const FILTER_LABELS = { agent: 'Agente', modelo: 'Modelo', user: 'Usuário', day: 'Dia' };
+const FILTER_ICONS  = { agent: Bot, modelo: Cpu, user: User, day: CalendarDays };
 
 function getInitials(email = '') {
   return email.split('@')[0].slice(0, 2).toUpperCase();
@@ -178,10 +179,12 @@ export default function MetricsDashboard() {
     }
   }, [logs, activeFilter]);
 
-  const byDay    = useMemo(() => aggregateByDay(filteredLogs), [filteredLogs]);
-  const byAgent  = useMemo(() => aggregateByAgent(filteredLogs, agentNames), [filteredLogs, agentNames]);
-  const byModelo = useMemo(() => aggregateByModelo(filteredLogs), [filteredLogs]);
-  const byUser   = useMemo(() => aggregateByUser(filteredLogs), [filteredLogs]);
+  // O gráfico que é a fonte do filtro exibe seus dados completos (apenas destaca o item).
+  // Os demais exibem filteredLogs para refletir a seleção.
+  const byDay    = useMemo(() => aggregateByDay(activeFilter?.type === 'day'    ? logs : filteredLogs), [logs, filteredLogs, activeFilter]);
+  const byAgent  = useMemo(() => aggregateByAgent(activeFilter?.type === 'agent' ? logs : filteredLogs, agentNames), [logs, filteredLogs, activeFilter, agentNames]);
+  const byModelo = useMemo(() => aggregateByModelo(activeFilter?.type === 'modelo' ? logs : filteredLogs), [logs, filteredLogs, activeFilter]);
+  const byUser   = useMemo(() => aggregateByUser(activeFilter?.type === 'user'   ? logs : filteredLogs), [logs, filteredLogs, activeFilter]);
 
   if (isPending) {
     return (
@@ -211,16 +214,20 @@ export default function MetricsDashboard() {
           onChange={range => { setDateRange(range); setActiveFilter(null); }}
           onClear={() => { setDateRange(defaultDateRange()); setActiveFilter(null); }}
         />
-        {activeFilter && (
-          <button
-            onClick={() => setActiveFilter(null)}
-            className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1.5 hover:bg-primary/20 transition-colors"
-          >
-            {FILTER_LABELS[activeFilter.type]}:{' '}
-            <span className="font-bold truncate max-w-[180px]">{activeFilter.value}</span>
-            <X className="w-3 h-3 flex-shrink-0" />
-          </button>
-        )}
+        {activeFilter && (() => {
+          const Icon = FILTER_ICONS[activeFilter.type];
+          return (
+            <button
+              onClick={() => setActiveFilter(null)}
+              className="flex items-center gap-1.5 h-8 text-sm font-normal text-primary bg-primary/5 border border-primary rounded-md px-2.5 hover:bg-primary/10 transition-colors"
+            >
+              {Icon && <Icon className="w-3.5 h-3.5 opacity-60" />}
+              <span className="font-medium">{FILTER_LABELS[activeFilter.type]}:</span>
+              <span className="font-bold truncate max-w-[160px]">{activeFilter.value}</span>
+              <X className="w-3 h-3 flex-shrink-0 opacity-60" />
+            </button>
+          );
+        })()}
       </div>
 
       {/* ② Banner de custo */}
