@@ -6,6 +6,7 @@ import { Plus, Receipt, Upload, Search } from "lucide-react";
 import { startOfMonth, endOfMonth, isBefore, isAfter, parseISO } from "date-fns";
 import FaturamentoList from "@/components/planejamento/FaturamentoList";
 import FaturamentoForm from "@/components/planejamento/FaturamentoForm";
+import FaturamentoSummary from "@/components/planejamento/FaturamentoSummary";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
@@ -164,6 +165,11 @@ export default function Faturamento() {
           />
           <DateRangePicker label="Período" value={periodo} onChange={setPeriodo} onClear={() => setPeriodo(null)} />
         </FilterToolbar>
+
+        <FaturamentoSummary
+          faturamentos={filtrados}
+          valorContrato={projetoAtivo?.valor_contrato ?? 0}
+        />
 
         <FaturamentoList
           faturamentos={filtrados}
