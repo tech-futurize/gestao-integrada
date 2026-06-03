@@ -1,10 +1,33 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Icons from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/components/ui/use-toast';
+import { entities } from '@/api/supabaseEntities';
 import RowActions from '@/components/ui/RowActions';
 
 export default function AgentCard({ agent, toolCount = 0, onEdit }) {
   const IconComp = Icons[agent.icone] ?? Icons.Bot;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const toggleMutation = useMutation({
+    mutationFn: () =>
+      entities.Agente.update(agent.id, {
+        ativo: !agent.ativo,
+        updated_at: new Date().toISOString(),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agentes'] });
+      toast({
+        title: agent.ativo ? 'Agente desativado' : 'Agente ativado',
+        variant: 'success',
+      });
+    },
+    onError: (err) =>
+      toast({ title: 'Erro ao alterar status', description: err.message, variant: 'destructive' }),
+  });
 
   return (
     <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
@@ -29,12 +52,22 @@ export default function AgentCard({ agent, toolCount = 0, onEdit }) {
               {agent.provider}/{agent.modelo}
             </Badge>
             {toolCount > 0 && (
-              <span className="text-xs text-muted-foreground">{toolCount} tool{toolCount !== 1 ? 's' : ''}</span>
+              <span className="text-xs text-muted-foreground">
+                {toolCount} tool{toolCount !== 1 ? 's' : ''}
+              </span>
             )}
           </div>
         </div>
 
-        <RowActions onEdit={() => onEdit(agent)} />
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <Switch
+            checked={!!agent.ativo}
+            onCheckedChange={() => toggleMutation.mutate()}
+            disabled={toggleMutation.isPending}
+            title={agent.ativo ? 'Desativar agente' : 'Ativar agente'}
+          />
+          <RowActions onEdit={() => onEdit(agent)} />
+        </div>
       </CardContent>
     </Card>
   );
