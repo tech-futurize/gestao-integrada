@@ -169,7 +169,7 @@ export default function PlanoAcao({ projectId }) {
           ) : acoes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">Nenhuma ação registrada. Clique em "Nova Ação" para começar.</div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[500px]">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted">
