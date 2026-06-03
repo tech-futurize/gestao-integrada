@@ -244,8 +244,6 @@ export default function RegistroDetalhes({ registro, onBack }) {
             <RegistroForm
               key={registro.id}
               incidente={registro}
-              casos={[]}
-              tarefas={tarefas}
               selectedProjectId={selectedProjectId}
               onSubmit={(data) => updateMutation.mutate({ id: registro.id, data })}
               onCancel={() => setShowEditForm(false)}

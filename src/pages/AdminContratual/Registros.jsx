@@ -120,12 +120,6 @@ export default function Registros() {
     enabled: !!selectedProjectId,
   });
 
-  const { data: tarefas = [] } = useQuery({
-    queryKey: ["tarefas_cronograma", selectedProjectId],
-    queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
-    enabled: !!selectedProjectId,
-  });
-
   // Fallback para deep-link: busca o registro diretamente se ainda não está na lista
   const isValidUUID = UUID_RE.test(registroIdParam ?? "");
   const registroNaLista = registroIdParam
@@ -362,8 +356,6 @@ export default function Registros() {
             <RegistroForm
               key={editingRegistro?.id || "new-incidente"}
               incidente={editingRegistro}
-              casos={[]}
-              tarefas={tarefas}
               selectedProjectId={selectedProjectId}
               onSubmit={handleSubmit}
               onCancel={() => { setShowForm(false); setEditingRegistro(null); }}

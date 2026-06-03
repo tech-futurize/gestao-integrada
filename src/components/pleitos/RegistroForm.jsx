@@ -6,42 +6,41 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Paperclip, X as XIcon, Link2 } from "lucide-react";
+import { Paperclip, X as XIcon } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
+import { useQuery } from "@tanstack/react-query";
+import { entities } from "@/api/supabaseEntities";
 
-export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting, tarefas = [], selectedProjectId = "" }) {
+export default function RegistroForm({ incidente, onSubmit, onCancel, isSubmitting, selectedProjectId = "" }) {
   const [formData, setFormData] = useState({
-    tipo_registro: incidente?.tipo_registro || "Ata de Reunião",
-    data_hora: toDateInput(incidente?.data_hora) || toDateInput(new Date()),
+    tipo_registro:        incidente?.tipo_registro || "Ata de Reunião",
+    data_hora:            toDateInput(incidente?.data_hora) || toDateInput(new Date()),
     responsavel_registro: incidente?.responsavel_registro || "",
-    descricao: incidente?.descricao || "",
-    impacto_preliminar: incidente?.impacto_preliminar || "",
-    impacto_ocorrencia: Array.isArray(incidente?.impacto_ocorrencia) ? incidente.impacto_ocorrencia : [],
-    status: incidente?.status || "Registrado",
-    pleito_id: incidente?.pleito_id || null,
-    responsabilidade: incidente?.responsabilidade || "",
+    descricao:            incidente?.descricao || "",
+    impacto_preliminar:   incidente?.impacto_preliminar || "",
+    impacto_ocorrencia:   Array.isArray(incidente?.impacto_ocorrencia) ? incidente.impacto_ocorrencia : [],
+    status:               incidente?.status || "Registrado",
+    pleito_id:            incidente?.pleito_id || null,
+    responsabilidade:     incidente?.responsabilidade || "",
   });
 
   const [newFiles, setNewFiles] = useState([]);
   const [existingAnexos, setExistingAnexos] = useState(incidente?.anexos || []);
   const [removedPaths, setRemovedPaths] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [atividadesVinculadas, setAtividadesVinculadas] = useState(incidente?.atividades_vinculadas || []);
-  const [showAtivModal, setShowAtivModal] = useState(false);
-  const [modalSearch, setModalSearch] = useState("");
-  const [modalSelected, setModalSelected] = useState(
-    new Set((incidente?.atividades_vinculadas || []).map(a => a.id))
-  );
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
   const { data: categoriasNomes = [], isPending: categoriasPending } = useCategoriasImpacto();
+
+  const { data: pleitos = [], isPending: pleitosPending } = useQuery({
+    queryKey: ["pleitos", selectedProjectId],
+    queryFn: () => entities.Pleito.filter({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId,
+  });
 
   const toggleImpactoOcorrencia = (cat) =>
     setFormData(f => ({
@@ -58,7 +57,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
       return;
     }
     setIsUploading(true);
-
     try {
       const uploaded = [];
       for (const file of newFiles) {
@@ -68,28 +66,17 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
           .from("registros-anexos")
           .upload(path, file, { upsert: false });
         if (error) throw new Error(`Erro ao enviar ${file.name}: ${error.message}`);
-        const { data: urlData } = supabase.storage
-          .from("registros-anexos")
-          .getPublicUrl(path);
-        uploaded.push({
-          nome: file.name,
-          url: urlData.publicUrl,
-          path,
-          tipo: file.type,
-          tamanho: file.size,
-        });
+        const { data: urlData } = supabase.storage.from("registros-anexos").getPublicUrl(path);
+        uploaded.push({ nome: file.name, url: urlData.publicUrl, path, tipo: file.type, tamanho: file.size });
       }
-
       if (removedPaths.length > 0) {
         await supabase.storage.from("registros-anexos").remove(removedPaths);
       }
-
       onSubmit({
         ...formData,
-        data_hora: toUtcIso(formData.data_hora),
-        pleito_id: formData.pleito_id || null,
-        anexos: [...existingAnexos, ...uploaded],
-        atividades_vinculadas: atividadesVinculadas,
+        data_hora:  toUtcIso(formData.data_hora),
+        pleito_id:  formData.pleito_id || null,
+        anexos:     [...existingAnexos, ...uploaded],
       });
     } catch (err) {
       toast({ title: "Erro ao enviar arquivo", description: err.message, variant: "destructive" });
@@ -106,9 +93,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
     e.target.value = "";
   };
 
-  const handleRemoveNewFile = (idx) => {
-    setNewFiles(prev => prev.filter((_, i) => i !== idx));
-  };
+  const handleRemoveNewFile = (idx) => setNewFiles(prev => prev.filter((_, i) => i !== idx));
 
   const handleRemoveExisting = (anexo) => {
     const storagePath = anexo.path || anexo.url.split("/registros-anexos/")[1];
@@ -122,27 +107,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
-
-  const handleConfirmAtividades = () => {
-    const selecionadas = tarefas
-      .filter(t => modalSelected.has(t.id))
-      .map(t => ({ id: t.id, nome: t.nome || t.titulo || t.descricao || t.id }));
-    setAtividadesVinculadas(selecionadas);
-    setShowAtivModal(false);
-    setModalSearch("");
-  };
-
-  const toggleModalTarefa = (id) => {
-    setModalSelected(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const tarefasFiltradas = tarefas.filter(t =>
-    (t.nome || t.titulo || t.descricao || "").toLowerCase().includes(modalSearch.toLowerCase())
-  );
 
   return (
     <Card className="border-0 shadow-lg">
@@ -184,7 +148,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
             </div>
           </div>
 
-          {/* Descrição + Impacto */}
+          {/* Descrição + Impacto + Categorias */}
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label>Descrição *</Label>
@@ -246,102 +210,11 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
             </div>
           </div>
 
-          {/* Vincular Atividades */}
-          <div className="space-y-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setModalSelected(new Set(atividadesVinculadas.map(a => a.id)));
-                setShowAtivModal(true);
-              }}
-            >
-              <Link2 className="w-4 h-4 mr-2" />
-              Vincular Atividades
-              {atividadesVinculadas.length > 0 && (
-                <Badge variant="secondary" className="ml-2">{atividadesVinculadas.length}</Badge>
-              )}
-            </Button>
-
-            {atividadesVinculadas.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {atividadesVinculadas.map(a => (
-                  <Badge key={a.id} variant="outline" className="text-xs font-normal">
-                    {a.nome}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Modal de seleção de atividades */}
-          <Dialog open={showAtivModal} onOpenChange={(open) => { setShowAtivModal(open); if (!open) setModalSearch(""); }}>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Vincular Atividades ao Cronograma</DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-3">
-                <Input
-                  placeholder="Buscar tarefa..."
-                  value={modalSearch}
-                  onChange={(e) => setModalSearch(e.target.value)}
-                />
-
-                <div className="max-h-72 overflow-y-auto space-y-1 border rounded-md p-2">
-                  {tarefasFiltradas.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-6">
-                      {tarefas.length === 0
-                        ? "Nenhuma tarefa no cronograma"
-                        : "Nenhuma tarefa encontrada"}
-                    </p>
-                  ) : (
-                    tarefasFiltradas.map(t => {
-                      const nome = t.nome || t.titulo || t.descricao || t.id;
-                      return (
-                        <div
-                          key={t.id}
-                          className="flex items-center gap-3 p-2 rounded hover:bg-muted cursor-pointer"
-                          onClick={() => toggleModalTarefa(t.id)}
-                        >
-                          <Checkbox
-                            checked={modalSelected.has(t.id)}
-                            onCheckedChange={() => toggleModalTarefa(t.id)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <span className="text-sm">{nome}</span>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  {modalSelected.size} {modalSelected.size === 1 ? "atividade selecionada" : "atividades selecionadas"}
-                </p>
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => { setShowAtivModal(false); setModalSearch(""); }}>
-                  Cancelar
-                </Button>
-                <Button type="button" onClick={handleConfirmAtividades}>
-                  Confirmar seleção
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
           {/* Anexos */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Anexos</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                 <Paperclip className="w-3 h-3 mr-1" />
                 Adicionar arquivo
               </Button>
@@ -361,23 +234,14 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
 
             {existingAnexos.map((anexo) => (
               <div key={anexo.url} className="flex items-center justify-between gap-2 p-2 bg-muted rounded-md">
-                <a
-                  href={anexo.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 min-w-0 text-sm text-blue-600 hover:underline"
-                >
+                <a href={anexo.url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 min-w-0 text-sm text-blue-600 hover:underline">
                   <Paperclip className="w-3.5 h-3.5 shrink-0" />
                   <span className="truncate">{anexo.nome}</span>
                   <span className="text-muted-foreground text-xs shrink-0">{formatBytes(anexo.tamanho)}</span>
                 </a>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 shrink-0"
-                  onClick={() => handleRemoveExisting(anexo)}
-                >
+                <Button type="button" size="icon" variant="ghost" className="h-6 w-6 shrink-0"
+                  onClick={() => handleRemoveExisting(anexo)}>
                   <XIcon className="w-3 h-3 text-muted-foreground" />
                 </Button>
               </div>
@@ -390,13 +254,8 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
                   <span className="text-sm truncate">{file.name}</span>
                   <span className="text-muted-foreground text-xs shrink-0">{formatBytes(file.size)}</span>
                 </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 shrink-0"
-                  onClick={() => handleRemoveNewFile(idx)}
-                >
+                <Button type="button" size="icon" variant="ghost" className="h-6 w-6 shrink-0"
+                  onClick={() => handleRemoveNewFile(idx)}>
                   <XIcon className="w-3 h-3 text-muted-foreground" />
                 </Button>
               </div>
@@ -406,11 +265,17 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
           {/* Associar Pleito */}
           <div className="space-y-2">
             <Label>Associar a Pleito (Opcional)</Label>
-            <Select value={formData.pleito_id || "__none__"} onValueChange={(v) => set("pleito_id", v === "__none__" ? null : v)}>
-              <SelectTrigger><SelectValue placeholder="Selecione um pleito" /></SelectTrigger>
+            <Select
+              value={formData.pleito_id || "__none__"}
+              onValueChange={(v) => set("pleito_id", v === "__none__" ? null : v)}
+              disabled={pleitosPending}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={pleitosPending ? "Carregando pleitos..." : "Selecione um pleito"} />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__">Nenhum</SelectItem>
-                {casos.map((pleito) => (
+                {pleitos.map((pleito) => (
                   <SelectItem key={pleito.id} value={pleito.id}>{pleito.titulo}</SelectItem>
                 ))}
               </SelectContent>
