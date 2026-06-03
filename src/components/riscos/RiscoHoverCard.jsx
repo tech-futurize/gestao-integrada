@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { calcScoreRisco, pesoProbabilidade, pesoImpacto, STATUS_RISCO_COLORS } from "@/utils/riscosUtils";
+import { calcScoreRisco, pesoProbabilidade, pesoImpacto, STATUS_RISCO_COLORS, CAT_COLORS } from "@/utils/riscosUtils";
 
 const POPUP_WIDTH = 240;
 const POPUP_OFFSET = 8;
@@ -52,7 +52,7 @@ export default function RiscoHoverCard({ risco, anchorRect, onMouseEnter, onMous
       <div className="grid grid-cols-2 gap-1.5 mb-3">
         <div className="bg-muted/40 rounded p-1.5">
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground/60 mb-0.5">Categoria</div>
-          <div className="text-xs font-semibold text-foreground">{risco.categoria || "—"}</div>
+          <div className="text-xs font-semibold" style={{ color: CAT_COLORS[risco.categoria] || "#6b7280" }}>{risco.categoria || "—"}</div>
         </div>
         <div className="bg-muted/40 rounded p-1.5">
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground/60 mb-0.5">Status</div>
