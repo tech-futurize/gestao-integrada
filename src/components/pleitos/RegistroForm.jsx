@@ -13,6 +13,7 @@ import { Paperclip, X as XIcon, Link2 } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
 
 export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isSubmitting, tarefas = [], selectedProjectId = "" }) {
   const [formData, setFormData] = useState({
@@ -21,6 +22,7 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
     responsavel_registro: incidente?.responsavel_registro || "",
     descricao: incidente?.descricao || "",
     impacto_preliminar: incidente?.impacto_preliminar || "",
+    impacto_ocorrencia: Array.isArray(incidente?.impacto_ocorrencia) ? incidente.impacto_ocorrencia : [],
     status: incidente?.status || "Registrado",
     pleito_id: incidente?.pleito_id || null,
     responsabilidade: incidente?.responsabilidade || "",
@@ -38,6 +40,16 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
   );
   const { toast } = useToast();
   const fileInputRef = useRef(null);
+
+  const { data: categoriasNomes = [], isPending: categoriasPending } = useCategoriasImpacto();
+
+  const toggleImpactoOcorrencia = (cat) =>
+    setFormData(f => ({
+      ...f,
+      impacto_ocorrencia: f.impacto_ocorrencia.includes(cat)
+        ? f.impacto_ocorrencia.filter(c => c !== cat)
+        : [...f.impacto_ocorrencia, cat],
+    }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -183,6 +195,29 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
               <Label>Avaliação de Impacto</Label>
               <Textarea value={formData.impacto_preliminar} onChange={(e) => set("impacto_preliminar", e.target.value)}
                 placeholder="Avaliação preliminar do impacto..." rows={2} className="resize-none" />
+            </div>
+            <div className="space-y-2">
+              <Label>Áreas de Impacto</Label>
+              {categoriasPending ? (
+                <p className="text-xs text-muted-foreground">Carregando categorias...</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {categoriasNomes.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => toggleImpactoOcorrencia(cat)}
+                      className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${
+                        formData.impacto_ocorrencia.includes(cat)
+                          ? "border-transparent bg-primary text-primary-foreground"
+                          : "border-border text-muted-foreground bg-background hover:border-primary/50"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
