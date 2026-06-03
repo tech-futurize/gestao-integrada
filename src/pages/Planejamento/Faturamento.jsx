@@ -7,6 +7,7 @@ import { startOfMonth, endOfMonth, isBefore, isAfter, parseISO } from "date-fns"
 import FaturamentoList from "@/components/planejamento/FaturamentoList";
 import FaturamentoForm from "@/components/planejamento/FaturamentoForm";
 import FaturamentoSummary from "@/components/planejamento/FaturamentoSummary";
+import PqMestraTab from "@/components/planejamento/PqMestraTab";
 import PageEmptyState from "@/components/ui/PageEmptyState";
 import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
@@ -30,6 +31,7 @@ export default function Faturamento() {
   const { toast } = useToast();
   const onErr = (e) => toast({ title: "Erro ao salvar", description: friendlyMessage(e), variant: "destructive" });
 
+  const [activeTab, setActiveTab] = useState("medicoes");
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [showImportExport, setShowImportExport] = useState(false);
@@ -133,78 +135,111 @@ export default function Faturamento() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
-              <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
-            </Button>
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditItem(null); setShowForm(true); }}>
-              <Plus className="w-4 h-4 mr-2" /> Novo Faturamento
-            </Button>
-          </div>
+          activeTab === "medicoes" ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowImportExport(true)}>
+                <Upload className="w-4 h-4 mr-2" /> Importar / Exportar
+              </Button>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { setEditItem(null); setShowForm(true); }}>
+                <Plus className="w-4 h-4 mr-2" /> Novo Faturamento
+              </Button>
+            </div>
+          ) : null
         }
       />
+
       <div className="flex-1 overflow-auto p-6 space-y-4">
-        <FilterToolbar
-          active={!!busca || !!periodo?.from || Object.values(filtros).some((a) => a?.length > 0)}
-          onClearAll={() => { setBusca(""); setPeriodo(null); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey((k) => k + 1); }}
-        >
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            <input
-              className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
-              placeholder="Buscar por número..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+        {/* Abas — padrão Histograma/Avanços */}
+        <div className="flex gap-1 border-b border-border pb-0">
+          {[
+            { key: "medicoes",  label: "Medições" },
+            { key: "pq-mestra", label: "PQ Mestra" },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors
+                ${activeTab === key
+                  ? "bg-card border border-b-card border-border text-foreground -mb-px"
+                  : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "medicoes" && (
+          <div className="space-y-4">
+            <FilterToolbar
+              active={!!busca || !!periodo?.from || Object.values(filtros).some((a) => a?.length > 0)}
+              onClearAll={() => { setBusca(""); setPeriodo(null); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey((k) => k + 1); }}
+            >
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                <input
+                  className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-56 bg-background text-foreground"
+                  placeholder="Buscar por número..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                />
+              </div>
+              <FilterBar
+                key={filterKey}
+                storageKey={FILTROS_KEY}
+                filters={[{ key: "status", label: "Status", options: ["Elaboração", "Concluído"] }]}
+                onChange={setFiltros}
+              />
+              <DateRangePicker label="Período" value={periodo} onChange={setPeriodo} onClear={() => setPeriodo(null)} />
+            </FilterToolbar>
+
+            <FaturamentoSummary
+              faturamentos={filtrados}
+              valorContrato={projetoAtivo?.valor_contrato ?? 0}
+            />
+
+            <FaturamentoList
+              faturamentos={filtrados}
+              isLoading={isPending}
+              onEdit={(f) => { setEditItem(f); setShowForm(true); }}
+              onDelete={(id) => deleteMut.mutate(id)}
             />
           </div>
-          <FilterBar
-            key={filterKey}
-            storageKey={FILTROS_KEY}
-            filters={[{ key: "status", label: "Status", options: ["Elaboração", "Concluído"] }]}
-            onChange={setFiltros}
-          />
-          <DateRangePicker label="Período" value={periodo} onChange={setPeriodo} onClear={() => setPeriodo(null)} />
-        </FilterToolbar>
-
-        <FaturamentoSummary
-          faturamentos={filtrados}
-          valorContrato={projetoAtivo?.valor_contrato ?? 0}
-        />
-
-        <FaturamentoList
-          faturamentos={filtrados}
-          isLoading={isPending}
-          onEdit={(f) => { setEditItem(f); setShowForm(true); }}
-          onDelete={(id) => deleteMut.mutate(id)}
-        />
-
-        {showForm && (
-          <FaturamentoForm
-            key={editItem?.id || "new-faturamento"}
-            faturamento={editItem}
-            faturamentos={faturamentos}
-            pqpMestra={projetoAtivo?.pqp_mestra || []}
-            onSave={handleSave}
-            onClose={() => { setShowForm(false); setEditItem(null); }}
-          />
         )}
 
-        <ImportExportDialog
-          open={showImportExport}
-          onOpenChange={setShowImportExport}
-          title="Faturamento"
-          exportFileName="faturamentos"
-          columns={EXPORT_COLUMNS}
-          onExport={() => faturamentos.map((f) => ({
-            numero: f.numero,
-            mes_referencia: f.mes_referencia,
-            valor_medido: f.valor_medido,
-            status: f.status,
-            observacoes: f.observacoes,
-          }))}
-          onImport={handleImport}
-        />
+        {activeTab === "pq-mestra" && (
+          <PqMestraTab
+            pqpMestra={projetoAtivo?.pqp_mestra || []}
+            faturamentos={faturamentos}
+          />
+        )}
       </div>
+
+      {showForm && (
+        <FaturamentoForm
+          key={editItem?.id || "new-faturamento"}
+          faturamento={editItem}
+          faturamentos={faturamentos}
+          pqpMestra={projetoAtivo?.pqp_mestra || []}
+          onSave={handleSave}
+          onClose={() => { setShowForm(false); setEditItem(null); }}
+        />
+      )}
+
+      <ImportExportDialog
+        open={showImportExport}
+        onOpenChange={setShowImportExport}
+        title="Faturamento"
+        exportFileName="faturamentos"
+        columns={EXPORT_COLUMNS}
+        onExport={() => faturamentos.map((f) => ({
+          numero: f.numero,
+          mes_referencia: f.mes_referencia,
+          valor_medido: f.valor_medido,
+          status: f.status,
+          observacoes: f.observacoes,
+        }))}
+        onImport={handleImport}
+      />
     </div>
   );
 }
