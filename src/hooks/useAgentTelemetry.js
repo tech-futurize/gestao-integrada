@@ -29,7 +29,7 @@ export function useAgentTelemetry() {
         thread_id: threadId ?? null,
       });
     },
-    onError: (err) => console.warn('[telemetry] Falha ao gravar log de uso:', err.message),
+    onError: (err) => { if (import.meta.env.DEV) console.warn('[telemetry] Falha ao gravar log de uso:', err.message); },
   });
 
   return mutate;
