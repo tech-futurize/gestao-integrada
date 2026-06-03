@@ -175,7 +175,7 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
           <div key={s.key} className="flex items-center" style={{ flex: idx < STEPS.length - 1 ? '1' : 'none' }}>
             <button
               className="flex items-center gap-2 cursor-pointer group"
-              onClick={() => visited.has(idx) && goTo(idx)}
+              onClick={() => goTo(idx)}
             >
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-colors ${
                 isDone   ? 'bg-green-600 text-white' :
@@ -211,9 +211,17 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
     const PreviewIcon = resolveIcon(form.icone);
     return (
       <div className="space-y-5">
-        <div>
-          <h3 className="text-base font-bold text-foreground">Identidade & Apresentação</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Nome, ícone e como o agente aparece no chat</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-base font-bold text-foreground">Identidade & Apresentação</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Nome, ícone e como o agente aparece no chat</p>
+          </div>
+          <div className="flex items-center gap-2 pt-0.5">
+            <Switch checked={form.ativo} onCheckedChange={v => set('ativo', v)} id="sw-ativo" />
+            <label htmlFor="sw-ativo" className={`text-sm font-medium cursor-pointer ${form.ativo ? 'text-green-600' : 'text-muted-foreground'}`}>
+              {form.ativo ? 'Ativo' : 'Inativo'}
+            </label>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -241,7 +249,7 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
         {/* Ícone — seletor visual */}
         <div className="space-y-2">
           <Label>Ícone</Label>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-2" role="group" aria-label="Selecionar ícone">
             {ICON_OPTIONS.map(({ value, Icon }) => {
               const active = form.icone === value;
               return (
@@ -293,15 +301,6 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
           </div>
         </div>
 
-        <div className="space-y-1">
-          <Label>Status</Label>
-          <div className="flex items-center gap-2 h-9">
-            <Switch checked={form.ativo} onCheckedChange={v => set('ativo', v)} id="sw-ativo" />
-            <label htmlFor="sw-ativo" className={`text-sm font-medium cursor-pointer ${form.ativo ? 'text-green-600' : 'text-muted-foreground'}`}>
-              {form.ativo ? 'Ativo' : 'Inativo'}
-            </label>
-          </div>
-        </div>
       </div>
     );
   };
@@ -533,17 +532,22 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
       </div>
 
       {/* Footer de navegação */}
-      <div className="border-t border-border bg-card px-6 py-3 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Passo {step + 1} de {STEPS.length}</span>
-        <div className="flex gap-2">
+      <div className="border-t border-border bg-card px-6 py-3 flex items-center">
+        {/* Esquerda — voltar */}
+        <div className="flex-1 flex justify-start">
           {step > 0 && (
             <Button variant="outline" size="sm" onClick={() => goTo(step - 1)}>
               <ArrowLeft size={14} className="mr-1" /> {STEPS[step - 1].label}
             </Button>
           )}
+        </div>
+        {/* Centro — indicador */}
+        <span className="text-xs text-muted-foreground font-medium">Passo {step + 1} de {STEPS.length}</span>
+        {/* Direita — avançar */}
+        <div className="flex-1 flex justify-end">
           {step < STEPS.length - 1 ? (
             <Button size="sm" className="bg-[hsl(210_62%_16%)] hover:bg-[hsl(210_62%_20%)] text-white" onClick={() => goTo(step + 1)}>
-              Próximo: {STEPS[step + 1].label} <ArrowRight size={14} className="ml-1" />
+              {STEPS[step + 1].label} <ArrowRight size={14} className="ml-1" />
             </Button>
           ) : (
             <Button

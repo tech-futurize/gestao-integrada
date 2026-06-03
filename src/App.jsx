@@ -139,7 +139,6 @@ const AuthenticatedApp = () => (
     {/* Agentes de IA — rota genérica por slug */}
     <Route path="/agentes/:slug" element={wrap(AgenteViewer, 'Agentes de IA')} />
     {/* Redirects das rotas legadas para os slugs do banco */}
-    <Route path="/agentes/executor" element={<Navigate to="/agentes/supabase-analyst-agent" replace />} />
     <Route path="/agentes/analista-negocio" element={<Navigate to="/agentes/business-analyst-agent" replace />} />
     <Route path="/agentes/analista-contratual" element={<Navigate to="/agentes/contractual-analyst-agent" replace />} />
 
@@ -167,7 +166,7 @@ const AuthenticatedApp = () => (
     <Route path="/Pleitos" element={<Navigate to="/admin-contratual/pleitos" replace />} />
     <Route path="/GestaoMudancas" element={<Navigate to="/riscos-mudancas/gestao-mudancas" replace />} />
     <Route path="/GestaoRiscos" element={<Navigate to="/riscos-mudancas/gestao-riscos" replace />} />
-    <Route path="/Agente" element={<Navigate to="/agentes/supabase-analyst-agent" replace />} />
+    <Route path="/Agente" element={<Navigate to="/agentes/business-analyst-agent" replace />} />
     <Route path="/AgenteConfig" element={<Navigate to="/configuracoes/agentes-admin" replace />} />
     <Route path="/GerenciarProjeto" element={<Navigate to="/configuracoes/gerenciar-projeto" replace />} />
     <Route path="/Financeiro" element={<Navigate to="/planejamento/avancos" replace />} />

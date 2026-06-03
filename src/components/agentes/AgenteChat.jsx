@@ -29,11 +29,11 @@ export default function AgenteChat({ agent }) {
   });
   const project = projetos[0] ?? null;
 
-  // Reinicia a conversa ao trocar de projeto
+  // Reinicia a conversa ao trocar de projeto ou de agente
   useEffect(() => {
     setMessages([]);
     setThreadId(crypto.randomUUID());
-  }, [selectedProjectId]);
+  }, [selectedProjectId, agent.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -170,8 +170,11 @@ export default function AgenteChat({ agent }) {
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-muted/20">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-            <div className={`w-16 h-16 rounded-2xl ${agent.iconBg} flex items-center justify-center`}>
-              <AgentIcon className={`w-8 h-8 ${agent.iconColor}`} />
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center"
+              style={{ background: (agent.cor || '#26405d') + '22' }}
+            >
+              <AgentIcon className="w-8 h-8" style={{ color: agent.cor || '#26405d' }} />
             </div>
             <div>
               <h3 className="font-bold text-foreground text-lg">{agent.name}</h3>
@@ -200,16 +203,20 @@ export default function AgenteChat({ agent }) {
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "assistant" && (
-              <div className={`w-8 h-8 rounded-full ${agent.color} flex-shrink-0 flex items-center justify-center mt-0.5`}>
+              <div
+                className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
+                style={{ background: agent.cor || '#26405d' }}
+              >
                 <AgentIcon className="w-4 h-4 text-white" />
               </div>
             )}
             <div
               className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                 msg.role === "user"
-                  ? `${agent.color} text-white rounded-tr-sm`
+                  ? "text-white rounded-tr-sm"
                   : "bg-card border border-border text-foreground rounded-tl-sm shadow-sm"
               }`}
+              style={msg.role === "user" ? { background: agent.cor || '#26405d' } : undefined}
             >
               {msg.role === "assistant" ? (
                 msg.content ? (
@@ -253,7 +260,8 @@ export default function AgenteChat({ agent }) {
           <Button
             onClick={() => sendMessage()}
             disabled={!input.trim() || isStreaming}
-            className={`${agent.btnColor} h-11 w-11 p-0 rounded-xl flex-shrink-0`}
+            className="h-11 w-11 p-0 rounded-xl flex-shrink-0 text-white hover:opacity-90"
+            style={{ background: agent.cor || '#26405d' }}
           >
             {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
