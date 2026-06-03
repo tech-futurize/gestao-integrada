@@ -7,7 +7,7 @@ import { FormDialog } from "@/components/ui/FormDialog";
 
 const TIPOS = ["Serviços", "Fornecimento", "Fornecimento + Serviço"];
 const STATUS = ["A iniciar", "Em andamento", "Concluído", "Paralisado"];
-const MODALIDADES = ["Preço unitário", "Global"];
+const MODALIDADES = ["Preço unitário", "Global", "HH"];
 
 const formatBR = (v) => {
   if (v === "" || v == null) return "";

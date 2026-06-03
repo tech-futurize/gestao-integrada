@@ -71,6 +71,10 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
     onChange?.(updateNode(itens, code, { [key]: value }));
   };
 
+  const editLeafStr = (code, key, value) => {
+    onChange?.(updateNode(itens, code, { [key]: value }));
+  };
+
   const addItemRaiz = () => {
     const nextNum = String(itens.length + 1);
     onChange?.([
@@ -168,7 +172,16 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
                         {node.item}
                       </span>
                     </td>
-                    <td className="px-3 py-1.5">{node.descricao}</td>
+                    <td className="px-3 py-1.5">
+                      {leaf && !readOnly && !isMedicao ? (
+                        <Input
+                          value={node.descricao ?? ""}
+                          onChange={(e) => editLeafStr(node.item, "descricao", e.target.value)}
+                          className="h-7 text-xs"
+                          placeholder="Descrição"
+                        />
+                      ) : node.descricao}
+                    </td>
 
                     {isMedicao ? (
                       <>
@@ -195,7 +208,18 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
                       </>
                     ) : (
                       <>
-                        <td className="px-2 py-1.5">{leaf ? node.unidade : "—"}</td>
+                        <td className="px-2 py-1.5">
+                          {leaf ? (
+                            readOnly ? node.unidade : (
+                              <Input
+                                value={node.unidade ?? ""}
+                                onChange={(e) => editLeafStr(node.item, "unidade", e.target.value)}
+                                className="h-7 w-16 text-xs"
+                                placeholder="Un."
+                              />
+                            )
+                          ) : "—"}
+                        </td>
                         <td className="px-2 py-1.5 text-right">
                           {leaf ? (
                             readOnly ? fmtNum(node.qtd_contratual) : (
