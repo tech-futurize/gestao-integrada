@@ -12,13 +12,12 @@ import {
 } from "lucide-react";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Area, AreaChart, BarChart, Bar
+  ComposedChart, Bar, Line, BarChart, Cell
 } from "recharts";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import FilterBar from "@/components/ui/FilterBar";
 import { Search } from "lucide-react";
 import RowActions from "@/components/ui/RowActions";
-import DetailDialog from "@/components/ui/DetailDialog";
 
 const DISCIPLINAS = ["Civil", "Mecânica", "Tubulação", "Elétrica", "Estrutura Metálica", "Instrumentação", "Pintura", "Outros"];
 
@@ -103,7 +102,6 @@ function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSave
 
   const [lancForm, setLancForm] = useState(null);
   const [editingLancId, setEditingLancId] = useState(null);
-  const [viewLanc, setViewLanc] = useState(null);
 
   const openNewLanc = () => {
     setEditingLancId(null);
@@ -226,23 +224,23 @@ function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSave
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted border-b border-border">
-                    {["Semana ISO", "Qtd. Lançada", "Acumulado", ""].map(h => (
+                    {["Semana ISO", "Qtd. Lançada", "Acumulado", "Observação", ""].map(h => (
                       <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {sortedLanc.length === 0 && (
-                    <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground text-sm">Nenhum lançamento ainda</td></tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">Nenhum lançamento ainda</td></tr>
                   )}
                   {sortedLanc.map((l, i) => (
                     <tr key={l.id} className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
                       <td className="px-4 py-2 font-bold text-xs text-foreground">{l.semana_iso || l.semana || "—"}</td>
                       <td className="px-4 py-2 font-semibold">{fmtQtd(l.quantidade)}</td>
                       <td className="px-4 py-2 text-foreground">{fmtQtd(l.acumulado)}</td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground max-w-[160px] truncate">{l.observacao || "—"}</td>
                       <td className="px-4 py-2">
                         <RowActions
-                          onView={() => setViewLanc(l)}
                           onEdit={() => openEditLanc(l)}
                           onDelete={() => onDeleteLancamento(l.id)}
                           deleteDescription="O lançamento será excluído permanentemente."
@@ -258,19 +256,6 @@ function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSave
 
       </div>
     </div>
-    {viewLanc && (
-      <DetailDialog
-        open={!!viewLanc}
-        onOpenChange={(o) => !o && setViewLanc(null)}
-        title={`Lançamento — Semana ${viewLanc.semana_iso || viewLanc.semana || "—"}`}
-        sections={[
-          { label: "Semana", value: viewLanc.semana_iso || viewLanc.semana },
-          { label: "Quantidade", value: fmtQtd(viewLanc.quantidade) },
-          { label: "Acumulado", value: fmtQtd(viewLanc.acumulado) },
-          { label: "Observação", value: viewLanc.observacao, full: true },
-        ]}
-      />
-    )}
     </>
   );
 }
@@ -326,7 +311,6 @@ function LancamentoModal({ commodityId, projetoId, lancamento, onSave, onClose }
 
 // ── DETALHE ITEM ───────────────────────────────────────────────────────────────
 function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLancamento, onEditLancamento, onDeleteLancamento }) {
-  const [viewLanc, setViewLanc] = useState(null);
   const sorted = [...lancamentos].sort((a, b) =>
     (a.semana_iso || a.semana || "").localeCompare(b.semana_iso || b.semana || "")
   );
@@ -344,7 +328,8 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
 
   const chartData = lancSorted.map(l => ({
     semana: l.semana_iso || l.semana || "",
-    realizado: l.acumulado,
+    semanal: l.quantidade,
+    acumulado: l.acumulado,
   }));
 
   return (
@@ -375,7 +360,7 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
             { label: "Qtd. Contrato", value: fmtQtd(item.qtd_contrato),           colorCls: "text-foreground" },
             { label: "Qtd. Take-Off", value: item.qtd_takeoff != null ? fmtQtd(item.qtd_takeoff) : "—", colorCls: "text-muted-foreground" },
             { label: "Qtd. Realizado", value: fmtQtd(realizado),                   colorCls: "text-status-positive" },
-            { label: "Saldo",          value: fmtQtd(saldo),                        colorCls: saldo >= 0 ? "text-status-positive" : "text-status-critical" },
+            { label: "Saldo",          value: fmtQtd(saldo),                        colorCls: "text-red-600 dark:text-red-400" },
             { label: "% Avanço",       value: fmtPct(pct),                                            colorCls: stCfg.cls.split(" ").find(c => c.startsWith("text-")) },
           ].map(({ label, value, colorCls }) => (
             <div key={label} className="bg-muted rounded-lg p-3 text-center">
@@ -397,19 +382,14 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
       <div className="bg-card rounded-xl border border-border shadow-sm p-5">
         <h3 className="font-semibold mb-4 text-foreground">Curva de Evolução</h3>
         <ResponsiveContainer width="100%" height={250}>
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="gradReal" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="#16a34a" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
-              </linearGradient>
-            </defs>
+          <ComposedChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="semana" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
-            <Tooltip />
-            <Area type="monotone" dataKey="realizado" stroke="#16a34a" fill="url(#gradReal)" strokeWidth={2} name="Realizado" connectNulls dot={{ r: 4 }} />
-          </AreaChart>
+            <Tooltip formatter={(v, name) => [fmtQtd(v), name]} />
+            <Bar dataKey="semanal" fill="#93c5fd" radius={[4, 4, 0, 0]} name="Qtd. Semanal" />
+            <Line type="monotone" dataKey="acumulado" stroke="#16a34a" strokeWidth={2} name="Acumulado" dot={{ r: 4 }} connectNulls />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
 
@@ -425,23 +405,23 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted border-b border-border">
-                {["Semana ISO", "Qtd. Lançada", "Acumulado", ""].map(h => (
+                {["Semana ISO", "Qtd. Lançada", "Acumulado", "Observação", ""].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-muted-foreground uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {lancSorted.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground text-sm">Nenhum lançamento ainda</td></tr>
+                <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground text-sm">Nenhum lançamento ainda</td></tr>
               )}
               {lancSorted.map((l, i) => (
                 <tr key={l.id} className={`border-b border-border ${i % 2 === 0 ? "bg-card" : "bg-muted/30"}`}>
                   <td className="px-4 py-2 font-bold text-xs text-ocre">{l.semana_iso || l.semana || "—"}</td>
                   <td className="px-4 py-2 font-semibold">{fmtQtd(l.quantidade)} <span className="text-xs text-muted-foreground">{item.unidade}</span></td>
                   <td className="px-4 py-2 font-semibold text-foreground">{fmtQtd(l.acumulado)}</td>
+                  <td className="px-4 py-2 text-xs text-muted-foreground max-w-[200px] truncate">{l.observacao || "—"}</td>
                   <td className="px-4 py-2">
                     <RowActions
-                      onView={() => setViewLanc(l)}
                       onEdit={() => onEditLancamento(l)}
                       onDelete={() => onDeleteLancamento(l.id)}
                       deleteDescription="O lançamento será excluído permanentemente."
@@ -454,19 +434,6 @@ function ItemDetalhe({ item, lancamentos, projetoId: _projetoId, onBack, onAddLa
         </div>
       </div>
     </div>
-    {viewLanc && (
-      <DetailDialog
-        open={!!viewLanc}
-        onOpenChange={(o) => !o && setViewLanc(null)}
-        title={`Lançamento — Semana ${viewLanc.semana_iso || viewLanc.semana || "—"}`}
-        sections={[
-          { label: "Semana", value: viewLanc.semana_iso || viewLanc.semana },
-          { label: "Quantidade", value: `${fmtQtd(viewLanc.quantidade)} ${item.unidade}` },
-          { label: "Acumulado", value: fmtQtd(viewLanc.acumulado) },
-          { label: "Observação", value: viewLanc.observacao, full: true },
-        ]}
-      />
-    )}
     </>
   );
 }
@@ -550,7 +517,8 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
     return { ...item, realizado, saldo, pct, status };
   }), [items, todosLancamentos]);
 
-  const filtered = useMemo(() => {
+  // Base filtrada pelos filtros do toolbar (busca + FilterBar) — sem os filtros de clique nos gráficos
+  const baseFiltered = useMemo(() => {
     let r = enriched;
     if (filtros.disciplina?.length > 0) r = r.filter(i => filtros.disciplina.includes(i.disciplina));
     if (filtros.unidade?.length > 0)    r = r.filter(i => filtros.unidade.includes(i.unidade));
@@ -558,12 +526,20 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
       const b = busca.toLowerCase();
       r = r.filter(i => i.codigo?.toLowerCase().includes(b) || i.descricao?.toLowerCase().includes(b));
     }
+    return r;
+  }, [enriched, filtros, busca]);
+
+  // Lista completa para a tabela — aplica também os filtros de clique nos gráficos
+  const filtered = useMemo(() => {
+    let r = baseFiltered;
+    if (filtroUnidade)    r = r.filter(i => i.unidade    === filtroUnidade);
+    if (filtroDisciplina) r = r.filter(i => i.disciplina === filtroDisciplina);
     return [...r].sort((a, b) => {
       const av = a[sortCol] ?? ""; const bv = b[sortCol] ?? "";
       const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [enriched, filtros, busca, sortCol, sortDir]);
+  }, [baseFiltered, filtroUnidade, filtroDisciplina, sortCol, sortDir]);
 
   const totals = useMemo(() =>
     filtered.reduce((acc, i) => ({
@@ -574,35 +550,39 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
     }), { qtd_contrato: 0, qtd_takeoff: 0, realizado: 0, saldo: 0 }),
   [filtered]);
 
-  const chartByUnidade = useMemo(() =>
-    UNIDADE_SIGLAS
+  // Gráfico de unidade: usa baseFiltered + filtro de disciplina (mas NÃO filtroUnidade — cross-filter)
+  const chartByUnidade = useMemo(() => {
+    const base = filtroDisciplina ? baseFiltered.filter(i => i.disciplina === filtroDisciplina) : baseFiltered;
+    return UNIDADE_SIGLAS
       .map(u => {
-        const its = filtered.filter(i => i.unidade === u);
+        const its = base.filter(i => i.unidade === u);
         if (its.length === 0) return null;
         return {
-          name:      u,
-          Contrato:  its.reduce((s, i) => s + (i.qtd_contrato || 0), 0),
-          "Take-Off": its.reduce((s, i) => s + (i.qtd_takeoff || 0), 0),
-          Realizado: its.reduce((s, i) => s + i.realizado, 0),
+          name:       u,
+          Contrato:   its.reduce((s, i) => s + (i.qtd_contrato || 0), 0),
+          "Take-Off": its.reduce((s, i) => s + (i.qtd_takeoff  || 0), 0),
+          Realizado:  its.reduce((s, i) => s + i.realizado, 0),
         };
       })
-      .filter(Boolean),
-  [filtered]);
+      .filter(Boolean);
+  }, [baseFiltered, filtroDisciplina]);
 
-  const chartByDisciplina = useMemo(() =>
-    DISCIPLINAS
+  // Gráfico de disciplina: usa baseFiltered + filtro de unidade (mas NÃO filtroDisciplina — cross-filter)
+  const chartByDisciplina = useMemo(() => {
+    const base = filtroUnidade ? baseFiltered.filter(i => i.unidade === filtroUnidade) : baseFiltered;
+    return DISCIPLINAS
       .map(d => {
-        const its = filtered.filter(i => i.disciplina === d);
+        const its = base.filter(i => i.disciplina === d);
         if (its.length === 0) return null;
         return {
-          name:      d,
-          Contrato:  its.reduce((s, i) => s + (i.qtd_contrato || 0), 0),
-          "Take-Off": its.reduce((s, i) => s + (i.qtd_takeoff || 0), 0),
-          Realizado: its.reduce((s, i) => s + i.realizado, 0),
+          name:       d,
+          Contrato:   its.reduce((s, i) => s + (i.qtd_contrato || 0), 0),
+          "Take-Off": its.reduce((s, i) => s + (i.qtd_takeoff  || 0), 0),
+          Realizado:  its.reduce((s, i) => s + i.realizado, 0),
         };
       })
-      .filter(Boolean),
-  [filtered]);
+      .filter(Boolean);
+  }, [baseFiltered, filtroUnidade]);
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -650,7 +630,7 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
       <div className="flex items-center justify-between gap-3">
         <FilterToolbar
           active={!!busca || Object.values(filtros).some(a => a?.length > 0)}
-          onClearAll={() => { setBusca(""); setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
+          onClearAll={() => { setBusca(""); setFiltros({}); setFiltroUnidade(""); setFiltroDisciplina(""); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1); }}
         >
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -671,7 +651,7 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
             onChange={setFiltros}
           />
         </FilterToolbar>
-        <Button onClick={() => { setEditingItem(null); setShowItemModal(true); }}>
+        <Button onClick={() => { setEditingItem(null); setShowItemModal(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
           <Plus className="w-4 h-4 mr-2" />Novo Item
         </Button>
       </div>
@@ -694,9 +674,15 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
-                <Bar dataKey="Contrato"  fill={filtroUnidade ? "#9ca3af66" : "#9ca3af"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Take-Off"  fill={filtroUnidade ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Realizado" fill={filtroUnidade ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Contrato"  radius={[4, 4, 0, 0]}>
+                  {chartByUnidade.map(e => <Cell key={`u-c-${e.name}`} fill={!filtroUnidade || filtroUnidade === e.name ? "#9ca3af" : "#9ca3af44"} />)}
+                </Bar>
+                <Bar dataKey="Take-Off"  radius={[4, 4, 0, 0]}>
+                  {chartByUnidade.map(e => <Cell key={`u-t-${e.name}`} fill={!filtroUnidade || filtroUnidade === e.name ? "#93c5fd" : "#93c5fd44"} />)}
+                </Bar>
+                <Bar dataKey="Realizado" radius={[4, 4, 0, 0]}>
+                  {chartByUnidade.map(e => <Cell key={`u-r-${e.name}`} fill={!filtroUnidade || filtroUnidade === e.name ? "#16a34a" : "#16a34a44"} />)}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -716,9 +702,15 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={45} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={formatYAxis} axisLine={{ stroke: "hsl(var(--border))" }} tickLine={false} />
                 <Tooltip formatter={(v) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
-                <Bar dataKey="Contrato"  fill={filtroDisciplina ? "#9ca3af66" : "#9ca3af"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Take-Off"  fill={filtroDisciplina ? "#93c5fd66" : "#93c5fd"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Realizado" fill={filtroDisciplina ? "#16a34a66" : "#16a34a"} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Contrato"  radius={[4, 4, 0, 0]}>
+                  {chartByDisciplina.map(e => <Cell key={`d-c-${e.name}`} fill={!filtroDisciplina || filtroDisciplina === e.name ? "#9ca3af" : "#9ca3af44"} />)}
+                </Bar>
+                <Bar dataKey="Take-Off"  radius={[4, 4, 0, 0]}>
+                  {chartByDisciplina.map(e => <Cell key={`d-t-${e.name}`} fill={!filtroDisciplina || filtroDisciplina === e.name ? "#93c5fd" : "#93c5fd44"} />)}
+                </Bar>
+                <Bar dataKey="Realizado" radius={[4, 4, 0, 0]}>
+                  {chartByDisciplina.map(e => <Cell key={`d-r-${e.name}`} fill={!filtroDisciplina || filtroDisciplina === e.name ? "#16a34a" : "#16a34a44"} />)}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
