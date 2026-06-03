@@ -9,10 +9,23 @@ import {
 } from 'recharts';
 
 async function fetchUsdBrl() {
+  // Fonte primária: ExchangeRate-API (cotação comercial atualizada)
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    if (res.ok) {
+      const json = await res.json();
+      const rate = Number(json.rates?.BRL);
+      if (rate > 1) return rate;
+    }
+  } catch { /* fallback abaixo */ }
+
+  // Fallback: AwesomeAPI
   const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
   if (!res.ok) throw new Error('cotação indisponível');
   const json = await res.json();
-  return Number(json.USDBRL.bid);
+  const rate = Number(json.USDBRL?.ask ?? json.USDBRL?.bid);
+  if (!rate || rate < 1) throw new Error('cotação indisponível');
+  return rate;
 }
 
 const AGENT_COLORS = {
