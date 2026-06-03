@@ -555,8 +555,7 @@ export default function Registros() {
                               {/* Card Body */}
                               <div className="px-4 py-2 flex-1 space-y-2">
                                 <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
-                                  {inc.descricao ||
-                                    inc.ocorrencias || (
+                                  {inc.descricao || (
                                       <span className="text-muted-foreground italic">
                                         Sem descrição
                                       </span>

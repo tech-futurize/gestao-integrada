@@ -80,7 +80,7 @@ export default function AdicionarCronogramaModal({ open, onClose, tarefas, onCon
               <p className="text-sm font-medium text-foreground truncate">{t.nome}</p>
               <p className="text-xs text-muted-foreground">
                 {[t.area, t.disciplina].filter(Boolean).join(" / ") || "Sem área/disciplina"}
-                {t.inicio_previsto && ` · ${formatDate(t.inicio_previsto)}`}
+                {t.data_inicio_planejada && ` · ${formatDate(t.data_inicio_planejada)}`}
               </p>
             </div>
           </label>

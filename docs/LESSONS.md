@@ -358,6 +358,38 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L020 — Front-end adicionou campo ao formulário sem criar a migration correspondente no banco
+
+- **Data:** 2026-06-03
+- **Agente:** Tester
+- **Milestone:** Auditoria Front-end ↔ Back-end (2026-06-03)
+- **Categoria:** Banco
+- **Gravidade:** Crítica
+- **Contexto em 1 frase:** Commit 6dfd051 adicionou o campo `impacto_ocorrencia` ao `RegistroForm` para suportar categorias dinâmicas de impacto, mas nunca criou a coluna na tabela `registros`.
+- **Erro observado:** Toda tentativa de criar ou editar um Registro pela UI falhava com `PGRST204` (coluna inexistente) — a operação inteira era rejeitada pelo PostgREST.
+- **Causa raiz:** A tarefa foi concluída fazendo apenas a mudança no front-end. Não existia checklist que obrigasse a verificar se a coluna alvo já existia no banco antes de commitar o form.
+- **Correção aplicada:** Migration `p0_registros_add_impacto_ocorrencia` adicionou `impacto_ocorrencia jsonb DEFAULT '[]'::jsonb` à tabela `registros`.
+- **Como evitar em projetos futuros:** Ao adicionar qualquer campo a um formulário, verificar imediatamente se a coluna correspondente existe no banco (`information_schema.columns`). Regra: formulário e coluna são um par atômico — commit só fecha quando ambos existem. Adicionar ao checklist de task: "Confirmar que todas as colunas gravadas pelo form existem no schema real (não na migration local)."
+- **Referências:** `src/components/pleitos/RegistroForm.jsx`; commit 6dfd051; migration `p0_registros_add_impacto_ocorrencia`.
+
+---
+
+### L021 — Constantes de import/export referenciando colunas inexistentes quebram o import
+
+- **Data:** 2026-06-03
+- **Agente:** Tester
+- **Milestone:** Auditoria Front-end ↔ Back-end (2026-06-03)
+- **Categoria:** Banco
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** `RISCO_COLUMNS` no módulo de Riscos listava `plano_resposta` como coluna de import/export, mas a tabela `riscos` só tem `mitigacao` e `residual`.
+- **Erro observado:** Importar uma planilha de riscos com a coluna "Plano de Resposta" falhava o INSERT por coluna inexistente; o export incluía uma coluna vazia que confundia o usuário.
+- **Causa raiz:** A constante foi criada antes da consolidação do schema e nunca foi revisada contra o banco real. Constantes de import/export ficam "fora do radar" do desenvolvimento cotidiano.
+- **Correção aplicada:** Renomear `plano_resposta` para `mitigacao` em `RISCO_COLUMNS` (`GestaoRiscos.jsx`).
+- **Como evitar em projetos futuros:** Ao criar qualquer constante de colunas para import/export (`*_COLUMNS`, `EXPORT_COLUMNS`, etc.), cada `key` deve ser confirmado como coluna real da tabela correspondente. Revisar essas constantes em toda auditoria de schema.
+- **Referências:** `src/pages/RiscosMudancas/GestaoRiscos.jsx` (`RISCO_COLUMNS`).
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:

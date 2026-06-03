@@ -19,15 +19,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import RegistroForm from "@/components/pleitos/RegistroForm";
 import { useProject } from "@/lib/ProjectContext";
 import { supabase } from "@/lib/supabaseClient";
@@ -85,19 +76,10 @@ export default function RegistroDetalhes({ registro, onBack }) {
   const [showEditForm, setShowEditForm] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [showAtivModal, setShowAtivModal] = useState(false);
-  const [modalSearch, setModalSearch] = useState("");
-  const [modalSelected, setModalSelected] = useState(new Set());
   const fileInputRef = useRef(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { selectedProjectId } = useProject();
-
-  const { data: tarefas = [] } = useQuery({
-    queryKey: ["tarefas_cronograma", selectedProjectId],
-    queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
-    enabled: !!selectedProjectId,
-  });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Registro.update(id, data),
@@ -155,35 +137,13 @@ export default function RegistroDetalhes({ registro, onBack }) {
     });
   };
 
-  const toggleModalTarefa = (id) => {
-    setModalSelected(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const handleConfirmAtividades = () => {
-    const selecionadas = tarefas
-      .filter(t => modalSelected.has(t.id))
-      .map(t => ({ id: t.id, nome: t.nome || t.titulo || t.descricao || t.id }));
-    updateMutation.mutate({ id: registro.id, data: { atividades_vinculadas: selecionadas } });
-    setShowAtivModal(false);
-    setModalSearch("");
-  };
-
-  const tarefasFiltradas = tarefas.filter(t =>
-    (t.nome || t.titulo || t.descricao || "").toLowerCase().includes(modalSearch.toLowerCase())
-  );
-
   const tipoClass = TIPO_COLORS[registro.tipo_registro] || "bg-muted text-muted-foreground";
   const anexos = registro.anexos || [];
-  const vinculos = registro.atividades_vinculadas || [];
 
   const abas = [
     { key: "detalhes", label: "Detalhes" },
     { key: "anexos",   label: `Anexos (${anexos.length})` },
-    { key: "vinculos", label: `Vínculos (${vinculos.length})` },
+    { key: "vinculos", label: "Vínculos" },
   ];
 
   return (
@@ -435,61 +395,26 @@ export default function RegistroDetalhes({ registro, onBack }) {
         {activeTab === "vinculos" && (
           <Card className="border-0 shadow-md">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Link2 className="w-5 h-5 text-green-500" />
-                  Vínculos
-                </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setModalSelected(new Set((registro.atividades_vinculadas || []).map(v => v.id).filter(Boolean)));
-                    setShowAtivModal(true);
-                  }}
-                >
-                  <Link2 className="w-3.5 h-3.5 mr-1.5" />
-                  Vincular Atividades
-                </Button>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-green-500" />
+                Vínculos
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
-              {vinculos.length === 0 && !registro.pleito_id ? (
+              {!registro.pleito_id ? (
                 <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
                   <Link2 className="w-8 h-8 opacity-30" />
                   <p className="text-sm">Nenhum vínculo neste registro.</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {registro.pleito_id && (
-                    <div className="flex items-center gap-3 p-3 border border-border rounded-lg bg-muted/30">
-                      <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <span className="text-sm font-medium text-foreground">Pleito vinculado</span>
-                      <span className="text-xs text-muted-foreground ml-auto font-mono">
-                        {registro.pleito_id.slice(0, 8)}…
-                      </span>
-                    </div>
-                  )}
-                  {vinculos.map((v, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <span className="text-sm text-foreground truncate flex-1">{v.nome || v.id}</span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => {
-                          const updated = vinculos.filter((_, idx) => idx !== i);
-                          updateMutation.mutate({ id: registro.id, data: { atividades_vinculadas: updated } });
-                        }}
-                      >
-                        <XIcon className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  ))}
+                  <div className="flex items-center gap-3 p-3 border border-border rounded-lg bg-muted/30">
+                    <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium text-foreground">Pleito vinculado</span>
+                    <span className="text-xs text-muted-foreground ml-auto font-mono">
+                      {registro.pleito_id.slice(0, 8)}…
+                    </span>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -497,58 +422,6 @@ export default function RegistroDetalhes({ registro, onBack }) {
         )}
 
       </div>
-
-      {/* Dialog — Vincular Atividades */}
-      <Dialog open={showAtivModal} onOpenChange={(open) => { setShowAtivModal(open); if (!open) setModalSearch(""); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Vincular Atividades ao Cronograma</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input
-              placeholder="Buscar tarefa..."
-              value={modalSearch}
-              onChange={(e) => setModalSearch(e.target.value)}
-            />
-            <div className="max-h-72 overflow-y-auto space-y-1 border rounded-md p-2">
-              {tarefasFiltradas.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">
-                  {tarefas.length === 0 ? "Nenhuma tarefa no cronograma" : "Nenhuma tarefa encontrada"}
-                </p>
-              ) : (
-                tarefasFiltradas.map(t => {
-                  const nome = t.nome || t.titulo || t.descricao || t.id;
-                  return (
-                    <div
-                      key={t.id}
-                      className="flex items-center gap-3 p-2 rounded hover:bg-muted cursor-pointer"
-                      onClick={() => toggleModalTarefa(t.id)}
-                    >
-                      <Checkbox
-                        checked={modalSelected.has(t.id)}
-                        onCheckedChange={() => toggleModalTarefa(t.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <span className="text-sm">{nome}</span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {modalSelected.size} {modalSelected.size === 1 ? "atividade selecionada" : "atividades selecionadas"}
-            </p>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => { setShowAtivModal(false); setModalSearch(""); }}>
-              Cancelar
-            </Button>
-            <Button type="button" onClick={handleConfirmAtividades}>
-              Confirmar seleção
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Confirmação de exclusão */}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

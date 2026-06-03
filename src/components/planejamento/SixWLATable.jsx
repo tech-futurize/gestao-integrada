@@ -257,8 +257,8 @@ export default function SixWLATable({ items, restricoes = [], isLoading, discipl
                             <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_inicio_real)}</span>
                             <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_fim_real)}</span>
                             <span className="text-muted-foreground">Proj</span>
-                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.inicio_previsto)}</span>
-                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.termino_previsto)}</span>
+                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_inicio_planejada)}</span>
+                            <span className="font-medium text-foreground">{fmtDateStr(item.tarefa?.data_fim_planejada)}</span>
                           </div>
                         </div>
                       </PopoverContent>

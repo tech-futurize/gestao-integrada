@@ -34,7 +34,7 @@ const RISCO_COLUMNS = [
   { key: "impacto",        label: "Impacto",                   type: "string" },
   { key: "status",         label: "Status",                    type: "string" },
   { key: "responsavel",    label: "Responsável",               type: "string" },
-  { key: "plano_resposta", label: "Plano de Resposta",         type: "string" },
+  { key: "mitigacao",      label: "Plano de Resposta",         type: "string" },
   { key: "escopo_texto",   label: "Impacto no Escopo",         type: "string" },
   { key: "prazo_dias",     label: "Impacto Prazo (dias)",      type: "number" },
   { key: "valor_impacto",  label: "Impacto Financeiro (R$)",   type: "number" },
@@ -622,7 +622,7 @@ export default function GestaoRiscos() {
           <SectionDivider label="Impactos no Projeto" />
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>Áreas de Impacto</Label>
+              <Label>Categorias de Impacto</Label>
               {categoriasPending ? (
                 <p className="text-xs text-muted-foreground">Carregando categorias...</p>
               ) : (

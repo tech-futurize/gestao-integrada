@@ -31,7 +31,6 @@ const TABLE_MAP = {
   PacoteSuprimento: 'pacotes_suprimento',
   CategoriaImpacto: 'categorias_impacto',
   Agente: 'agentes',
-  AgenteSystemTool: 'agente_system_tools',
   AgenteTool: 'agente_tools',
   AgenteToolLink: 'agente_tool_links',
   AgenteUsoLog: 'agente_uso_logs',

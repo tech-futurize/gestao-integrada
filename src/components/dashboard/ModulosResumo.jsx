@@ -429,21 +429,31 @@ function ResumoAvancoFisico({ projetoId }) {
     enabled: !!projetoId,
   });
 
-  const sorted = [...avancos].sort((a, b) => new Date(a.mes_referencia) - new Date(b.mes_referencia)).slice(-8);
-  const areaData = sorted.map(f => ({
-    name: new Date(f.mes_referencia).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }),
-    Previsto: f.avanco_previsto_acumulado || 0,
-    Realizado: f.avanco_realizado_acumulado || 0,
-    "Prev. Mensal": f.avanco_previsto_mensal || 0,
-    "Real. Mensal": f.avanco_realizado_mensal || 0,
+  const sorted = [...avancos]
+    .filter(r => r.semana_iso)
+    .sort((a, b) => (a.semana_iso || "").localeCompare(b.semana_iso || ""));
+
+  let _prevAc = 0, _realAc = 0;
+  const withAcum = sorted.map(r => {
+    _prevAc += (r.avanco_previsto_mensal || 0);
+    _realAc += (r.avanco_realizado_mensal || 0);
+    return { ...r, _prevAcum: _prevAc, _realAcum: _realAc };
+  });
+
+  const areaData = withAcum.slice(-8).map(r => ({
+    name: r.semana_iso,
+    Previsto: r._prevAcum,
+    Realizado: r._realAcum,
+    "Prev. Mensal": r.avanco_previsto_mensal || 0,
+    "Real. Mensal": r.avanco_realizado_mensal || 0,
   }));
 
-  const ultimo = sorted[sorted.length - 1];
-  const prevAcum = ultimo?.avanco_previsto_acumulado || 0;
-  const realAcum = ultimo?.avanco_realizado_acumulado || 0;
+  const ultimo = withAcum[withAcum.length - 1];
+  const prevAcum = ultimo?._prevAcum || 0;
+  const realAcum = ultimo?._realAcum || 0;
   const desvio = realAcum - prevAcum;
-  const penultimo = sorted[sorted.length - 2];
-  const tendencia = penultimo ? realAcum - (penultimo.avanco_realizado_acumulado || 0) : 0;
+  const penultimo = withAcum[withAcum.length - 2];
+  const tendencia = penultimo ? realAcum - (penultimo._realAcum || 0) : 0;
 
   return (
     <Card className="border-0 shadow-md">

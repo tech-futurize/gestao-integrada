@@ -13,15 +13,14 @@ export function getSemanas(hoje) {
 
 /**
  * Retorna quais labels de semana uma tarefa sobrepõe.
- * Usa data_inicio_planejada/data_fim_planejada com fallback para inicio_previsto/termino_previsto.
  * Datas são parseadas como horário local (T00:00:00) para evitar desvio de fuso.
- * @param {{ data_inicio_planejada?: string|null, data_fim_planejada?: string|null, inicio_previsto?: string|null, termino_previsto?: string|null }} tarefa
+ * @param {{ data_inicio_planejada?: string|null, data_fim_planejada?: string|null }} tarefa
  * @param {{ label: string, start: Date, end: Date }[]} semanas
  * @returns {string[]}
  */
 export function getSemanasBadge(tarefa, semanas) {
-  const iniStr = tarefa.data_inicio_planejada || tarefa.inicio_previsto;
-  const fimStr = tarefa.data_fim_planejada    || tarefa.termino_previsto;
+  const iniStr = tarefa.data_inicio_planejada;
+  const fimStr = tarefa.data_fim_planejada;
   if (!iniStr || !fimStr) return [];
   const inicio = new Date(iniStr + "T00:00:00");
   const termino = new Date(fimStr + "T00:00:00");

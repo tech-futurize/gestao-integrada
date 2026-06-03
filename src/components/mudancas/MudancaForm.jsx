@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowRightLeft } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
-
-const CATEGORIAS = ["Escopo", "Prazo", "Custo"];
+import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
 
 export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting, pleitos = [] }) {
+  const { data: categoriasNomes = [], isPending: categoriasPending } = useCategoriasImpacto();
   const [formData, setFormData] = useState({
     titulo: mudanca?.titulo || "",
     descricao: mudanca?.descricao || "",
@@ -114,22 +114,27 @@ export default function MudancaForm({ mudanca, onSubmit, onCancel, isSubmitting,
 
           {/* Categorias (tags) */}
           <div className="space-y-2">
-            <Label>Categorias de Impacto (Tríade)</Label>
-            <div className="flex gap-2 flex-wrap">
-              {CATEGORIAS.map((cat) => (
-                <button key={cat} type="button" onClick={() => toggleCategoria(cat)}>
-                  <Badge variant="outline" className={`cursor-pointer text-sm px-3 py-1 transition-all ${
-                    categorias.includes(cat)
-                      ? cat === "Custo" ? "bg-status-positive text-white border-status-positive"
-                        : cat === "Prazo" ? "bg-status-attention text-white border-status-attention"
-                        : "bg-status-info text-white border-status-info"
-                      : "bg-background text-muted-foreground border-border hover:border-foreground/40"
-                  }`}>
-                    {categorias.includes(cat) ? "✓ " : ""}{cat}
-                  </Badge>
-                </button>
-              ))}
-            </div>
+            <Label>Categorias de Impacto</Label>
+            {categoriasPending ? (
+              <p className="text-xs text-muted-foreground">Carregando categorias...</p>
+            ) : (
+              <div className="flex gap-2 flex-wrap">
+                {categoriasNomes.map((cat) => (
+                  <button key={cat} type="button" onClick={() => toggleCategoria(cat)}>
+                    <Badge variant="outline" className={`cursor-pointer text-sm px-3 py-1 transition-all ${
+                      categorias.includes(cat)
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-border hover:border-foreground/40"
+                    }`}>
+                      {categorias.includes(cat) ? "✓ " : ""}{cat}
+                    </Badge>
+                  </button>
+                ))}
+                {categoriasNomes.length === 0 && (
+                  <p className="text-xs text-muted-foreground italic">Nenhuma categoria cadastrada para este projeto.</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Descrição */}
