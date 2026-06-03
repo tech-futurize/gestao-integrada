@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { VincularAtividadesDialog } from "./VincularAtividadesDialog";
+import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
 
 const DISCIPLINAS = ["Mecânica", "Elétrica", "Estrutura Metálica", "Tubulação", "Instrumentação", "Civil", "Pintura"];
-const CATEGORIAS_OCORRENCIA = ["Engenharia", "Suprimentos", "Planejamento", "Construção", "Contratos", "Qualidade/SSMA"];
 
 const inputCls = "w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-background text-foreground";
 
@@ -73,6 +73,8 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
     queryFn: () => entities.Rdo.count({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId && !rdo,
   });
+
+  const { data: categoriasNomes = [], isPending: categoriasPending } = useCategoriasImpacto();
 
   useEffect(() => {
     if (!rdo && rdosCount >= 0) {
@@ -502,12 +504,16 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
                     <div>
                       <label className="text-xs text-muted-foreground mb-2 block">Categorias de Impacto</label>
                       <div className="flex flex-wrap gap-2">
-                        {CATEGORIAS_OCORRENCIA.map(cat => (
-                          <button key={cat} type="button" onClick={() => toggleOcorrCategoria(i, cat)}
-                            className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${(oc.categorias || []).includes(cat) ? "border-transparent bg-ocre text-white" : "border-border text-muted-foreground bg-background"}`}>
-                            {cat}
-                          </button>
-                        ))}
+                        {categoriasPending ? (
+                          <span className="text-xs text-muted-foreground">Carregando categorias...</span>
+                        ) : (
+                          categoriasNomes.map(cat => (
+                            <button key={cat} type="button" onClick={() => toggleOcorrCategoria(i, cat)}
+                              className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors ${(oc.categorias || []).includes(cat) ? "border-transparent bg-ocre text-white" : "border-border text-muted-foreground bg-background"}`}>
+                              {cat}
+                            </button>
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
