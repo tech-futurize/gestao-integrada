@@ -391,7 +391,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
                     </button>
                   </div>
                 ))}
-                <button type="button" onClick={addMdo} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                <button type="button" onClick={addMdo} className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1 mt-1">
                   <Plus className="w-3 h-3" />Adicionar função
                 </button>
               </div>
@@ -430,7 +430,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
                     </button>
                   </div>
                 ))}
-                <button type="button" onClick={addEquip} className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                <button type="button" onClick={addEquip} className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1 mt-1">
                   <Plus className="w-3 h-3" />Adicionar equipamento
                 </button>
               </div>
@@ -519,7 +519,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
                   </div>
                 ))}
                 <button onClick={addOcorrencia}
-                  className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                  className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1">
                   <Plus className="w-3 h-3" />Adicionar Ocorrência
                 </button>
               </div>

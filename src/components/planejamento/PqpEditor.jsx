@@ -123,7 +123,7 @@ export default function PqpEditor({ itens = [], onChange, mode = "definicao", re
               <Download className="w-3.5 h-3.5 mr-1.5" /> Exportar / Importar
             </Button>
             {!isMedicao && (
-              <Button type="button" size="sm" variant="outline" onClick={addItemRaiz}>
+              <Button type="button" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={addItemRaiz}>
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> Adicionar item
               </Button>
             )}

@@ -156,6 +156,7 @@ export default function PlanoAcao({ projectId }) {
           <Button
             onClick={() => { setEditingAcao(null); setFormData(emptyForm); setVinculoTipo("risco"); setShowForm(true); }}
             size="sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             <Plus className="w-4 h-4 mr-2" />
             Nova Ação

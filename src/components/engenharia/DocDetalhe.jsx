@@ -129,7 +129,7 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
       <div className="bg-card rounded-xl border border-border shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-sm text-foreground">Histórico de Revisões</h3>
-          <Button size="sm" variant="outline" onClick={() => setShowRevModal(true)}>+ Nova Revisão</Button>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowRevModal(true)}>+ Nova Revisão</Button>
         </div>
         {(!doc.historico_revisoes || doc.historico_revisoes.length === 0) ? (
           <p className="text-xs text-muted-foreground text-center py-4">Nenhuma revisão registrada</p>

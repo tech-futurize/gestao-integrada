@@ -405,7 +405,7 @@ export default function HistogramaTabela({ tipo }) {
           ))}
         </>}
         <div className="ml-auto flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setShowNovoDialog(true)}>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowNovoDialog(true)}>
             <Plus className="w-3.5 h-3.5 mr-1" />
             Novo {tipo === "MO" ? "Função" : "Equipamento"}
           </Button>

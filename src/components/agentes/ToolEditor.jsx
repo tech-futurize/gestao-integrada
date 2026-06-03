@@ -156,7 +156,7 @@ export default function ToolEditor({ open, onOpenChange, tool, onSave, saving })
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Parâmetros</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addParam}>
+              <Button type="button" size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={addParam}>
                 <Plus size={12} className="mr-1" /> Adicionar
               </Button>
             </div>
