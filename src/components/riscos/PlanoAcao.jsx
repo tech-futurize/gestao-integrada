@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { entities } from "@/api/supabaseEntities";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { labelRisco, CLASSIFICACOES } from "@/utils/riscosUtils";
+import { labelRisco } from "@/utils/riscosUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RowActions from "@/components/ui/RowActions";
 import FilterBar from "@/components/ui/FilterBar";
-import FilterToolbar from "@/components/ui/FilterToolbar";
-import { Plus, CheckCircle2, Clock, X, Search } from "lucide-react";
+import DateRangePicker from "@/components/ui/DateRangePicker";
+import { Plus, CheckCircle2, Clock, X, Search, SlidersHorizontal } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { KPICard } from "@/components/ui/KPICard";
 import { useSortTable } from "@/hooks/useSortTable";
 import { SortableTableHead } from "@/components/ui/SortableTableHead";
 import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
@@ -48,9 +47,10 @@ export default function PlanoAcao({ projectId }) {
   const [formData, setFormData]           = useState(emptyForm);
   const [filtros, setFiltros]             = useState({});
   const [filterKey, setFilterKey]         = useState(0);
-  const [buscaResp, setBuscaResp]         = useState("");
-  const [periodoInicio, setPeriodoInicio] = useState("");
-  const [periodoFim, setPeriodoFim]       = useState("");
+  const [busca, setBusca]                       = useState("");
+  const [periodoRange, setPeriodoRange]         = useState(null);
+  const [tipoFiltro, setTipoFiltro]             = useState(() => new Set(["Ameaça", "Oportunidade"]));
+  const [activeCardFilter, setActiveCardFilter] = useState(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -79,34 +79,48 @@ export default function PlanoAcao({ projectId }) {
     _classificacao: a.registro_risco_id ? (riscoById[a.registro_risco_id]?.classificacao || null) : null,
   })), [acoes, riscoById]);
 
-  const responsaveisDistintos = useMemo(() =>
-    [...new Set(acoes.map(a => a.responsavel).filter(Boolean))].sort(),
-  [acoes]);
-
   const filtered = useMemo(() => {
-    const statusFiltro = filtros.status         || [];
-    const classFiltro  = filtros.classificacao  || [];
+    const statusFiltro = filtros.status || [];
     let r = acoesCalc;
 
-    if (buscaResp) {
-      const b = buscaResp.toLowerCase();
-      r = r.filter(a => a.responsavel?.toLowerCase().includes(b));
+    // 1. Tipo (minicards) — se Set tem exatamente 1 valor, filtra; 0 ou 2 = sem filtro
+    if (tipoFiltro.size === 1) {
+      const [tipo] = tipoFiltro;
+      r = r.filter(a => (a._classificacao || "Ameaça") === tipo);
     }
-    if (statusFiltro.length  > 0) r = r.filter(a => statusFiltro.includes(a.status));
-    if (classFiltro.length   > 0) r = r.filter(a => classFiltro.includes(a._classificacao));
 
-    if (periodoInicio || periodoFim) {
+    // 2. Status (FilterBar)
+    if (statusFiltro.length > 0) r = r.filter(a => statusFiltro.includes(a.status));
+
+    // 3. Filtro de card ativo (acumula com demais)
+    if (activeCardFilter === "Concluída") r = r.filter(a => a.status === "Concluída");
+    if (activeCardFilter === "Pendente")  r = r.filter(a => ["Pendente", "Em Andamento"].includes(a.status));
+    if (activeCardFilter === "Atrasada")  r = r.filter(a => a.status === "Atrasada");
+
+    // 4. Período (DateRangePicker)
+    if (periodoRange?.from) {
+      const from = periodoRange.from.toISOString().slice(0, 10);
+      const to   = periodoRange.to ? periodoRange.to.toISOString().slice(0, 10) : from;
       r = r.filter(a => {
-        const inicio = a.data_inicio_prevista || "";
-        const fim    = a.data_fim_prevista    || "";
-        const dentroInicio = inicio && (!periodoInicio || inicio >= periodoInicio) && (!periodoFim || inicio <= periodoFim);
-        const dentroFim    = fim    && (!periodoInicio || fim    >= periodoInicio) && (!periodoFim || fim    <= periodoFim);
-        return dentroInicio || dentroFim;
+        const di = a.data_inicio_prevista || "";
+        const df = a.data_fim_prevista    || "";
+        return (di && di >= from && di <= to) || (df && df >= from && df <= to);
+      });
+    }
+
+    // 5. Busca texto aberta (descrição + responsável + label do risco)
+    if (busca) {
+      const b = busca.toLowerCase();
+      r = r.filter(a => {
+        const desc  = (a.descricao   || "").toLowerCase();
+        const resp  = (a.responsavel || "").toLowerCase();
+        const risco = labelRisco(riscoById[a.registro_risco_id] || null).toLowerCase();
+        return desc.includes(b) || resp.includes(b) || risco.includes(b);
       });
     }
 
     return r;
-  }, [acoesCalc, buscaResp, filtros, periodoInicio, periodoFim]);
+  }, [acoesCalc, busca, tipoFiltro, filtros, periodoRange, activeCardFilter, riscoById]);
 
   const { sortedData: acoesSorted, sortKey, sortDir, handleSort } = useSortTable(filtered, { defaultKey: "descricao" });
 
@@ -174,84 +188,145 @@ export default function PlanoAcao({ projectId }) {
   const acoesPendentes = acoes.filter(a => ["Pendente", "Em Andamento"].includes(a.status)).length;
   const acoesAtrasadas = acoes.filter(a => a.status === "Atrasada").length;
 
-  const temFiltroAtivo = buscaResp || periodoInicio || periodoFim ||
-    Object.values(filtros).some(a => a?.length > 0);
+  const temFiltroAtivo = !!(busca || periodoRange?.from || activeCardFilter ||
+    Object.values(filtros).some(a => a?.length > 0) ||
+    tipoFiltro.size < 2);
 
   const limparFiltros = () => {
-    setBuscaResp(""); setPeriodoInicio(""); setPeriodoFim("");
-    setFiltros({}); localStorage.removeItem(FILTROS_KEY); setFilterKey(k => k + 1);
+    setBusca("");
+    setPeriodoRange(null);
+    setActiveCardFilter(null);
+    setTipoFiltro(new Set(["Ameaça", "Oportunidade"]));
+    setFiltros({});
+    localStorage.removeItem(FILTROS_KEY);
+    setFilterKey(k => k + 1);
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KPICard label="Pendentes"  value={acoesPendentes} icon={<Clock />}         accent="text-status-attention" />
-        <KPICard label="Concluídas" value={acoesCompletas} icon={<CheckCircle2 />}  accent="text-status-positive"  />
-        <KPICard label="Atrasadas"  value={acoesAtrasadas} icon={<X />}             accent="text-status-critical"  />
+    <div className="space-y-4 p-6">
+
+      {/* ── LINHA DE FILTROS + NOVA AÇÃO ───────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Label "Filtros" com botão de limpar */}
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground relative">
+          <SlidersHorizontal className="w-4 h-4" />
+          <span className="relative pr-1">
+            Filtros
+            {temFiltroAtivo && (
+              <button
+                className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/80 z-10 transition-colors"
+                onClick={limparFiltros}
+                aria-label="Limpar todos os filtros"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            )}
+          </span>
+        </span>
+
+        {/* Minicards Ameaça / Oportunidade */}
+        {[
+          { key: "Ameaça",       activeStyle: "bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300"   },
+          { key: "Oportunidade", activeStyle: "bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300" },
+        ].map(({ key, activeStyle }) => {
+          const isActive = tipoFiltro.has(key);
+          return (
+            <button
+              key={key}
+              onClick={() => setTipoFiltro(prev => {
+                const next = new Set(prev);
+                if (next.has(key)) next.delete(key); else next.add(key);
+                return next;
+              })}
+              className={`px-3 py-1 rounded-full border text-xs font-semibold transition-colors
+                ${isActive ? activeStyle : "bg-muted text-muted-foreground border-border opacity-50"}`}
+            >
+              {isActive ? "●" : "○"} {key}
+            </button>
+          );
+        })}
+
+        {/* Separador */}
+        <div className="h-5 w-px bg-border mx-1" />
+
+        {/* FilterBar — apenas Status */}
+        <FilterBar
+          key={filterKey}
+          storageKey={FILTROS_KEY}
+          filters={[
+            { key: "status", label: "Status", options: STATUS_ACAO },
+          ]}
+          onChange={setFiltros}
+        />
+
+        {/* DateRangePicker */}
+        <DateRangePicker
+          label="Período"
+          value={periodoRange}
+          onChange={setPeriodoRange}
+          onClear={() => setPeriodoRange(null)}
+        />
+
+        {/* Busca aberta — ao final */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-64 bg-background text-foreground"
+            placeholder="Buscar por descrição, risco ou responsável..."
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+          />
+        </div>
+
+        {/* Botão Nova Ação — direita */}
+        <Button
+          onClick={() => { setEditingAcao(null); setFormData(emptyForm); setShowForm(true); }}
+          size="sm"
+          className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Ação
+        </Button>
       </div>
 
+      {/* ── 4 KPI CARDS CLICÁVEIS ──────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Total de Ações", value: acoes.length,   filter: null,        icon: <CheckCircle2 />, accent: "text-foreground"         },
+          { label: "Concluídas",     value: acoesCompletas, filter: "Concluída", icon: <CheckCircle2 />, accent: "text-status-positive"    },
+          { label: "Pendentes",      value: acoesPendentes, filter: "Pendente",  icon: <Clock />,        accent: "text-status-attention"   },
+          { label: "Atrasadas",      value: acoesAtrasadas, filter: "Atrasada",  icon: <X />,            accent: "text-status-critical"    },
+        ].map(({ label, value, filter, icon, accent }) => {
+          const isCardActive = activeCardFilter === filter;
+          return (
+            <button
+              key={label}
+              className={`text-left rounded-lg border p-4 transition-all cursor-pointer
+                ${isCardActive
+                  ? "ring-2 ring-primary border-primary bg-primary/5"
+                  : "bg-card hover:bg-muted/50 border-border shadow-sm"}`}
+              onClick={() => setActiveCardFilter(prev => prev === filter ? null : filter)}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+                <span className="text-muted-foreground/60 [&_svg]:size-4">{icon}</span>
+              </div>
+              <span className={`text-2xl font-bold leading-none ${accent}`}>{value}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── CARD DA TABELA ─────────────────────────────────────────────── */}
       <Card className="border-0 shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-blue-600" />
             Plano de Ação
           </CardTitle>
-          <Button
-            onClick={() => { setEditingAcao(null); setFormData(emptyForm); setShowForm(true); }}
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Ação
-          </Button>
         </CardHeader>
 
         <CardContent>
-          {/* Filtros */}
-          <div className="mb-4">
-            <FilterToolbar active={temFiltroAtivo} onClearAll={limparFiltros}>
-              {/* Busca por responsável */}
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                <input
-                  className="h-8 border border-border rounded-md pl-8 pr-3 text-sm w-44 bg-background text-foreground"
-                  placeholder="Responsável..."
-                  value={buscaResp}
-                  onChange={e => setBuscaResp(e.target.value)}
-                />
-              </div>
-
-              {/* Filtros de Status e Ameaça/Oportunidade */}
-              <FilterBar
-                key={filterKey}
-                storageKey={FILTROS_KEY}
-                filters={[
-                  { key: "status",         label: "Status",             options: STATUS_ACAO    },
-                  { key: "classificacao",  label: "Ameaça/Oportunidade", options: CLASSIFICACOES },
-                ]}
-                onChange={setFiltros}
-              />
-
-              {/* Filtro de período */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">Período:</span>
-                <Input
-                  type="date"
-                  value={periodoInicio}
-                  onChange={e => setPeriodoInicio(e.target.value)}
-                  className="h-8 w-36 text-xs"
-                />
-                <span className="text-xs text-muted-foreground">até</span>
-                <Input
-                  type="date"
-                  value={periodoFim}
-                  onChange={e => setPeriodoFim(e.target.value)}
-                  className="h-8 w-36 text-xs"
-                />
-              </div>
-            </FilterToolbar>
-          </div>
-
           {isLoadingAcoes ? (
             <div className="text-center py-12 text-muted-foreground">Carregando...</div>
           ) : isErrorAcoes ? (
@@ -263,24 +338,26 @@ export default function PlanoAcao({ projectId }) {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted">
-                    <SortableTableHead columnKey="descricao"        sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Descrição</SortableTableHead>
+                    <SortableTableHead columnKey="descricao"         sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Descrição</SortableTableHead>
                     <TableHead>Risco Vinculado</TableHead>
-                    <SortableTableHead columnKey="responsavel"      sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>
+                    <TableHead>Tipo</TableHead>
+                    <SortableTableHead columnKey="responsavel"       sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Responsável</SortableTableHead>
                     <SortableTableHead columnKey="data_fim_prevista" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Previsão</SortableTableHead>
-                    <SortableTableHead columnKey="status"           sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
+                    <SortableTableHead columnKey="status"            sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>Status</SortableTableHead>
                     <TableHead className="w-16" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {acoesSorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                         Nenhuma ação encontrada com os filtros aplicados.
                       </TableCell>
                     </TableRow>
                   ) : acoesSorted.map((acao) => {
-                    const vinculoLabel = getVinculoLabel(acao, riscos);
-                    const temVinculo   = !!acao.registro_risco_id;
+                    const vinculoLabel   = getVinculoLabel(acao, riscos);
+                    const temVinculo     = !!acao.registro_risco_id;
+                    const classificacao  = temVinculo ? (riscoById[acao.registro_risco_id]?.classificacao || "Ameaça") : null;
                     return (
                       <TableRow key={acao.id} className="hover:bg-muted">
                         <TableCell className="max-w-sm">
@@ -291,6 +368,18 @@ export default function PlanoAcao({ projectId }) {
                           {temVinculo ? (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-700 border-amber-500/20 max-w-[160px] truncate block">
                               {vinculoLabel}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {classificacao ? (
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap
+                              ${classificacao === "Ameaça"
+                                ? "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300"
+                                : "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300"}`}>
+                              {classificacao}
                             </span>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
@@ -320,7 +409,7 @@ export default function PlanoAcao({ projectId }) {
         </CardContent>
       </Card>
 
-      {/* Popup de nova/editar ação */}
+      {/* ── FORM DIALOG ────────────────────────────────────────────────── */}
       <FormDialog
         open={showForm}
         onOpenChange={(open) => { if (!open) handleCancel(); }}
