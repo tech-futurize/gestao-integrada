@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  FileText,
 } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
+import { FormDialog } from "@/components/ui/FormDialog";
 import { entities } from "@/api/supabaseEntities";
 import RegistroForm from "@/components/pleitos/RegistroForm";
 import RegistroDetalhes from "@/components/pleitos/RegistroDetalhes";
@@ -39,21 +41,51 @@ import PageHeader from "@/components/ui/PageHeader";
 import { useProject } from "@/lib/ProjectContext";
 import { useToast } from "@/components/ui/use-toast";
 
+const TIPOS_REGISTRO = [
+  "Ata de Reunião",
+  "Notificação",
+  "Carta",
+  "E-mail",
+  "Memória de Cálculo",
+  "Liberações/Autorizações",
+  "Solicitações/Requisições",
+  "Registros de Qualidade",
+  "Registros de Segurança",
+  "Registros de Meio Ambiente",
+  "Outros",
+];
+
 const TIPO_COLORS = {
-  "Ata de Reunião": "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
-  "E-mail": "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
-  Notificação: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+  "Ata de Reunião":          "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+  "Notificação":             "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+  "Carta":                   "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  "E-mail":                  "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300",
+  "Memória de Cálculo":      "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
+  "Liberações/Autorizações": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+  "Solicitações/Requisições":"bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+  "Registros de Qualidade":  "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
+  "Registros de Segurança":  "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+  "Registros de Meio Ambiente": "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  "Outros":                  "bg-muted text-muted-foreground",
 };
 
 const DIMENSION_COLORS = {
-  "Ata de Reunião": { text: "text-purple-400", bar: "#c084fc" },
-  "E-mail":         { text: "text-orange-400", bar: "#fb923c" },
-  Notificação:      { text: "text-red-400",    bar: "#f87171" },
-  Contratada:       { text: "text-blue-400",   bar: "#60a5fa" },
-  Contratante:      { text: "text-amber-400",  bar: "#fbbf24" },
-  Registrado:       { text: "text-blue-400",   bar: "#60a5fa" },
-  "Em Análise":     { text: "text-amber-400",  bar: "#fbbf24" },
-  Resolvido:        { text: "text-green-400",  bar: "#4ade80" },
+  "Ata de Reunião":          { text: "text-purple-400",  bar: "#c084fc" },
+  "Notificação":             { text: "text-red-400",     bar: "#f87171" },
+  "Carta":                   { text: "text-blue-400",    bar: "#60a5fa" },
+  "E-mail":                  { text: "text-orange-400",  bar: "#fb923c" },
+  "Memória de Cálculo":      { text: "text-cyan-400",    bar: "#22d3ee" },
+  "Liberações/Autorizações": { text: "text-green-400",   bar: "#4ade80" },
+  "Solicitações/Requisições":{ text: "text-yellow-400",  bar: "#facc15" },
+  "Registros de Qualidade":  { text: "text-teal-400",    bar: "#2dd4bf" },
+  "Registros de Segurança":  { text: "text-rose-400",    bar: "#fb7185" },
+  "Registros de Meio Ambiente": { text: "text-emerald-400", bar: "#34d399" },
+  "Outros":                  { text: "text-muted-foreground", bar: "#8195A9" },
+  "Contratada":              { text: "text-blue-400",    bar: "#60a5fa" },
+  "Contratante":             { text: "text-amber-400",   bar: "#fbbf24" },
+  "Registrado":              { text: "text-blue-400",    bar: "#60a5fa" },
+  "Em Análise":              { text: "text-amber-400",   bar: "#fbbf24" },
+  "Resolvido":               { text: "text-green-400",   bar: "#4ade80" },
 };
 
 const STATUS_ORDER = ["Registrado", "Em Análise", "Resolvido"];
@@ -156,7 +188,7 @@ export default function Registros() {
   const handleSubmit = (data) => {
     const payload = { ...data, projeto_id: selectedProjectId };
     if (editingRegistro) {
-      // não usado diretamente na lista — edição ocorre no detalhe
+      // edição ocorre no detalhe
     } else {
       createMutation.mutate(payload);
     }
@@ -208,7 +240,6 @@ export default function Registros() {
         used.add(status);
       }
     }
-    // Outros status fora do STATUS_ORDER
     const outros = filtered.filter((i) => !used.has(i.status));
     if (outros.length > 0) groups.push({ status: "Outros", items: outros });
     return groups;
@@ -216,13 +247,19 @@ export default function Registros() {
 
   const kpis = useMemo(() => {
     const total = baseList.length;
+
+    // Tipos presentes na lista, ordenados por contagem decrescente
+    const tipoMap = {};
+    baseList.forEach((i) => {
+      if (i.tipo_registro) tipoMap[i.tipo_registro] = (tipoMap[i.tipo_registro] || 0) + 1;
+    });
+    const porTipo = Object.entries(tipoMap)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ label, count }));
+
     return {
       total,
-      porTipo: [
-        { label: "Ata de Reunião", count: baseList.filter((i) => i.tipo_registro === "Ata de Reunião").length },
-        { label: "E-mail",         count: baseList.filter((i) => i.tipo_registro === "E-mail").length },
-        { label: "Notificação",    count: baseList.filter((i) => i.tipo_registro === "Notificação").length },
-      ],
+      porTipo,
       porResp: [
         { label: "Contratada",  count: baseList.filter((i) => i.responsabilidade === "Contratada").length },
         { label: "Contratante", count: baseList.filter((i) => i.responsabilidade === "Contratante").length },
@@ -351,18 +388,6 @@ export default function Registros() {
             </div>
           )}
 
-          {/* Form inline (novo registro) */}
-          {showForm && (
-            <RegistroForm
-              key={editingRegistro?.id || "new-incidente"}
-              incidente={editingRegistro}
-              selectedProjectId={selectedProjectId}
-              onSubmit={handleSubmit}
-              onCancel={() => { setShowForm(false); setEditingRegistro(null); }}
-              isSubmitting={createMutation.isPending}
-            />
-          )}
-
           {/* Filtros */}
           {(() => {
             const isFilterActive =
@@ -391,7 +416,7 @@ export default function Registros() {
                   key={filterKey}
                   storageKey={FILTROS_KEY}
                   filters={[
-                    { key: "tipo",             label: "Tipo",             options: ["Ata de Reunião", "E-mail", "Notificação"] },
+                    { key: "tipo",             label: "Tipo",             options: TIPOS_REGISTRO },
                     { key: "status",           label: "Status",           options: ["Registrado", "Em Análise", "Resolvido"] },
                     { key: "responsabilidade", label: "Responsabilidade", options: ["Contratada", "Contratante"] },
                   ]}
@@ -627,6 +652,27 @@ export default function Registros() {
 
         </div>
       </div>
+
+      {/* Modal — Novo Registro */}
+      <FormDialog
+        open={showForm}
+        onOpenChange={(open) => { if (!open) { setShowForm(false); setEditingRegistro(null); } }}
+        icon={FileText}
+        title={editingRegistro ? "Editar Registro" : "Novo Registro"}
+        subtitle="Preencha os dados do registro contratual"
+        maxWidth="max-w-3xl"
+        hideFooter
+      >
+        <RegistroForm
+          key={editingRegistro?.id || "new-registro"}
+          incidente={editingRegistro}
+          selectedProjectId={selectedProjectId}
+          onSubmit={handleSubmit}
+          onCancel={() => { setShowForm(false); setEditingRegistro(null); }}
+          isSubmitting={createMutation.isPending}
+          noChrome
+        />
+      </FormDialog>
 
       {/* Confirm delete */}
       <AlertDialog
