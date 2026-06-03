@@ -31,8 +31,6 @@ const EMPTY_FORM = {
   // Comercial
   cliente_cnpj: "", cliente_contato: "", contrato_objeto: "",
   moeda: "BRL", regime_execucao: "", data_base_orcamento: "",
-  // PQ-mestra
-  pqp_mestra: [],
 };
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
@@ -95,8 +93,6 @@ export default function GerenciarProjeto() {
       moeda: projeto.moeda || "BRL",
       regime_execucao: projeto.regime_execucao || "",
       data_base_orcamento: projeto.data_base_orcamento || "",
-      // PQ-mestra
-      pqp_mestra: projeto.pqp_mestra || [],
     });
     setShowForm(true);
   };
@@ -132,8 +128,6 @@ export default function GerenciarProjeto() {
       moeda: form.moeda || "BRL",
       regime_execucao: form.regime_execucao || null,
       data_base_orcamento: form.data_base_orcamento || null,
-      // PQ-mestra
-      pqp_mestra: form.pqp_mestra || [],
     };
     if (editing) updateMut.mutate({ id: editing.id, data: payload });
     else createMut.mutate(payload);
