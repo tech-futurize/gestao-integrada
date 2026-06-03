@@ -12,19 +12,9 @@ import ProjetoPqpMestra from "@/components/projeto/ProjetoPqpMestra";
 
 const STATUS_OPTIONS = ["Planejamento", "Em Andamento", "Pausado", "Concluído", "Cancelado"];
 const REGIME_OPTIONS = ["EPC", "EPCM", "Turnkey", "Outro"];
-const TRIBUTARIO_OPTIONS = ["Lucro Real", "Lucro Presumido", "Simples Nacional"];
 const MOEDA_OPTIONS = ["BRL", "USD", "EUR"];
 
-export default function ProjetoForm({
-  form,
-  onChange,
-  projetos = [],
-  editing,
-  onSave,
-  onClose,
-  saving,
-  onDelete,
-}) {
+export default function ProjetoForm({ form, onChange, editing, onSave, onClose, saving }) {
   const set = (k, v) => onChange((f) => ({ ...f, [k]: v }));
 
   return (
@@ -38,14 +28,8 @@ export default function ProjetoForm({
       onClose={onClose}
       onSave={onSave}
       saving={saving}
-      saveLabel={editing ? "Salvar" : "Criar Projeto"}
       footer={
         <>
-          {editing && (
-            <Button variant="destructive" onClick={onDelete}>
-              Excluir
-            </Button>
-          )}
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button variant="save" onClick={onSave} disabled={saving}>
             {editing ? "Salvar" : "Criar Projeto"}
@@ -57,9 +41,6 @@ export default function ProjetoForm({
         <TabsList className="mb-4 flex flex-wrap gap-1 h-auto">
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="comercial">Comercial</TabsTrigger>
-          <TabsTrigger value="orcamento">Orçamento</TabsTrigger>
-          <TabsTrigger value="local">Local & Prazos</TabsTrigger>
-          <TabsTrigger value="equipe">Equipe & Vínculos</TabsTrigger>
           <TabsTrigger value="pqp">PQ-mestra</TabsTrigger>
         </TabsList>
 
@@ -97,6 +78,22 @@ export default function ProjetoForm({
               />
             </div>
             <div className="space-y-1">
+              <Label>Gestor do Contrato</Label>
+              <Input
+                value={form.gestor_contrato}
+                onChange={(e) => set("gestor_contrato", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Status</Label>
+              <Select value={form.status} onValueChange={(v) => set("status", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label>Data de Início</Label>
               <Input
                 type="date"
@@ -129,13 +126,28 @@ export default function ProjetoForm({
               />
             </div>
             <div className="space-y-1">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={(v) => set("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>Cidade</Label>
+              <Input
+                value={form.local_cidade}
+                onChange={(e) => set("local_cidade", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>UF</Label>
+              <Input
+                value={form.local_uf}
+                onChange={(e) => set("local_uf", e.target.value.toUpperCase().slice(0, 2))}
+                placeholder="SP"
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-1 col-span-2">
+              <Label>Endereço da Obra</Label>
+              <Input
+                value={form.local_endereco}
+                onChange={(e) => set("local_endereco", e.target.value)}
+                placeholder="Rodovia / Município / CEP"
+              />
             </div>
           </div>
         </TabsContent>
@@ -193,127 +205,6 @@ export default function ProjetoForm({
                 value={form.data_base_orcamento}
                 onChange={(e) => set("data_base_orcamento", e.target.value)}
               />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ABA ORÇAMENTO */}
-        <TabsContent value="orcamento">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label>BDI (%)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={form.bdi_percentual}
-                onChange={(e) => set("bdi_percentual", e.target.value)}
-                placeholder="Ex: 25.50"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Encargos Sociais (%)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={form.encargos_sociais_percentual}
-                onChange={(e) => set("encargos_sociais_percentual", e.target.value)}
-                placeholder="Ex: 68.00"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Regime Tributário</Label>
-              <Select value={form.regime_tributario || ""} onValueChange={(v) => set("regime_tributario", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
-                <SelectContent>
-                  {TRIBUTARIO_OPTIONS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Retenção Contratual (%)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={form.retencao_percentual}
-                onChange={(e) => set("retencao_percentual", e.target.value)}
-                placeholder="Ex: 5.00"
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ABA LOCAL & PRAZOS */}
-        <TabsContent value="local">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label>Cidade</Label>
-              <Input
-                value={form.local_cidade}
-                onChange={(e) => set("local_cidade", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>UF</Label>
-              <Input
-                value={form.local_uf}
-                onChange={(e) => set("local_uf", e.target.value.toUpperCase().slice(0, 2))}
-                placeholder="SP"
-                maxLength={2}
-              />
-            </div>
-            <div className="space-y-1 col-span-2">
-              <Label>Endereço da Obra</Label>
-              <Input
-                value={form.local_endereco}
-                onChange={(e) => set("local_endereco", e.target.value)}
-                placeholder="Rodovia / Município / CEP"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Prazo Contratual (dias)</Label>
-              <Input
-                type="number"
-                value={form.prazo_contratual_dias}
-                onChange={(e) => set("prazo_contratual_dias", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Data de Início Efetivo</Label>
-              <Input
-                type="date"
-                value={form.data_inicio_efetivo}
-                onChange={(e) => set("data_inicio_efetivo", e.target.value)}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ABA EQUIPE & VÍNCULOS */}
-        <TabsContent value="equipe">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <Label>Gestor do Contrato</Label>
-              <Input
-                value={form.gestor_contrato}
-                onChange={(e) => set("gestor_contrato", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Projeto-pai (lote)</Label>
-              <Select
-                value={form.projeto_pai_id || "none"}
-                onValueChange={(v) => set("projeto_pai_id", v === "none" ? "" : v)}
-              >
-                <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {projetos
-                    .filter((p) => p.id !== editing?.id)
-                    .map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </TabsContent>

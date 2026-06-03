@@ -26,17 +26,11 @@ const EMPTY_FORM = {
   nome: "", descricao: "", status: "Planejamento",
   data_inicio: "", data_fim_prevista: "",
   cliente: "", responsavel: "", contrato_numero: "", valor_contrato: "",
+  gestor_contrato: "",
+  local_cidade: "", local_uf: "", local_endereco: "",
   // Comercial
   cliente_cnpj: "", cliente_contato: "", contrato_objeto: "",
   moeda: "BRL", regime_execucao: "", data_base_orcamento: "",
-  // Orçamento
-  bdi_percentual: "", encargos_sociais_percentual: "",
-  regime_tributario: "", retencao_percentual: "",
-  // Local/Prazo
-  local_cidade: "", local_uf: "", local_endereco: "",
-  prazo_contratual_dias: "", data_inicio_efetivo: "",
-  // Equipe/Vínculo
-  gestor_contrato: "", projeto_pai_id: "",
   // PQ-mestra
   pqp_mestra: [],
 };
@@ -77,12 +71,6 @@ export default function GerenciarProjeto() {
     onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
   });
 
-  const deleteMut = useMutation({
-    mutationFn: (id) => entities.Projeto.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projetos"] }),
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
-  });
-
   const handleEdit = (projeto) => {
     setEditing(projeto);
     setForm({
@@ -96,6 +84,10 @@ export default function GerenciarProjeto() {
       responsavel: projeto.responsavel_geral || "",
       contrato_numero: projeto.contrato_numero || "",
       valor_contrato: projeto.valor_contrato ?? "",
+      gestor_contrato: projeto.gestor_contrato || "",
+      local_cidade: projeto.local_cidade || "",
+      local_uf: projeto.local_uf || "",
+      local_endereco: projeto.local_endereco || "",
       // Comercial
       cliente_cnpj: projeto.cliente_cnpj || "",
       cliente_contato: projeto.cliente_contato || "",
@@ -103,20 +95,6 @@ export default function GerenciarProjeto() {
       moeda: projeto.moeda || "BRL",
       regime_execucao: projeto.regime_execucao || "",
       data_base_orcamento: projeto.data_base_orcamento || "",
-      // Orçamento
-      bdi_percentual: projeto.bdi_percentual ?? "",
-      encargos_sociais_percentual: projeto.encargos_sociais_percentual ?? "",
-      regime_tributario: projeto.regime_tributario || "",
-      retencao_percentual: projeto.retencao_percentual ?? "",
-      // Local/Prazo
-      local_cidade: projeto.local_cidade || "",
-      local_uf: projeto.local_uf || "",
-      local_endereco: projeto.local_endereco || "",
-      prazo_contratual_dias: projeto.prazo_contratual_dias ?? "",
-      data_inicio_efetivo: projeto.data_inicio_efetivo || "",
-      // Equipe/Vínculo
-      gestor_contrato: projeto.gestor_contrato || "",
-      projeto_pai_id: projeto.projeto_pai_id || "",
       // PQ-mestra
       pqp_mestra: projeto.pqp_mestra || [],
     });
@@ -143,6 +121,10 @@ export default function GerenciarProjeto() {
       responsavel_geral: form.responsavel,
       contrato_numero: form.contrato_numero,
       valor_contrato: parseFloat(form.valor_contrato) || 0,
+      gestor_contrato: form.gestor_contrato || null,
+      local_cidade: form.local_cidade || null,
+      local_uf: form.local_uf || null,
+      local_endereco: form.local_endereco || null,
       // Comercial
       cliente_cnpj: form.cliente_cnpj || null,
       cliente_contato: form.cliente_contato || null,
@@ -150,20 +132,6 @@ export default function GerenciarProjeto() {
       moeda: form.moeda || "BRL",
       regime_execucao: form.regime_execucao || null,
       data_base_orcamento: form.data_base_orcamento || null,
-      // Orçamento
-      bdi_percentual: form.bdi_percentual !== "" ? parseFloat(form.bdi_percentual) : null,
-      encargos_sociais_percentual: form.encargos_sociais_percentual !== "" ? parseFloat(form.encargos_sociais_percentual) : null,
-      regime_tributario: form.regime_tributario || null,
-      retencao_percentual: form.retencao_percentual !== "" ? parseFloat(form.retencao_percentual) : null,
-      // Local/Prazo
-      local_cidade: form.local_cidade || null,
-      local_uf: form.local_uf || null,
-      local_endereco: form.local_endereco || null,
-      prazo_contratual_dias: form.prazo_contratual_dias !== "" ? parseInt(form.prazo_contratual_dias) : null,
-      data_inicio_efetivo: form.data_inicio_efetivo || null,
-      // Equipe/Vínculo
-      gestor_contrato: form.gestor_contrato || null,
-      projeto_pai_id: form.projeto_pai_id || null,
       // PQ-mestra
       pqp_mestra: form.pqp_mestra || [],
     };
@@ -221,7 +189,6 @@ export default function GerenciarProjeto() {
                   {p.responsavel_geral && <div className="col-span-2"><span className="font-medium">Resp.:</span> {p.responsavel_geral}</div>}
                   {p.valor_contrato > 0 && <div className="col-span-2"><span className="font-medium">Valor:</span> {fmt(p.valor_contrato)}</div>}
                   {p.regime_execucao && <div><span className="font-medium">Regime:</span> {p.regime_execucao}</div>}
-                  {p.bdi_percentual != null && <div><span className="font-medium">BDI:</span> {p.bdi_percentual}%</div>}
                   {p.local_cidade && <div className="col-span-2"><span className="font-medium">Local:</span> {p.local_cidade}{p.local_uf ? `/${p.local_uf}` : ""}</div>}
                 </div>
                 <div className="flex items-center justify-between pt-1">
@@ -231,8 +198,6 @@ export default function GerenciarProjeto() {
                   <RowActions
                     onView={() => setViewItem(p)}
                     onEdit={() => handleEdit(p)}
-                    onDelete={() => deleteMut.mutate(p.id)}
-                    deleteDescription="O projeto será excluído permanentemente. Esta ação não pode ser desfeita."
                     size="md"
                   />
                 </div>
@@ -247,12 +212,10 @@ export default function GerenciarProjeto() {
         <ProjetoForm
           form={form}
           onChange={setForm}
-          projetos={projetos}
           editing={editing}
           onSave={handleSubmit}
           onClose={() => { setShowForm(false); setEditing(null); }}
           saving={createMut.isPending || updateMut.isPending}
-          onDelete={() => { deleteMut.mutate(editing.id); setShowForm(false); setEditing(null); }}
         />
       )}
 
@@ -269,14 +232,9 @@ export default function GerenciarProjeto() {
             { label: "Responsável", value: viewItem.responsavel_geral },
             { label: "Gestor do Contrato", value: viewItem.gestor_contrato },
             { label: "Início", value: formatDate(viewItem.data_inicio) },
-            { label: "Início Efetivo", value: formatDate(viewItem.data_inicio_efetivo) },
             { label: "Fim previsto", value: formatDate(viewItem.data_prevista_termino) },
-            { label: "Prazo (dias)", value: viewItem.prazo_contratual_dias },
             { label: "Regime", value: viewItem.regime_execucao },
-            { label: "Regime Tributário", value: viewItem.regime_tributario },
-            { label: "BDI (%)", value: viewItem.bdi_percentual },
-            { label: "Encargos (%)", value: viewItem.encargos_sociais_percentual },
-            { label: "Retenção (%)", value: viewItem.retencao_percentual },
+            { label: "Moeda", value: viewItem.moeda },
             { label: "Local", value: [viewItem.local_endereco, viewItem.local_cidade, viewItem.local_uf].filter(Boolean).join(", ") },
             { label: "Objeto", value: viewItem.contrato_objeto, full: true },
             { label: "Descrição", value: viewItem.descricao, full: true },
