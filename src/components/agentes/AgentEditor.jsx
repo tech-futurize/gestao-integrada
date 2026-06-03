@@ -502,7 +502,7 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
       {/* Topbar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-card">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <button onClick={onCancel} className="hover:text-foreground transition-colors">Admin de Agentes</button>
+          <button onClick={onCancel} className="hover:text-foreground transition-colors">Configurar Agentes</button>
           <span>/</span>
           <span className="text-foreground font-semibold">{isEditing ? agent.nome : 'Novo Agente'}</span>
         </div>
