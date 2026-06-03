@@ -83,17 +83,16 @@ export function StatusBadge({ label, variant = "neutral" }) {
 }
 
 // ── SUB SECTION BAND ─────────────────────────────────────────────────────────
-// Props: { title, tagline, bg, color, borderColor }
-// Usado em blocos internos de Planejamento e Adm. Contratual.
-// Exemplo: <SubSectionBand title="📅 Cronograma" tagline="Avanço Físico · 6WLA · Datas" bg="#eef2f8" color="#26405d" borderColor="#d7e0ec" />
-export function SubSectionBand({ title, tagline, bg, color, borderColor }) {
+// Props: { title, tagline, color } — bg e borderColor são ignorados; calculados via color-mix
+// com --card e --border para adaptar ao tema claro/escuro automaticamente.
+export function SubSectionBand({ title, tagline, color }) {
   return (
     <div
       className="flex items-center gap-2 px-4 py-2 font-bold text-sm border-b"
       style={{
-        backgroundColor: bg,
-        color,
-        borderColor,
+        backgroundColor: `color-mix(in srgb, ${color} 12%, hsl(var(--card)))`,
+        color: `color-mix(in srgb, ${color} 70%, hsl(var(--foreground)))`,
+        borderColor: `color-mix(in srgb, ${color} 20%, hsl(var(--border)))`,
       }}
     >
       <span>{title}</span>
