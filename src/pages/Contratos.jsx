@@ -53,6 +53,12 @@ export default function Contratos() {
     enabled: !!selectedProjectId,
   });
 
+  const { data: todosAditivos = [] } = useQuery({
+    queryKey: ["aditivos", "projeto", selectedProjectId],
+    queryFn: () => entities.Aditivo.filter({ projeto_id: selectedProjectId }),
+    enabled: !!selectedProjectId,
+  });
+
   // Contrato selecionado derivado do cache (reflete edições automaticamente)
   const selectedContrato = useMemo(
     () => (selectedId ? contratos.find((c) => c.id === selectedId) || null : null),
@@ -74,11 +80,11 @@ export default function Contratos() {
     if (filtros.tipo?.length) r = r.filter((c) => filtros.tipo.includes(c.tipo));
     if (periodo?.from) {
       const fromStr = periodo.from.toISOString().split("T")[0];
-      r = r.filter((c) => c.data_inicio && c.data_inicio >= fromStr);
+      r = r.filter((c) => !c.data_fim || c.data_fim >= fromStr);
     }
     if (periodo?.to) {
       const toStr = periodo.to.toISOString().split("T")[0];
-      r = r.filter((c) => c.data_inicio && c.data_inicio <= toStr);
+      r = r.filter((c) => !c.data_inicio || c.data_inicio <= toStr);
     }
     return r;
   }, [contratos, busca, filtros, periodo]);
@@ -179,7 +185,7 @@ export default function Contratos() {
               ]}
               onChange={setFiltros}
             />
-            <DateRangePicker label="Data Início" value={periodo} onChange={setPeriodo} onClear={() => setPeriodo(null)} />
+            <DateRangePicker label="Período" value={periodo} onChange={setPeriodo} onClear={() => setPeriodo(null)} />
           </FilterToolbar>
         )}
 
@@ -193,6 +199,7 @@ export default function Contratos() {
         ) : (
           <ContratosList
             contratos={filteredContratos}
+            aditivos={todosAditivos}
             isLoading={loadingContratos}
             onSelect={(c) => setSelectedId(c.id)}
             onEdit={(c) => { setEditContrato(c); setShowContratoForm(true); }}
