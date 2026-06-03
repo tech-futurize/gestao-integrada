@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { entities } from '@/api/supabaseEntities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { X } from 'lucide-react';
+import DateRangePicker from '@/components/ui/DateRangePicker';
 import {
-  AreaChart, Area, BarChart, Bar, Cell,
+  BarChart, Bar, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
@@ -28,16 +30,10 @@ async function fetchUsdBrl() {
   return rate;
 }
 
-const AGENT_COLORS = {
-  'supabase-analyst-agent': '#26405d',
-  'business-analyst-agent': '#c35e1e',
-  'contractual-analyst-agent': '#00a49a',
-};
 const PALETTE = ['#26405d', '#c35e1e', '#00a49a', '#3b82f6', '#f59e0b', '#8b5cf6'];
+const ACTIVE_COLOR = '#ef4444';
 
-function getAgentColor(slug, idx) {
-  return AGENT_COLORS[slug] ?? PALETTE[idx % PALETTE.length];
-}
+const FILTER_LABELS = { agent: 'Agente', modelo: 'Modelo', user: 'Usuário', day: 'Dia' };
 
 function getInitials(email = '') {
   return email.split('@')[0].slice(0, 2).toUpperCase();
@@ -99,17 +95,13 @@ function aggregateByUser(logs) {
   return Object.values(acc).sort((a, b) => b.execucoes - a.execucoes).slice(0, 8);
 }
 
-function defaultDateFrom() {
-  const d = new Date();
-  d.setDate(d.getDate() - 30);
-  return d.toISOString().slice(0, 10);
+function defaultDateRange() {
+  const to = new Date();
+  const from = new Date();
+  from.setDate(from.getDate() - 30);
+  return { from, to };
 }
 
-function defaultDateTo() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-// Custom label acima das barras do BarChart de modelo
 const ModelBarLabel = ({ x, y, width, value }) => (
   <text x={x + width / 2} y={y - 4} textAnchor="middle" fontSize={10} fontWeight={700} fill="currentColor">
     {value}%
@@ -117,8 +109,15 @@ const ModelBarLabel = ({ x, y, width, value }) => (
 );
 
 export default function MetricsDashboard() {
-  const [dateFrom, setDateFrom] = useState(defaultDateFrom);
-  const [dateTo, setDateTo] = useState(defaultDateTo);
+  const [dateRange, setDateRange] = useState(defaultDateRange);
+  const [activeFilter, setActiveFilter] = useState(null);
+
+  const dateFrom = dateRange?.from ? dateRange.from.toISOString().slice(0, 10) : '';
+  const dateTo   = dateRange?.to   ? dateRange.to.toISOString().slice(0, 10)   : new Date().toISOString().slice(0, 10);
+
+  const toggleFilter = (type, value) => {
+    setActiveFilter(prev => prev?.type === type && prev.value === value ? null : { type, value });
+  };
 
   const { data: usdBrl, isError: rateError } = useQuery({
     queryKey: ['usd-brl-rate'],
@@ -147,9 +146,8 @@ export default function MetricsDashboard() {
   const totalCusto     = logs.reduce((s, l) => s + Number(l.custo_usd ?? 0), 0);
   const custoMedio     = totalExecucoes > 0 ? totalCusto / totalExecucoes : 0;
 
-  // Comparativo mês anterior
   const { data: prevLogs = [] } = useQuery({
-    queryKey: ['agente-uso-logs-prev'],
+    queryKey: ['agente-uso-logs-prev', dateFrom, dateTo],
     queryFn: () => entities.AgenteUsoLog.list(),
     select: (data) => {
       const from = new Date(dateFrom);
@@ -168,12 +166,22 @@ export default function MetricsDashboard() {
     ? ((totalCusto - prevCusto) / prevCusto) * 100
     : null;
 
-  const byDay    = useMemo(() => aggregateByDay(logs), [logs]);
-  const byAgent  = useMemo(() => aggregateByAgent(logs, agentNames), [logs, agentNames]);
-  const byModelo = useMemo(() => aggregateByModelo(logs), [logs]);
-  const byUser   = useMemo(() => aggregateByUser(logs), [logs]);
+  // Cross-filter: aplica o filtro ativo em cima dos logs do período
+  const filteredLogs = useMemo(() => {
+    if (!activeFilter) return logs;
+    switch (activeFilter.type) {
+      case 'agent':  return logs.filter(l => (l.agente_slug    ?? 'desconhecido') === activeFilter.value);
+      case 'modelo': return logs.filter(l => (l.modelo         ?? 'desconhecido') === activeFilter.value);
+      case 'user':   return logs.filter(l => (l.usuario_email  ?? 'anônimo')      === activeFilter.value);
+      case 'day':    return logs.filter(l => (l.created_at     ?? '').slice(0, 10) === activeFilter.value);
+      default:       return logs;
+    }
+  }, [logs, activeFilter]);
 
-  const maxModeloPct = Math.max(...byModelo.map(m => m.pct), 1);
+  const byDay    = useMemo(() => aggregateByDay(filteredLogs), [filteredLogs]);
+  const byAgent  = useMemo(() => aggregateByAgent(filteredLogs, agentNames), [filteredLogs, agentNames]);
+  const byModelo = useMemo(() => aggregateByModelo(filteredLogs), [filteredLogs]);
+  const byUser   = useMemo(() => aggregateByUser(filteredLogs), [filteredLogs]);
 
   if (isPending) {
     return (
@@ -197,20 +205,22 @@ export default function MetricsDashboard() {
 
       {/* ① Filtros */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm text-muted-foreground font-medium">Período:</span>
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={e => setDateFrom(e.target.value)}
-          className="text-sm border border-border rounded-md px-2 py-1.5 bg-background text-foreground"
+        <DateRangePicker
+          label="Período"
+          value={dateRange}
+          onChange={range => { setDateRange(range); setActiveFilter(null); }}
+          onClear={() => { setDateRange(defaultDateRange()); setActiveFilter(null); }}
         />
-        <span className="text-sm text-muted-foreground">até</span>
-        <input
-          type="date"
-          value={dateTo}
-          onChange={e => setDateTo(e.target.value)}
-          className="text-sm border border-border rounded-md px-2 py-1.5 bg-background text-foreground"
-        />
+        {activeFilter && (
+          <button
+            onClick={() => setActiveFilter(null)}
+            className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1.5 hover:bg-primary/20 transition-colors"
+          >
+            {FILTER_LABELS[activeFilter.type]}:{' '}
+            <span className="font-bold truncate max-w-[180px]">{activeFilter.value}</span>
+            <X className="w-3 h-3 flex-shrink-0" />
+          </button>
+        )}
       </div>
 
       {/* ② Banner de custo */}
@@ -256,7 +266,7 @@ export default function MetricsDashboard() {
         </div>
       </div>
 
-      {/* ③ Execuções por dia */}
+      {/* ③ Execuções por dia — BarChart clicável */}
       <Card className="border-0 shadow-md">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold">Execuções por dia</CardTitle>
@@ -266,28 +276,27 @@ export default function MetricsDashboard() {
             <p className="text-center text-muted-foreground text-sm py-8">Nenhuma execução no período.</p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={byDay} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                <defs>
-                  <linearGradient id="grad-exec" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#26405d" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#26405d" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <BarChart data={byDay} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
                 <XAxis dataKey="day" tick={{ fontSize: 10 }} tickFormatter={d => d.slice(5)} />
                 <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                 <Tooltip
                   formatter={(v) => [v, 'Execuções']}
                   labelFormatter={l => new Date(l).toLocaleDateString('pt-BR')}
                 />
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="execucoes"
-                  stroke="#26405d"
-                  strokeWidth={2}
-                  fill="url(#grad-exec)"
-                  name="Execuções"
-                />
-              </AreaChart>
+                  radius={[3, 3, 0, 0]}
+                  cursor="pointer"
+                  onClick={(data) => toggleFilter('day', data.day)}
+                >
+                  {byDay.map((item, i) => (
+                    <Cell
+                      key={i}
+                      fill={activeFilter?.type === 'day' && activeFilter.value === item.day ? ACTIVE_COLOR : '#26405d'}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           )}
         </CardContent>
@@ -296,7 +305,7 @@ export default function MetricsDashboard() {
       {/* ④ Grid 3 colunas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-        {/* Por agente */}
+        {/* Por agente — clicável */}
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Por agente</CardTitle>
@@ -305,12 +314,17 @@ export default function MetricsDashboard() {
             {byAgent.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {byAgent.map((item, idx) => {
-                  const color = getAgentColor(item.slug, idx);
+                  const isActive = activeFilter?.type === 'agent' && activeFilter.value === item.slug;
+                  const color = isActive ? ACTIVE_COLOR : PALETTE[idx % PALETTE.length];
                   const pct = byAgent[0].execucoes > 0 ? (item.execucoes / byAgent[0].execucoes) * 100 : 0;
                   return (
-                    <div key={item.slug}>
+                    <div
+                      key={item.slug}
+                      onClick={() => toggleFilter('agent', item.slug)}
+                      className={`rounded-lg p-2 -mx-2 cursor-pointer transition-colors ${isActive ? 'bg-red-500/8' : 'hover:bg-muted/40'}`}
+                    >
                       <div className="flex items-start justify-between mb-1">
                         <div>
                           <p className="text-xs font-semibold text-foreground leading-tight">{item.nome}</p>
@@ -336,7 +350,7 @@ export default function MetricsDashboard() {
           </CardContent>
         </Card>
 
-        {/* Por modelo — BarChart vertical em % */}
+        {/* Por modelo — BarChart clicável */}
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Por modelo</CardTitle>
@@ -358,9 +372,18 @@ export default function MetricsDashboard() {
                   />
                   <YAxis tick={{ fontSize: 9 }} domain={[0, 100]} unit="%" />
                   <Tooltip formatter={(v) => [`${v}%`, 'Participação']} />
-                  <Bar dataKey="pct" radius={[3, 3, 0, 0]} label={<ModelBarLabel />}>
-                    {byModelo.map((_, i) => (
-                      <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+                  <Bar
+                    dataKey="pct"
+                    radius={[3, 3, 0, 0]}
+                    label={<ModelBarLabel />}
+                    cursor="pointer"
+                    onClick={(data) => toggleFilter('modelo', data.modelo)}
+                  >
+                    {byModelo.map((m, i) => (
+                      <Cell
+                        key={i}
+                        fill={activeFilter?.type === 'modelo' && activeFilter.value === m.modelo ? ACTIVE_COLOR : PALETTE[i % PALETTE.length]}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -369,7 +392,7 @@ export default function MetricsDashboard() {
           </CardContent>
         </Card>
 
-        {/* Top usuários */}
+        {/* Top usuários — clicável */}
         <Card className="border-0 shadow-md">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Top usuários</CardTitle>
@@ -378,23 +401,30 @@ export default function MetricsDashboard() {
             {byUser.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-4">Sem dados</p>
             ) : (
-              <div className="space-y-3">
-                {byUser.map((user, idx) => (
-                  <div key={user.email} className="flex items-center gap-3">
+              <div className="space-y-2">
+                {byUser.map((user, idx) => {
+                  const isActive = activeFilter?.type === 'user' && activeFilter.value === user.email;
+                  return (
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white"
-                      style={{ background: PALETTE[idx % PALETTE.length] }}
+                      key={user.email}
+                      onClick={() => toggleFilter('user', user.email)}
+                      className={`flex items-center gap-3 rounded-lg p-1.5 -mx-1.5 cursor-pointer transition-colors ${isActive ? 'bg-red-500/8' : 'hover:bg-muted/40'}`}
                     >
-                      {getInitials(user.email)}
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 text-white"
+                        style={{ background: isActive ? ACTIVE_COLOR : PALETTE[idx % PALETTE.length] }}
+                      >
+                        {getInitials(user.email)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate">{user.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {user.execucoes} exec · {usdBrl ? formatBRL(user.custo, usdBrl) : formatUSD(user.custo)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold truncate">{user.email}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {user.execucoes} exec · {usdBrl ? formatBRL(user.custo, usdBrl) : formatUSD(user.custo)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -402,7 +432,7 @@ export default function MetricsDashboard() {
 
       </div>
 
-      {logs.length === 0 && (
+      {filteredLogs.length === 0 && (
         <p className="text-center text-muted-foreground text-sm py-4">
           Nenhuma execução registrada no período selecionado.
         </p>

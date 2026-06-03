@@ -27,7 +27,7 @@ Retorna as linhas resultantes como JSON.`,
   'analyze-table': `Executa SELECT COUNT(*) FROM <tabela> no banco.
 Retorna o número total de registros da tabela informada pelo LLM.
 Útil para saber se uma tabela está vazia ou para calibrar o escopo de uma query.`,
-  'query-database': `Delega a consulta ao agente supabase-analyst-agent (Analista de Dados).
+  'query-database': `Delega a consulta a um agente especializado em dados.
 Usado por outros agentes que precisam de dados mas não executam SQL diretamente.
 O agente de destino recebe a pergunta em linguagem natural e retorna o resultado.`,
 };
