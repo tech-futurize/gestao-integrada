@@ -1,8 +1,24 @@
-import { useMemo, useState } from "react";
-import { ChevronDown, TableProperties, Search, Layers } from "lucide-react";
-import { recalcAcumulado, flattenLeaves } from "@/utils/pqpUtils";
+import { useMemo, useState, useRef } from "react";
+import { ChevronDown, TableProperties, Search, Layers, Plus, Download } from "lucide-react";
+import { recalcAcumulado, flattenLeaves, buildTreeFromFlat } from "@/utils/pqpUtils";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import FilterBar from "@/components/ui/FilterBar";
+import { FormDialog } from "@/components/ui/FormDialog";
+import { ImportExportDialog } from "@/components/ui/import-export-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+const PQP_COLUMNS = [
+  { key: "item",           label: "Item (EAP)",     type: "string", required: true },
+  { key: "descricao",      label: "Descrição",      type: "string" },
+  { key: "unidade",        label: "Unidade",        type: "string" },
+  { key: "qtd_contratual", label: "Quantidade",     type: "number" },
+  { key: "preco_unitario", label: "Preço unitário", type: "number" },
+];
 
 const fmtBRL = (v) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v || 0);
@@ -50,13 +66,95 @@ function computeTotaisGerais(pqp) {
   return { valContratual, valMedido, saldo: valContratual - valMedido };
 }
 
-export default function PqMestraTab({ pqpMestra = [], faturamentos = [] }) {
+function flattenAllNodes(itens) {
+  return itens.flatMap(n => [
+    { item: n.item, descricao: n.descricao },
+    ...(n.children?.length ? flattenAllNodes(n.children) : []),
+  ]);
+}
+
+function findNode(tree, itemCode) {
+  for (const n of tree) {
+    if (n.item === itemCode) return n;
+    if (n.children?.length) {
+      const found = findNode(n.children, itemCode);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function suggestNextCode(tree, parentItem) {
+  const siblings = parentItem ? (findNode(tree, parentItem)?.children || []) : tree;
+  if (siblings.length === 0) return parentItem ? `${parentItem}.1` : "1";
+  const sorted = [...siblings].sort((a, b) =>
+    a.item.localeCompare(b.item, undefined, { numeric: true })
+  );
+  const last = sorted[sorted.length - 1].item;
+  const parts = last.split(".");
+  parts[parts.length - 1] = String((parseInt(parts[parts.length - 1]) || 0) + 1);
+  return parts.join(".");
+}
+
+function insertIntoTree(tree, parentItem, newNode) {
+  if (!parentItem) {
+    return [...tree, newNode].sort((a, b) =>
+      a.item.localeCompare(b.item, undefined, { numeric: true })
+    );
+  }
+  return tree.map(n => {
+    if (n.item === parentItem) {
+      const children = [...(n.children || []), newNode].sort((a, b) =>
+        a.item.localeCompare(b.item, undefined, { numeric: true })
+      );
+      return { ...n, children };
+    }
+    if (n.children?.length) {
+      return { ...n, children: insertIntoTree(n.children, parentItem, newNode) };
+    }
+    return n;
+  });
+}
+
+function flattenForExport(itens) {
+  return itens.flatMap(n => {
+    const row = {
+      item: n.item,
+      descricao: n.descricao ?? "",
+      unidade: n.unidade ?? "",
+      qtd_contratual: n.qtd_contratual ?? 0,
+      preco_unitario: n.preco_unitario ?? 0,
+    };
+    return isLeaf(n) ? [row] : [row, ...flattenForExport(n.children)];
+  });
+}
+
+export default function PqMestraTab({
+  pqpMestra = [],
+  faturamentos = [],
+  onSavePqp,
+  isSavingPqp = false,
+}) {
   const depth = useMemo(() => maxDepth(pqpMestra), [pqpMestra]);
 
   const [busca, setBusca] = useState("");
   const [selectedLevels, setSelectedLevels] = useState(new Set());
   const [levelsOpen, setLevelsOpen] = useState(false);
   const [filtrosBar, setFiltrosBar] = useState({});
+
+  // Import/Export
+  const [showImportExport, setShowImportExport] = useState(false);
+  const importBuf = useRef([]);
+  const didImport = useRef(false);
+
+  // Add Item form
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [addParent, setAddParent] = useState("");
+  const [addItemCode, setAddItemCode] = useState("");
+  const [addDescricao, setAddDescricao] = useState("");
+  const [addUnidade, setAddUnidade] = useState("");
+  const [addQtd, setAddQtd] = useState("");
+  const [addPreco, setAddPreco] = useState("");
 
   const pqpComAcumulado = useMemo(() => {
     const concluidos = faturamentos.filter((f) => f.status === "Concluído");
@@ -74,6 +172,8 @@ export default function PqMestraTab({ pqpMestra = [], faturamentos = [] }) {
     Array.from({ length: depth }, (_, i) => i + 1),
     [depth]
   );
+
+  const allNodes = useMemo(() => flattenAllNodes(pqpMestra), [pqpMestra]);
 
   const rows = useMemo(() => {
     const unidadesFiltro = filtrosBar.unidade || [];
@@ -102,20 +202,147 @@ export default function PqMestraTab({ pqpMestra = [], faturamentos = [] }) {
     setLevelsOpen(false);
   };
 
-  if (!pqpMestra.length) {
+  // Import handlers
+  const openImportExport = () => {
+    importBuf.current = [];
+    didImport.current = false;
+    setShowImportExport(true);
+  };
+
+  const handleImportRow = async (row) => {
+    importBuf.current.push(row);
+    didImport.current = true;
+  };
+
+  const handleImportExportChange = (open) => {
+    if (!open && didImport.current) {
+      const newTree = buildTreeFromFlat(importBuf.current);
+      onSavePqp?.(newTree);
+    }
+    if (!open) {
+      importBuf.current = [];
+      didImport.current = false;
+    }
+    setShowImportExport(open);
+  };
+
+  // Add Item handlers
+  const openAddItem = () => {
+    setAddParent("");
+    setAddItemCode(suggestNextCode(pqpMestra, null));
+    setAddDescricao("");
+    setAddUnidade("");
+    setAddQtd("");
+    setAddPreco("");
+    setShowAddItem(true);
+  };
+
+  const handleAddParentChange = (val) => {
+    setAddParent(val);
+    setAddItemCode(suggestNextCode(pqpMestra, val || null));
+  };
+
+  const handleAddSubmit = (e) => {
+    e.preventDefault();
+    const code = addItemCode.trim();
+    if (!code || !addDescricao.trim()) return;
+    if (allNodes.some(n => n.item === code)) return;
+    const newNode = {
+      item: code,
+      descricao: addDescricao.trim(),
+      unidade: addUnidade.trim(),
+      qtd_contratual: Number(addQtd) || 0,
+      preco_unitario: Number(addPreco) || 0,
+    };
+    const newTree = insertIntoTree(pqpMestra, addParent || null, newNode);
+    onSavePqp?.(newTree);
+    setShowAddItem(false);
+  };
+
+  const emptyState = !pqpMestra.length;
+
+  // Dialogs shared between empty-state and full render — always rendered at the bottom.
+  const dialogs = (
+    <>
+      <ImportExportDialog
+        open={showImportExport}
+        onOpenChange={handleImportExportChange}
+        title="PQ Mestra — Importar / Exportar"
+        exportFileName="pq-mestra"
+        columns={PQP_COLUMNS}
+        onExport={() => flattenForExport(pqpMestra)}
+        onImport={handleImportRow}
+      />
+      <FormDialog
+        open={showAddItem}
+        onOpenChange={(o) => !o && setShowAddItem(false)}
+        title="Adicionar Item à PQ Mestra"
+        subtitle="O item será inserido na hierarquia conforme o código informado"
+        icon={Plus}
+        maxWidth="max-w-lg"
+        hideFooter
+      >
+        <AddItemForm
+          allNodes={allNodes}
+          addParent={addParent}
+          addItemCode={addItemCode}
+          addDescricao={addDescricao}
+          addUnidade={addUnidade}
+          addQtd={addQtd}
+          addPreco={addPreco}
+          onParentChange={handleAddParentChange}
+          onItemCodeChange={setAddItemCode}
+          onDescricaoChange={setAddDescricao}
+          onUnidadeChange={setAddUnidade}
+          onQtdChange={setAddQtd}
+          onPrecoChange={setAddPreco}
+          onSubmit={handleAddSubmit}
+          onCancel={() => setShowAddItem(false)}
+          isSaving={isSavingPqp}
+          existingCodes={allNodes.map(n => n.item)}
+        />
+      </FormDialog>
+    </>
+  );
+
+  if (emptyState) {
     return (
-      <div className="border border-dashed border-border rounded-xl py-16 flex flex-col items-center gap-2 text-muted-foreground">
-        <TableProperties className="w-8 h-8 opacity-30" />
-        <p className="text-sm">Nenhuma PQ Mestra definida para este projeto.</p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={openImportExport}>
+            <Download className="w-3.5 h-3.5 mr-1.5" /> Importar / Exportar
+          </Button>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openAddItem}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Adicionar Item
+          </Button>
+        </div>
+        <div className="border border-dashed border-border rounded-xl py-16 flex flex-col items-center gap-2 text-muted-foreground">
+          <TableProperties className="w-8 h-8 opacity-30" />
+          <p className="text-sm">Nenhuma PQ Mestra definida para este projeto.</p>
+          <p className="text-xs">Use "Importar / Exportar" ou "Adicionar Item" para começar.</p>
+        </div>
+        {dialogs}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {/* Barra de ações */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-muted-foreground">Planilha de Quantidades e Preços</span>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={openImportExport}>
+            <Download className="w-3.5 h-3.5 mr-1.5" /> Importar / Exportar
+          </Button>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openAddItem}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Adicionar Item
+          </Button>
+        </div>
+      </div>
+
       {/* Filtros */}
       <FilterToolbar active={isFilterActive} onClearAll={handleClearAll}>
-        {/* Busca */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
           <input
@@ -126,13 +353,11 @@ export default function PqMestraTab({ pqpMestra = [], faturamentos = [] }) {
           />
         </div>
 
-        {/* Unidade */}
         <FilterBar
           filters={[{ key: "unidade", label: "Unidade", options: unidades }]}
           onChange={setFiltrosBar}
         />
 
-        {/* Níveis — mesmo padrão do Cronograma */}
         <div className="relative">
           <button
             onClick={() => setLevelsOpen(v => !v)}
@@ -313,6 +538,115 @@ export default function PqMestraTab({ pqpMestra = [], faturamentos = [] }) {
           </tfoot>
         </table>
       </div>
+
+      {dialogs}
     </div>
+  );
+}
+
+function AddItemForm({
+  allNodes,
+  addParent, addItemCode, addDescricao, addUnidade, addQtd, addPreco,
+  onParentChange, onItemCodeChange, onDescricaoChange, onUnidadeChange, onQtdChange, onPrecoChange,
+  onSubmit, onCancel, isSaving, existingCodes = [],
+}) {
+  const isDuplicate = existingCodes.includes(addItemCode.trim());
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div className="space-y-1.5">
+        <Label htmlFor="add-parent">Inserir dentro de</Label>
+        <Select value={addParent} onValueChange={onParentChange}>
+          <SelectTrigger id="add-parent">
+            <SelectValue placeholder="— Raiz (nível superior) —" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">— Raiz (nível superior) —</SelectItem>
+            {allNodes.map(({ item, descricao }) => (
+              <SelectItem key={item} value={item}>
+                {item} — {descricao || "(sem descrição)"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="add-item-code">Código do Item *</Label>
+          <Input
+            id="add-item-code"
+            value={addItemCode}
+            onChange={e => onItemCodeChange(e.target.value)}
+            placeholder="Ex: 1.2.3"
+            required
+            className={isDuplicate ? "border-red-500" : ""}
+          />
+          {isDuplicate && (
+            <p className="text-xs text-red-500">Esse código já existe na planilha.</p>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="add-unidade">Unidade</Label>
+          <Input
+            id="add-unidade"
+            value={addUnidade}
+            onChange={e => onUnidadeChange(e.target.value)}
+            placeholder="m³, kg, un..."
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="add-descricao">Descrição *</Label>
+        <Input
+          id="add-descricao"
+          value={addDescricao}
+          onChange={e => onDescricaoChange(e.target.value)}
+          placeholder="Descrição do item"
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="add-qtd">Qtd. Contratual</Label>
+          <Input
+            id="add-qtd"
+            type="number"
+            value={addQtd}
+            onChange={e => onQtdChange(e.target.value)}
+            placeholder="0"
+            min="0"
+            step="any"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="add-preco">Preço Unitário (R$)</Label>
+          <Input
+            id="add-preco"
+            type="number"
+            value={addPreco}
+            onChange={e => onPrecoChange(e.target.value)}
+            placeholder="0,00"
+            min="0"
+            step="any"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2 border-t border-border">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          disabled={isSaving || isDuplicate || !addItemCode.trim() || !addDescricao.trim()}
+        >
+          {isSaving ? "Salvando..." : "Adicionar Item"}
+        </Button>
+      </div>
+    </form>
   );
 }

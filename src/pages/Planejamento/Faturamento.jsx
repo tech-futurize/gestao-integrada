@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
+import { flattenLeaves } from "@/utils/pqpUtils";
 import { Button } from "@/components/ui/button";
 import { Plus, Receipt, Upload, Search } from "lucide-react";
 import { startOfMonth, endOfMonth, isBefore, isAfter, parseISO } from "date-fns";
@@ -54,6 +55,15 @@ export default function Faturamento() {
     enabled: !!selectedProjectId,
   });
 
+  const valorContrato = useMemo(() => {
+    const pqp = projetoAtivo?.pqp_mestra || [];
+    if (pqp.length === 0) return projetoAtivo?.valor_contrato ?? 0;
+    return flattenLeaves(pqp).reduce(
+      (sum, l) => sum + (l.qtd_contratual ?? 0) * (l.preco_unitario ?? 0),
+      0
+    );
+  }, [projetoAtivo]);
+
   const filtrados = useMemo(() => {
     const st = filtros.status || [];
     let r = faturamentos;
@@ -86,6 +96,13 @@ export default function Faturamento() {
   const deleteMut = useMutation({
     mutationFn: (id) => entities.Faturamento.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["faturamentos"] }),
+    onError: onErr,
+  });
+
+  const updateProjetoMut = useMutation({
+    mutationFn: (pqpMestra) =>
+      entities.Projeto.update(selectedProjectId, { pqp_mestra: pqpMestra }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["projeto", selectedProjectId] }),
     onError: onErr,
   });
 
@@ -194,7 +211,7 @@ export default function Faturamento() {
 
             <FaturamentoSummary
               faturamentos={filtrados}
-              valorContrato={projetoAtivo?.valor_contrato ?? 0}
+              valorContrato={valorContrato}
             />
 
             <FaturamentoList
@@ -210,6 +227,8 @@ export default function Faturamento() {
           <PqMestraTab
             pqpMestra={projetoAtivo?.pqp_mestra || []}
             faturamentos={faturamentos}
+            onSavePqp={(newPqp) => updateProjetoMut.mutate(newPqp)}
+            isSavingPqp={updateProjetoMut.isPending}
           />
         )}
       </div>
