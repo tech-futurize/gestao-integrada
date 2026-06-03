@@ -25,7 +25,7 @@ export default function ContratoPQP({ contrato }) {
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <Button size="sm" disabled={!dirty || mut.isPending} onClick={() => mut.mutate(itens)}>
+        <Button size="sm" variant="save" disabled={!dirty || mut.isPending} onClick={() => mut.mutate(itens)}>
           <Save className="w-4 h-4 mr-1.5" /> Salvar PQP
         </Button>
       </div>

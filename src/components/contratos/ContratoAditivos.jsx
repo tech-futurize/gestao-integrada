@@ -52,7 +52,7 @@ export default function ContratoAditivos({ contrato }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-foreground">Aditivos</span>
-        <Button size="sm" variant="outline" onClick={() => { setEdit(null); setShowForm(true); }}>
+        <Button size="sm" variant="save" onClick={() => { setEdit(null); setShowForm(true); }}>
           <Plus className="w-3.5 h-3.5 mr-1.5" /> Novo Aditivo
         </Button>
       </div>

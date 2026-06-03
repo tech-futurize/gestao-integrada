@@ -49,7 +49,7 @@ export default function ContratoMedicoes({ contrato }) {
           <span className="font-bold text-foreground">{fmt(acumulado)} · {pct.toFixed(0)}%</span>
           <span className="text-xs text-muted-foreground"> de {fmt(contrato.valor_total)}</span>
         </div>
-        <Button size="sm" variant="outline" onClick={() => { setEdit(null); setShowForm(true); }}>
+        <Button size="sm" variant="save" onClick={() => { setEdit(null); setShowForm(true); }}>
           <Plus className="w-3.5 h-3.5 mr-1.5" /> Nova Medição
         </Button>
       </div>
