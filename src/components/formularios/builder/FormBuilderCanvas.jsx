@@ -5,7 +5,7 @@ import {
   useSensor, useSensors, closestCenter,
 } from "@dnd-kit/core";
 import {
-  SortableContext, verticalListSortingStrategy,
+  SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import {
   addField, addSection, createField,
@@ -20,7 +20,7 @@ export default function FormBuilderCanvas({ definition, onChange }) {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   function handleDragEnd(event) {

@@ -34,20 +34,21 @@ export default function ResponderFormulario() {
 
   const definition = formulario?.definicao;
 
+  function buildDefaults(def) {
+    const defaults = {};
+    def?.sections?.forEach(sec => {
+      sec.fields.forEach(f => { defaults[f.id] = getDefaultAnswer(f); });
+    });
+    return defaults;
+  }
+
   useEffect(() => {
-    if (definition?.sections) {
-      const defaults = {};
-      definition.sections.forEach(sec => {
-        sec.fields.forEach(f => { defaults[f.id] = getDefaultAnswer(f); });
-      });
-      setAnswers(defaults);
-    }
+    if (definition?.sections) setAnswers(buildDefaults(definition));
   }, [definition]);
 
   const createMut = useMutation({
     mutationFn: payload => entities.FormularioResposta.create(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["formulario_respostas"] });
       queryClient.invalidateQueries({ queryKey: ["formulario_respostas_count", selectedProjectId] });
       queryClient.invalidateQueries({ queryKey: ["formulario_respostas", id, selectedProjectId] });
       toast({ variant: "success", title: "Resposta enviada com sucesso!" });
@@ -118,7 +119,7 @@ export default function ResponderFormulario() {
           <p className="text-muted-foreground">Sua resposta foi registrada com sucesso.</p>
           <div className="flex gap-3 flex-wrap justify-center">
             <button
-              onClick={() => { setSubmitted(false); setAnswers({}); setErrors({}); setRespondente(""); }}
+              onClick={() => { setSubmitted(false); setAnswers(buildDefaults(definition)); setErrors({}); setRespondente(""); }}
               className="border border-border rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-muted/30"
             >
               Nova resposta

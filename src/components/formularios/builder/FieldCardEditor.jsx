@@ -10,8 +10,20 @@ export default function FieldCardEditor({ field, onUpdate, onRemove, onDuplicate
 
   function handleTypeChange(newType) {
     const fresh = createField(newType);
-    // Preserve label and required when changing type
-    onUpdate({ ...fresh, id: field.id, label: field.label, required: field.required });
+    // Clear all type-specific keys first, then spread fresh to avoid stale properties
+    // from the previous type (e.g. options from single_choice leaking into number)
+    onUpdate({
+      options: undefined,
+      validation: undefined,
+      placeholder: undefined,
+      max: undefined,
+      minLabel: undefined,
+      maxLabel: undefined,
+      ...fresh,
+      id: field.id,
+      label: field.label,
+      required: field.required,
+    });
   }
 
   // Section type has simpler editing
