@@ -18,16 +18,20 @@ function zerarMedida(itens = []) {
   );
 }
 
-export default function FaturamentoForm({ faturamento, faturamentos = [], onSave, onClose }) {
+export default function FaturamentoForm({ faturamento, faturamentos = [], pqpMestra = [], onSave, onClose }) {
   // Itens iniciais: edição usa os próprios; novo herda do último período (acumulando os concluídos).
   const initialItens = useMemo(() => {
     if (faturamento) return faturamento.itens || [];
     const ordenados = [...faturamentos].sort((a, b) => (b.mes_referencia || "").localeCompare(a.mes_referencia || ""));
     const ultimo = ordenados[0];
-    if (!ultimo?.itens?.length) return [];
-    const anteriores = faturamentos.filter((f) => f.status === "Concluído");
-    return zerarMedida(recalcAcumulado(ultimo.itens, anteriores));
-  }, [faturamento, faturamentos]);
+    if (ultimo?.itens?.length) {
+      const anteriores = faturamentos.filter((f) => f.status === "Concluído");
+      return zerarMedida(recalcAcumulado(ultimo.itens, anteriores));
+    }
+    // Sem período anterior: semeia da PQ-mestra do projeto ativo
+    if (pqpMestra?.length) return zerarMedida(pqpMestra);
+    return [];
+  }, [faturamento, faturamentos, pqpMestra]);
 
   const proximoNumero = useMemo(() => {
     if (faturamento) return faturamento.numero || "";

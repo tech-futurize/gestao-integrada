@@ -44,6 +44,13 @@ export default function Faturamento() {
     enabled: !!selectedProjectId,
   });
 
+  const { data: projetoAtivo } = useQuery({
+    queryKey: ["projeto", selectedProjectId],
+    queryFn: () =>
+      entities.Projeto.filter({ id: selectedProjectId }).then((r) => r[0] || null),
+    enabled: !!selectedProjectId,
+  });
+
   const filtrados = useMemo(() => {
     const st = filtros.status || [];
     let r = faturamentos;
@@ -170,6 +177,7 @@ export default function Faturamento() {
             key={editItem?.id || "new-faturamento"}
             faturamento={editItem}
             faturamentos={faturamentos}
+            pqpMestra={projetoAtivo?.pqp_mestra || []}
             onSave={handleSave}
             onClose={() => { setShowForm(false); setEditItem(null); }}
           />
