@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileText, Upload, AlertTriangle, Search } from "lucide-react";
-import { KPICard } from "@/components/ui/KPICard";
+import { Plus, FileText, Upload, AlertTriangle, Search, Loader2 } from "lucide-react";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
 import { Button } from "@/components/ui/button";
 import { entities } from "@/api/supabaseEntities";
@@ -28,13 +28,14 @@ const PLEITO_COLUMNS = [
 
 export default function Pleitos() {
   const { selectedProjectId } = useProject();
+  const { id: pleitoIdParam } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const onErr = (msg) => toast({ title: "Erro ao salvar", description: msg, variant: "destructive" });
   const [showImportExport, setShowImportExport] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingPleito, setEditingPleito] = useState(null);
-  const [selectedPleito, setSelectedPleito] = useState(null);
   const [busca, setBusca] = useState("");
   const [filtros, setFiltros] = useState({});
   const [periodo, setPeriodo] = useState(null);
@@ -46,6 +47,15 @@ export default function Pleitos() {
     queryFn: () => entities.Pleito.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
   });
+
+  // Fallback para deep-link: busca o pleito diretamente se ainda não está na lista
+  const pleitoNaLista = pleitoIdParam ? casos.find(c => c.id === pleitoIdParam) : null;
+  const { data: pleitoFallback, isPending: fallbackPending } = useQuery({
+    queryKey: ["pleito", pleitoIdParam],
+    queryFn: () => entities.Pleito.filter({ id: pleitoIdParam }).then(r => r[0] ?? null),
+    enabled: !!pleitoIdParam && !isLoading && !pleitoNaLista,
+  });
+  const pleitoSelecionado = pleitoNaLista ?? pleitoFallback ?? null;
 
   const statusOptions = useMemo(
     () => [...new Set(casos.map(c => c.status).filter(Boolean))].sort(),
@@ -79,7 +89,7 @@ export default function Pleitos() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Pleito.update(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pleitos"] }); setShowForm(false); setEditingPleito(null); setSelectedPleito(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pleitos"] }); setShowForm(false); setEditingPleito(null); navigate("/admin-contratual/pleitos"); },
     onError: (e) => onErr(e.message),
   });
 
@@ -103,15 +113,48 @@ export default function Pleitos() {
     );
   }
 
-  if (selectedPleito) {
+  // Renderizar detalhe quando há um ID na URL
+  if (pleitoIdParam) {
+    const carregando = (isLoading || fallbackPending) && !pleitoSelecionado;
+
+    if (carregando) {
+      return (
+        <div className="flex flex-col h-full">
+          <PageHeader />
+          <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Carregando pleito...
+          </div>
+        </div>
+      );
+    }
+
+    if (!pleitoSelecionado) {
+      return (
+        <div className="flex flex-col h-full">
+          <PageHeader />
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+            <p className="text-sm">Pleito não encontrado.</p>
+            <Button variant="outline" size="sm" onClick={() => navigate("/admin-contratual/pleitos")}>
+              Voltar à lista
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col h-full">
         <PageHeader />
         <div className="flex-1 overflow-auto">
           <PleitoDetalhes
-            pleito={selectedPleito}
-            onBack={() => setSelectedPleito(null)}
-            onEdit={(pleito) => { setEditingPleito(pleito); setShowForm(true); setSelectedPleito(null); }}
+            pleito={pleitoSelecionado}
+            onBack={() => navigate("/admin-contratual/pleitos")}
+            onEdit={(pleito) => {
+              setEditingPleito(pleito);
+              setShowForm(true);
+              navigate("/admin-contratual/pleitos");
+            }}
           />
         </div>
       </div>
@@ -136,14 +179,6 @@ export default function Pleitos() {
       />
       <div className="flex-1 overflow-auto p-6 md:p-8">
         <div className="max-w-7xl mx-auto space-y-4">
-
-          {/* KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <KPICard label="Total de Pleitos" value={casos.length} icon={<FileText />} />
-            <KPICard label="Abertos" value={casos.filter(c => c.status === "Aberto").length} accent="text-status-info" />
-            <KPICard label="Em Análise / Neg." value={casos.filter(c => ["Em Análise", "Em Andamento", "Em Negociação"].includes(c.status)).length} accent="text-status-attention" />
-            <KPICard label="Resolvidos" value={casos.filter(c => ["Resolvido", "Fechado"].includes(c.status)).length} accent="text-status-positive" />
-          </div>
 
           {isError && (
             <div className="rounded-xl border border-status-critical/30 bg-status-critical/10 px-4 py-3 text-sm text-status-critical flex items-center gap-2">
@@ -192,7 +227,11 @@ export default function Pleitos() {
             />
           </FilterToolbar>
 
-          <PleitosList casos={filteredCasos} isLoading={isLoading} onSelect={setSelectedPleito} />
+          <PleitosList
+            casos={filteredCasos}
+            isLoading={isLoading}
+            onSelect={(pleito) => navigate(`/admin-contratual/pleitos/${pleito.id}`)}
+          />
         </div>
       </div>
       <ImportExportDialog

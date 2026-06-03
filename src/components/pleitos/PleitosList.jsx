@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { FileText, ChevronRight, AlertCircle, Clock, Layers } from "lucide-react";
+import { FileText, AlertCircle, Clock, Layers } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/dateUtils";
 
@@ -75,6 +75,8 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
     );
   }
 
+  const COLS = "3fr 1.5fr 1fr 1fr 1.5fr 1fr";
+
   return (
     <div className="flex flex-col gap-4">
 
@@ -114,10 +116,12 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
       {/* Tabela */}
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
 
-        {/* Cabeçalho da tabela */}
-        <div className="grid gap-0 border-b border-border bg-background px-5 py-2.5"
-             style={{ gridTemplateColumns: "3fr 1.5fr 1fr 1fr 1.5fr 1fr 40px" }}>
-          {["Título", "Categoria", "Prioridade", "Status", "Responsável", "Abertura", ""].map((h, i) => (
+        {/* Cabeçalho */}
+        <div
+          className="grid gap-0 border-b border-border bg-background px-5 py-2.5"
+          style={{ gridTemplateColumns: COLS }}
+        >
+          {["Título", "Categoria", "Prioridade", "Status", "Responsável", "Abertura"].map((h, i) => (
             <span key={i} className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
               {h}
             </span>
@@ -140,7 +144,7 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
                     vr.index < casos.length - 1 ? "border-b border-border" : ""
                   }`}
                   style={{
-                    gridTemplateColumns: "3fr 1.5fr 1fr 1fr 1.5fr 1fr 40px",
+                    gridTemplateColumns: COLS,
                     position: "absolute",
                     top: vr.start,
                     left: 0,
@@ -164,14 +168,18 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
                     ))}
                   </div>
 
-                  {/* Prioridade */}
+                  {/* Prioridade — outline: sem fundo */}
                   <div>
-                    <StatusBadge status={pleito.prioridade} tone={PRIORITY_TONE[pleito.prioridade] ?? "attention"} />
+                    <StatusBadge
+                      status={pleito.prioridade}
+                      tone={PRIORITY_TONE[pleito.prioridade] ?? "attention"}
+                      variant="outline"
+                    />
                   </div>
 
-                  {/* Status */}
+                  {/* Status — text: apenas cor do texto */}
                   <div>
-                    <StatusBadge status={pleito.status} />
+                    <StatusBadge status={pleito.status} variant="text" />
                   </div>
 
                   {/* Responsável */}
@@ -180,11 +188,6 @@ export default function PleitosList({ casos, isLoading, onSelect }) {
                   {/* Data */}
                   <div className="text-xs text-muted-foreground">
                     {formatDate(pleito.data_abertura) || "—"}
-                  </div>
-
-                  {/* Chevron */}
-                  <div className="flex justify-end">
-                    <ChevronRight size={16} className="text-muted-foreground" />
                   </div>
                 </div>
               );

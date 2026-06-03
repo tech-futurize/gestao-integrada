@@ -130,6 +130,7 @@ const AuthenticatedApp = () => (
     <Route path="/admin-contratual/rdos" element={wrap(RDOs, 'Adm. Contratual')} />
     <Route path="/admin-contratual/registros" element={wrap(Registros, 'Adm. Contratual')} />
     <Route path="/admin-contratual/pleitos" element={wrap(AdminPleitos, 'Adm. Contratual')} />
+    <Route path="/admin-contratual/pleitos/:id" element={wrap(AdminPleitos, 'Adm. Contratual')} />
     <Route path="/admin-contratual/mapa-impacto" element={wrap(MapaImpacto, 'Adm. Contratual')} />
 
     {/* Riscos e Mudanças */}

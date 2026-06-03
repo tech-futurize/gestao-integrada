@@ -49,7 +49,8 @@ const STATUS_MAP = {
   "A iniciar":         "neutral",
 };
 
-const STYLE_MAP = {
+// solid: fundo + texto + borda (padrão original)
+const SOLID_MAP = {
   info:       "bg-status-info/15 text-status-info border-status-info/30",
   positive:   "bg-status-positive/15 text-status-positive border-status-positive/30",
   attention:  "bg-status-attention/15 text-status-attention border-status-attention/30",
@@ -57,16 +58,49 @@ const STYLE_MAP = {
   neutral:    "bg-status-neutral/15 text-status-neutral border-status-neutral/30",
 };
 
+// outline: sem fundo, apenas texto + borda
+const OUTLINE_MAP = {
+  info:       "text-status-info border-status-info/40",
+  positive:   "text-status-positive border-status-positive/40",
+  attention:  "text-status-attention border-status-attention/40",
+  critical:   "text-status-critical border-status-critical/40",
+  neutral:    "text-status-neutral border-status-neutral/40",
+};
+
+// text: apenas cor do texto, sem pílula
+const TEXT_MAP = {
+  info:       "text-status-info",
+  positive:   "text-status-positive",
+  attention:  "text-status-attention",
+  critical:   "text-status-critical",
+  neutral:    "text-status-neutral",
+};
+
 /**
- * Badge de status tokenizado com padrão neon-pill.
+ * Badge de status tokenizado.
  *
- * @param {{ status: string, className?: string }} props
- *   - status: label do status (ex: "Aberto", "Concluído")
- *   - tone: forçar tom manualmente ("info"|"positive"|"attention"|"critical"|"neutral")
+ * @param {{ status: string, tone?: string, variant?: "solid"|"outline"|"text", className?: string }} props
+ *   - variant "solid" (default): fundo + texto + borda (comportamento original)
+ *   - variant "outline": sem fundo, apenas texto + borda
+ *   - variant "text": apenas texto colorido, sem pílula
  */
-export function StatusBadge({ status, tone, className, ...props }) {
+export function StatusBadge({ status, tone, variant = "solid", className, ...props }) {
   const resolvedTone = tone ?? STATUS_MAP[status] ?? "neutral";
-  const styles = STYLE_MAP[resolvedTone] ?? STYLE_MAP.neutral;
+
+  if (variant === "text") {
+    const colorClass = TEXT_MAP[resolvedTone] ?? TEXT_MAP.neutral;
+    return (
+      <span
+        className={cn("inline-flex items-center text-xs font-semibold whitespace-nowrap", colorClass, className)}
+        {...props}
+      >
+        {status}
+      </span>
+    );
+  }
+
+  const styleMap = variant === "outline" ? OUTLINE_MAP : SOLID_MAP;
+  const styles = styleMap[resolvedTone] ?? styleMap.neutral;
 
   return (
     <span

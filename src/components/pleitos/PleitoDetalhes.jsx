@@ -32,7 +32,7 @@ export default function PleitoDetalhes({ pleito, onBack, onEdit }) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <h2 className="text-3xl font-bold text-foreground">{pleito.titulo}</h2>
+            <h2 className="text-2xl font-bold text-foreground">{pleito.titulo}</h2>
             <div className="flex items-center gap-2 mt-2 flex-wrap">
               <StatusBadge status={pleito.status} />
               {(pleito.categorias || []).map((cat) => (

@@ -56,11 +56,11 @@ export default function VinculoModuloCard({ pleito, modulo, vinculos }) {
                   className="flex items-start gap-2 group rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-foreground leading-snug truncate">
+                    <p className="text-xs text-foreground leading-snug break-words">
                       {v.label_cache ?? "—"}
                     </p>
                     {v.observacao && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-0.5 break-words">
                         {v.observacao}
                       </p>
                     )}

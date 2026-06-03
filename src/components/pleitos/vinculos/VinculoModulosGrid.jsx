@@ -3,7 +3,7 @@ import VinculoModuloCard from "./VinculoModuloCard";
 
 export default function VinculoModulosGrid({ pleito, vinculosPorModulo }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="space-y-3">
       {MODULOS_VINCULAVEIS.map((modulo) => (
         <VinculoModuloCard
           key={modulo.entidade}
