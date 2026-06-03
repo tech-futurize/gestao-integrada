@@ -37,8 +37,43 @@ const PROVIDERS = [
     id: 'groq',
     name: 'Groq',
     envKey: 'GROQ_API_KEY',
-    description: 'Llama, Mixtral e Gemma via Groq Cloud',
+    description: 'Llama, Mixtral e Gemma via Groq Cloud (inferência rápida)',
     prefix: 'gsk_',
+  },
+  {
+    id: 'mistral',
+    name: 'Mistral AI',
+    envKey: 'MISTRAL_API_KEY',
+    description: 'Mistral Large, Mistral Medium e Codestral',
+    prefix: '',
+  },
+  {
+    id: 'perplexity',
+    name: 'Perplexity',
+    envKey: 'PERPLEXITY_API_KEY',
+    description: 'Sonar Pro e Sonar Reasoning (modelos com busca na web)',
+    prefix: 'pplx-',
+  },
+  {
+    id: 'xai',
+    name: 'xAI',
+    envKey: 'XAI_API_KEY',
+    description: 'Grok-2 e Grok-3 da xAI',
+    prefix: 'xai-',
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    envKey: 'DEEPSEEK_API_KEY',
+    description: 'DeepSeek V3 e DeepSeek R1 (raciocínio)',
+    prefix: 'sk-',
+  },
+  {
+    id: 'together',
+    name: 'Together AI',
+    envKey: 'TOGETHER_API_KEY',
+    description: 'Meta Llama 3, Qwen e outros modelos open-source',
+    prefix: '',
   },
 ];
 
@@ -136,8 +171,8 @@ export default function ProvidersTab() {
 
   if (isPending) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-56" />)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-56" />)}
       </div>
     );
   }
@@ -150,7 +185,7 @@ export default function ProvidersTab() {
         o arquivo local tem prioridade.
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {PROVIDERS.map((provider) => {
           const config = getConfig(provider.id);
           const providerPrecos = getPrecos(provider.id);
