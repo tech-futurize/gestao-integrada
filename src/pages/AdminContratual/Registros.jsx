@@ -76,12 +76,6 @@ const STATUS_SECTION_COLORS = {
   },
 };
 
-const NIVEL_COLORS = {
-  "Baixa": "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  "Média": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-  "Alta":  "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-};
-
 const RESP_COLORS = {
   "Contratada":  "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
   "Contratante": "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
@@ -93,8 +87,6 @@ const REGISTRO_COLUMNS = [
   { key: "data_hora",           label: "Data/Hora",       type: "date" },
   { key: "responsavel_registro",label: "Responsável",     type: "string" },
   { key: "impacto_preliminar",  label: "Impacto",         type: "string" },
-  { key: "probabilidade",       label: "Probabilidade",   type: "string" },
-  { key: "gravidade",           label: "Gravidade",       type: "string" },
   { key: "responsabilidade",    label: "Responsabilidade",type: "string" },
   { key: "status",              label: "Status",          type: "string" },
 ];
@@ -578,23 +570,16 @@ export default function Registros() {
                                       </span>
                                     )}
                                 </p>
-                                {(inc.probabilidade || inc.gravidade || inc.responsabilidade) && (
+                                {inc.impacto_preliminar && (
+                                  <p className="text-xs text-muted-foreground line-clamp-1 italic border-l-2 border-border pl-2">
+                                    {inc.impacto_preliminar}
+                                  </p>
+                                )}
+                                {inc.responsabilidade && (
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    {inc.responsabilidade && (
-                                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${RESP_COLORS[inc.responsabilidade] || "bg-muted text-muted-foreground"}`}>
-                                        {inc.responsabilidade}
-                                      </span>
-                                    )}
-                                    {inc.probabilidade && (
-                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${NIVEL_COLORS[inc.probabilidade] || "bg-muted text-muted-foreground"}`}>
-                                        P: {inc.probabilidade}
-                                      </span>
-                                    )}
-                                    {inc.gravidade && (
-                                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${NIVEL_COLORS[inc.gravidade] || "bg-muted text-muted-foreground"}`}>
-                                        I: {inc.gravidade}
-                                      </span>
-                                    )}
+                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${RESP_COLORS[inc.responsabilidade] || "bg-muted text-muted-foreground"}`}>
+                                      {inc.responsabilidade}
+                                    </span>
                                   </div>
                                 )}
                               </div>
@@ -607,24 +592,22 @@ export default function Registros() {
                                       {inc.responsavel_registro}
                                     </span>
                                   )}
-                                  {inc.anexos?.length > 0 && (
-                                    <span
-                                      className="flex items-center gap-0.5 text-xs text-muted-foreground shrink-0"
-                                      title={`${inc.anexos.length} anexo(s)`}
-                                    >
-                                      <Paperclip className="w-3 h-3" />
-                                      {inc.anexos.length}
-                                    </span>
-                                  )}
-                                  {inc.atividades_vinculadas?.length > 0 && (
-                                    <span
-                                      className="flex items-center gap-0.5 text-xs text-muted-foreground shrink-0"
-                                      title={`${inc.atividades_vinculadas.length} atividade(s) vinculada(s)`}
-                                    >
-                                      <Link2 className="w-3 h-3" />
-                                      {inc.atividades_vinculadas.length}
-                                    </span>
-                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <span
+                                    className={`flex items-center gap-1 text-xs font-medium ${(inc.anexos?.length || 0) > 0 ? "text-foreground" : "text-muted-foreground/50"}`}
+                                    title={`${inc.anexos?.length || 0} anexo(s)`}
+                                  >
+                                    <Paperclip className="w-3.5 h-3.5" />
+                                    {inc.anexos?.length || 0}
+                                  </span>
+                                  <span
+                                    className={`flex items-center gap-1 text-xs font-medium ${(inc.atividades_vinculadas?.length || 0) > 0 ? "text-foreground" : "text-muted-foreground/50"}`}
+                                    title={`${inc.atividades_vinculadas?.length || 0} vínculo(s)`}
+                                  >
+                                    <Link2 className="w-3.5 h-3.5" />
+                                    {inc.atividades_vinculadas?.length || 0}
+                                  </span>
                                 </div>
                                 <Button
                                   size="icon"

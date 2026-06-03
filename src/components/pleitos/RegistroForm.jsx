@@ -21,8 +21,6 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
     responsavel_registro: incidente?.responsavel_registro || "",
     descricao: incidente?.descricao || "",
     impacto_preliminar: incidente?.impacto_preliminar || "",
-    probabilidade: incidente?.probabilidade || "Média",
-    gravidade: incidente?.gravidade || "Média",
     status: incidente?.status || "Registrado",
     pleito_id: incidente?.pleito_id || null,
     responsabilidade: incidente?.responsabilidade || "",
@@ -188,30 +186,8 @@ export default function RegistroForm({ incidente, casos, onSubmit, onCancel, isS
             </div>
           </div>
 
-          {/* Probabilidade + Gravidade + Responsabilidade + Status */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>Probabilidade</Label>
-              <Select value={formData.probabilidade} onValueChange={(v) => set("probabilidade", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Baixa">Baixa</SelectItem>
-                  <SelectItem value="Média">Média</SelectItem>
-                  <SelectItem value="Alta">Alta</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Gravidade</Label>
-              <Select value={formData.gravidade} onValueChange={(v) => set("gravidade", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Baixa">Baixa</SelectItem>
-                  <SelectItem value="Média">Média</SelectItem>
-                  <SelectItem value="Alta">Alta</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Responsabilidade + Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Responsabilidade</Label>
               <Select value={formData.responsabilidade} onValueChange={(v) => set("responsabilidade", v)}>
