@@ -44,14 +44,14 @@ export const navigationGroups = [
       { title: "Registros", path: "/admin-contratual/registros" },
       { title: "Pleitos", path: "/admin-contratual/pleitos" },
       { title: "Mapa de Impacto", path: "/admin-contratual/mapa-impacto" },
+      { title: "Gestão de Mudanças", path: "/admin-contratual/gestao-mudancas" },
     ],
   },
   {
-    title: "Riscos e Mudanças",
+    title: "Riscos",
     icon: ShieldAlert,
     children: [
       { title: "Gestão de Riscos", path: "/riscos-mudancas/gestao-riscos" },
-      { title: "Gestão de Mudanças", path: "/riscos-mudancas/gestao-mudancas" },
     ],
   },
   {

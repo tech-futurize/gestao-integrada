@@ -39,7 +39,7 @@ const MapaImpacto          = lazy(() => import('./pages/AdminContratual/MapaImpa
 
 // Riscos e Mudanças
 const GestaoRiscos         = lazy(() => import('./pages/RiscosMudancas/GestaoRiscos'));
-const GestaoMudancas       = lazy(() => import('./pages/RiscosMudancas/GestaoMudancas'));
+const GestaoMudancas       = lazy(() => import('./pages/AdminContratual/GestaoMudancas'));
 
 // Agentes
 const AgenteViewer         = lazy(() => import('./pages/Agentes/AgenteViewer'));
@@ -133,9 +133,13 @@ const AuthenticatedApp = () => (
     <Route path="/admin-contratual/pleitos/:id" element={wrap(AdminPleitos, 'Adm. Contratual')} />
     <Route path="/admin-contratual/mapa-impacto" element={wrap(MapaImpacto, 'Adm. Contratual')} />
 
-    {/* Riscos e Mudanças */}
+    {/* Riscos */}
     <Route path="/riscos-mudancas/gestao-riscos" element={wrap(GestaoRiscos, 'Riscos e Mudanças')} />
-    <Route path="/riscos-mudancas/gestao-mudancas" element={wrap(GestaoMudancas, 'Riscos e Mudanças')} />
+
+    {/* Adm. Contratual — Gestão de Mudanças (movido de Riscos e Mudanças) */}
+    <Route path="/admin-contratual/gestao-mudancas" element={wrap(GestaoMudancas, 'Adm. Contratual')} />
+    {/* Redirect da rota antiga para manter deep-links funcionando */}
+    <Route path="/riscos-mudancas/gestao-mudancas" element={<Navigate to="/admin-contratual/gestao-mudancas" replace />} />
 
     {/* Agentes de IA — rota genérica por slug */}
     <Route path="/agentes/:slug" element={wrap(AgenteViewer, 'Agentes de IA')} />
@@ -165,7 +169,7 @@ const AuthenticatedApp = () => (
     <Route path="/Histograma" element={<Navigate to="/planejamento/histograma" replace />} />
     <Route path="/AvancoFisico" element={<Navigate to="/planejamento/avancos" replace />} />
     <Route path="/Pleitos" element={<Navigate to="/admin-contratual/pleitos" replace />} />
-    <Route path="/GestaoMudancas" element={<Navigate to="/riscos-mudancas/gestao-mudancas" replace />} />
+    <Route path="/GestaoMudancas" element={<Navigate to="/admin-contratual/gestao-mudancas" replace />} />
     <Route path="/GestaoRiscos" element={<Navigate to="/riscos-mudancas/gestao-riscos" replace />} />
     <Route path="/Agente" element={<Navigate to="/agentes/business-analyst-agent" replace />} />
     <Route path="/AgenteConfig" element={<Navigate to="/configuracoes/agentes-admin" replace />} />
