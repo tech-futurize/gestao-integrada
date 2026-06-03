@@ -13,8 +13,8 @@ const FONTE_BADGE = {
 
 function fmtCurrency(val) {
   if (val == null || val === 0) return null;
-  const abs = Math.abs(val).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
-  return val >= 0 ? `+${abs}` : `-${abs.replace("-", "")}`;
+  const formatted = Math.abs(val).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  return val > 0 ? `+${formatted}` : `-${formatted}`;
 }
 
 function DetalheRegistro({ r }) {
