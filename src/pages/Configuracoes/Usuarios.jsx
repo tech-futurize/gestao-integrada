@@ -495,7 +495,7 @@ export default function Usuarios() {
                   size="sm"
                   variant="save"
                   onClick={() => savePermsMut.mutate({ usuarioId: editing.id, matrix: permsMatrix })}
-                  disabled={savePermsMut.isPending}
+                  disabled={savePermsMut.isPending || permsPending || permsError}
                 >
                   {savePermsMut.isPending ? "Salvando..." : "Salvar Permissões"}
                 </Button>

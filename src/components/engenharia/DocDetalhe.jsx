@@ -188,7 +188,7 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowRevModal(false)}>Cancelar</Button>
-              <Button size="sm" onClick={handleAddRevisao} variant="save">
+              <Button size="sm" onClick={handleAddRevisao} variant="save" disabled={!novaRevisao.revisao || !novaRevisao.data}>
                 <Save className="w-3.5 h-3.5 mr-1" />Salvar
               </Button>
             </div>

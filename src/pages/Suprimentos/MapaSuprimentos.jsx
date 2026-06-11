@@ -62,7 +62,8 @@ export default function MapaSuprimentos() {
         descricao:        row.descricao        || "",
         fornecedor:       row.fornecedor       || "",
         unidade:          unidadeNormalizada,
-        unidade_id:       unidadeCadastrada?.id || null,
+        // Só grava a FK quando a lista de unidades já carregou — evita zerar vínculo em update
+        ...(unidades.length > 0 ? { unidade_id: unidadeCadastrada?.id || null } : {}),
         quantidade:       row.quantidade       ?? 0,
         responsavel:      row.responsavel      || "",
         status:           row.status           || "A iniciar",
