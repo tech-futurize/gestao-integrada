@@ -8,10 +8,18 @@ import PageHeader from '@/components/ui/PageHeader';
 export default function AgenteViewer() {
   const { slug } = useParams();
 
-  const { data: agentes = [], isPending } = useQuery({
+  const { data: agentes = [], isPending, isError } = useQuery({
     queryKey: ['agentes'],
     queryFn: () => entities.Agente.list({}, { pageSize: 100 }),
   });
+
+  if (isError) {
+    return (
+      <div className="flex flex-1 items-center justify-center h-full">
+        <p className="text-sm text-destructive">Erro ao carregar o agente. Recarregue a página.</p>
+      </div>
+    );
+  }
 
   if (isPending) {
     return (

@@ -11,7 +11,7 @@ export default function ListaFormularios() {
   const navigate = useNavigate();
   const { selectedProjectId } = useProject();
 
-  const { data: formularios = [], isPending } = useQuery({
+  const { data: formularios = [], isPending, isError } = useQuery({
     queryKey: ["formularios_digitais", "ativos"],
     queryFn: () => entities.FormularioDigital.filter({ ativo: true }),
   });
@@ -33,6 +33,8 @@ export default function ListaFormularios() {
       <div className="flex-1 overflow-auto p-6">
         {isPending ? (
           <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+        ) : isError ? (
+          <div className="text-center py-12 text-destructive">Erro ao carregar os formulários. Tente novamente.</div>
         ) : formularios.length === 0 ? (
           <PageEmptyState
             icon={ClipboardList}

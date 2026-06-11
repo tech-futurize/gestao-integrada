@@ -37,8 +37,8 @@ const ACTIVE_COLOR = '#ef4444';
 const FILTER_LABELS = { agent: 'Agente', modelo: 'Modelo', user: 'Usuário', day: 'Dia' };
 const FILTER_ICONS  = { agent: Bot, modelo: Cpu, user: User, day: CalendarDays };
 
-function getInitials(email = '') {
-  return email.split('@')[0].slice(0, 2).toUpperCase();
+function getInitials(email) {
+  return (email || '').split('@')[0].slice(0, 2).toUpperCase();
 }
 
 function formatUSD(val) {

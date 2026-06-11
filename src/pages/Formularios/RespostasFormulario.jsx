@@ -29,7 +29,7 @@ export default function RespostasFormulario() {
   const { selectedProjectId } = useProject();
   const [viewing, setViewing] = useState(null);
 
-  const { data: formulario } = useQuery({
+  const { data: formulario, isError: isErrorFormulario } = useQuery({
     queryKey: ["formulario_digital", id],
     queryFn: async () => {
       const [result] = await entities.FormularioDigital.filter({ id });
@@ -80,6 +80,9 @@ export default function RespostasFormulario() {
             <p className="text-sm text-muted-foreground">
               {respostas.length} {respostas.length === 1 ? "resposta" : "respostas"} neste projeto
             </p>
+            {isErrorFormulario && (
+              <p className="text-sm text-destructive">Erro ao carregar a definição do formulário.</p>
+            )}
           </div>
           <div className="flex gap-2">
             <button

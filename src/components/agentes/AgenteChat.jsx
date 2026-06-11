@@ -39,6 +39,11 @@ export default function AgenteChat({ agent }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Aborta stream pendente ao desmontar o componente
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
   const buildApiMessages = (history, newContent) => {
     const userMessages = [...history, { role: "user", content: newContent }];
 

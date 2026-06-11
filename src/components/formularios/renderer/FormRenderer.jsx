@@ -1,7 +1,7 @@
 import FieldInput from "./FieldInput";
 
 export default function FormRenderer({ definition, value, onChange, errors, readOnly }) {
-  if (!definition?.sections) return null;
+  if (!Array.isArray(definition?.sections)) return null;
 
   return (
     <div className="space-y-3">
