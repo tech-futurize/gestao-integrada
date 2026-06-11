@@ -48,7 +48,7 @@ export default function Faturamento() {
     enabled: !!selectedProjectId,
   });
 
-  const { data: projetoAtivo } = useQuery({
+  const { data: projetoAtivo, isPending: isPendingProjeto, isError: isErrorProjeto } = useQuery({
     queryKey: ["projeto", selectedProjectId],
     queryFn: () =>
       entities.Projeto.filter({ id: selectedProjectId }).then((r) => r[0] || null),
@@ -223,7 +223,15 @@ export default function Faturamento() {
           </div>
         )}
 
-        {activeTab === "pq-mestra" && (
+        {activeTab === "pq-mestra" && isPendingProjeto && (
+          <div className="py-12 text-center text-sm text-muted-foreground">Carregando PQ Mestra...</div>
+        )}
+        {activeTab === "pq-mestra" && !isPendingProjeto && isErrorProjeto && (
+          <div className="py-12 text-center text-sm text-destructive">
+            Erro ao carregar o projeto. A PQ Mestra não pode ser editada agora.
+          </div>
+        )}
+        {activeTab === "pq-mestra" && !isPendingProjeto && !isErrorProjeto && (
           <PqMestraTab
             pqpMestra={projetoAtivo?.pqp_mestra || []}
             faturamentos={faturamentos}
