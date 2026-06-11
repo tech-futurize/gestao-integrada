@@ -390,6 +390,22 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L022 — Tabelas novas criadas sem RLS e RPCs SECURITY DEFINER expostas à anon key
+
+- **Data:** 2026-06-10
+- **Agente:** Tester
+- **Milestone:** Auditoria Completa do Sistema (2026-06-10)
+- **Categoria:** Segurança
+- **Gravidade:** Crítica
+- **Contexto em 1 frase:** As tabelas `acoes`, `funcoes` e `tipos_equipamento` estavam com RLS desabilitado, e as funções `exec_readonly_sql`/`get_db_schema` (SECURITY DEFINER) eram executáveis pela role `anon` — qualquer pessoa com a anon key pública podia ler/alterar essas tabelas e rodar SQL de leitura no banco inteiro.
+- **Erro observado:** Advisors de segurança do Supabase acusaram `rls_disabled_in_public` (ERROR) e `anon_security_definer_function_executable` (WARN); nenhum sintoma na UI, o que tornou o problema invisível.
+- **Causa raiz:** Migrations criaram tabelas/funções sem repetir o boilerplate de RLS/REVOKE; o Mastra usa service_role key, então ninguém percebeu que os grants default para anon/authenticated tinham ficado abertos.
+- **Correção aplicada:** `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` + policy padrão nas 3 tabelas; `REVOKE EXECUTE ... FROM anon, authenticated` nas 2 funções (service_role mantida — agentes Mastra não são afetados).
+- **Como evitar em projetos futuros:** Toda migration que cria tabela deve terminar com `ENABLE ROW LEVEL SECURITY` + policy; toda função SECURITY DEFINER deve ter `REVOKE EXECUTE FROM PUBLIC, anon, authenticated` explícito. Rodar `get_advisors(security)` ao final de cada milestone.
+- **Referências:** migrations `enable_rls_acoes_funcoes_tipos_equipamento` e `revoke_anon_exec_on_definer_functions`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:

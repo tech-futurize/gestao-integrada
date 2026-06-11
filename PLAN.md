@@ -353,6 +353,29 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 
 **Escopo preliminar (a confirmar com `/brainstorming`):**
 
+### Auditoria Completa do Sistema (2026-06-10) — Tester
+
+> Auditoria módulo a módulo (15 grupos) com 9 agentes de revisão + validação manual de cada achado contra código e schema real. Build ✓ · Lint 0 erros ✓ · Tests 57/57 ✓ · 0 registros órfãos em 13 verificações de FK.
+
+**Corrigido nesta auditoria:**
+- [x] Lint: 18 erros zerados (aspas não escapadas, imports/vars não usados)
+- [x] **Segurança crítica:** RLS habilitado em `acoes`/`funcoes`/`tipos_equipamento`; REVOKE de `exec_readonly_sql`/`get_db_schema` para anon/authenticated (L022)
+- [x] Dashboard: loading agregado em todas as queries das seções; KPI medições aprovadas inclui "Concluído"
+- [x] Engenharia: erro do cronograma visível no select de vínculo; validação de nova revisão
+- [x] Suprimentos: importação resolve `unidade_id` (FK); sigla denormalizada em `unidade`; validação NaN de quantidade
+- [x] Faturamento: aba PQ Mestra bloqueada enquanto projeto não carrega (evitava sobrescrever PQP com vazio)
+- [x] Riscos: `RiscoHoverCard` lia coluna inexistente `plano_resposta` → `mitigacao`
+- [x] Mudanças: opção "Redução" no Impacto no Escopo (spec M13 restaurada)
+- [x] Formulários/Agentes: estados de erro, abort de stream no unmount, guards defensivos
+- [x] Config/Layout: erro tratado na lista de projetos e na matriz de permissões (evita salvar matriz zerada)
+- [x] Banco: índice duplicado removido + 11 índices de FK criados
+
+**Decisões pendentes do PO (não executadas):**
+1. Formulário de Riscos não expõe campo "Plano de Resposta" (`mitigacao`) — a coluna existe, aparece no hover card e no import/export, mas não é editável no form. Adicionar o campo ou removê-lo da UI?
+2. Bucket público `registros-anexos` permite listagem de todos os arquivos (advisor WARN). Trocar para bucket privado + signed URLs impacta UX de anexos.
+3. Proteção contra senhas vazadas (HaveIBeenPwned) desabilitada no Supabase Auth — habilitar no dashboard (sem impacto de código).
+4. `documentos_engenharia.id_cronograma` é TEXT sem FK (itens_mas usa UUID+FK) — padronizar exige migration com cast.
+
 ### Melhorias de Qualidade (2026-06-02)
 
 - [x] **Sort por Coluna:** Implementado hook `useSortTable` + componente `SortableTableHead` + aplicado em 5 módulos (Plano de Ação, Gestão de Riscos, Gestão de Mudanças, Documentos, RDOs) *(7 commits integrados, `npm run build` ✓, tests 9/9 ✓)*
