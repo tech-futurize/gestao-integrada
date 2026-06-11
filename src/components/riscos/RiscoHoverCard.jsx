@@ -79,9 +79,9 @@ export default function RiscoHoverCard({ risco, anchorRect, onMouseEnter, onMous
             <span className="text-xs font-semibold text-foreground">{risco.responsavel}</span>
           </div>
         )}
-        {risco.plano_resposta && (
+        {risco.mitigacao && (
           <p className="text-[10px] text-muted-foreground italic line-clamp-2 leading-relaxed">
-            Plano: {risco.plano_resposta}
+            Plano: {risco.mitigacao}
           </p>
         )}
       </div>

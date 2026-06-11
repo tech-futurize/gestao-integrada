@@ -195,15 +195,19 @@ export default function MudancaForm({ open, onOpenChange, mudanca, onSubmit, onC
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <Label>Impacto no Escopo</Label>
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={formData.impacto_escopo_tipo === "Adição"}
-              onChange={(e) => set("impacto_escopo_tipo", e.target.checked ? "Adição" : null)}
-              className="w-4 h-4 rounded border-border accent-primary"
-            />
-            <span className="text-sm text-foreground">Adição</span>
-          </label>
+          <div className="flex items-center gap-4">
+            {["Adição", "Redução"].map((tipo) => (
+              <label key={tipo} className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.impacto_escopo_tipo === tipo}
+                  onChange={(e) => set("impacto_escopo_tipo", e.target.checked ? tipo : null)}
+                  className="w-4 h-4 rounded border-border accent-primary"
+                />
+                <span className="text-sm text-foreground">{tipo}</span>
+              </label>
+            ))}
+          </div>
         </div>
         <Textarea
           value={formData.impacto_escopo}
