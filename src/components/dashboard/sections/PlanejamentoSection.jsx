@@ -129,7 +129,7 @@ function calcFinanceiroKpis(financeiros, faturamentos, medicoes) {
   const desvioAcum = realAcum - prevAcum;
   const medicaoEmitidas = faturamentos.length;
   const aprovadas = medicoes.filter((m) =>
-    ["Aprovada", "Paga"].includes(m.status)
+    ["Aprovada", "Paga", "Concluído"].includes(m.status)
   ).length;
   return { realAcum, prevAcum, avancoFin, desvioAcum, medicaoEmitidas, aprovadas };
 }
@@ -842,7 +842,7 @@ export default function PlanejamentoSection({ projetoId }) {
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
-  const { data: itens6wla = [], isError: isErrorWLA } = useQuery({
+  const { data: itens6wla = [], isPending: isLoadingWLA, isError: isErrorWLA } = useQuery({
     queryKey: ["6wla_cron_dash", projetoId],
     queryFn: () => entities.Item6WLA.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
@@ -860,12 +860,12 @@ export default function PlanejamentoSection({ projetoId }) {
     queryFn: () => entities.Financeiro.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
-  const { data: faturamentos = [], isError: isErrorFat } = useQuery({
+  const { data: faturamentos = [], isPending: isLoadingFat, isError: isErrorFat } = useQuery({
     queryKey: ["faturamentos_dash", projetoId],
     queryFn: () => entities.Faturamento.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
-  const { data: medicoes = [], isError: isErrorMed } = useQuery({
+  const { data: medicoes = [], isPending: isLoadingMed, isError: isErrorMed } = useQuery({
     queryKey: ["medicoes_dash", projetoId],
     queryFn: () => entities.Medicao.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
@@ -912,7 +912,7 @@ export default function PlanejamentoSection({ projetoId }) {
             tarefas={tarefas}
             itens6wla={itens6wla}
             projeto={projeto}
-            isLoading={isLoadingAvancos || isLoadingTarefas}
+            isLoading={isLoadingAvancos || isLoadingTarefas || isLoadingWLA}
             isError={isErrorAvancos || isErrorTarefas || isErrorWLA || isErrorProjeto}
           />
         </div>
@@ -930,7 +930,7 @@ export default function PlanejamentoSection({ projetoId }) {
             financeiros={financeiros}
             faturamentos={faturamentos}
             medicoes={medicoes}
-            isLoading={isLoadingFin}
+            isLoading={isLoadingFin || isLoadingFat || isLoadingMed}
             isError={isErrorFin || isErrorFat || isErrorMed}
           />
         </div>

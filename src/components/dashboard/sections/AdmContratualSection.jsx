@@ -525,12 +525,12 @@ export default function AdmContratualSection({ projetoId }) {
     queryFn: () => entities.Contrato.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
-  const { data: aditivos = [], isError: isErrorAdit } = useQuery({
+  const { data: aditivos = [], isPending: isLoadingAdit, isError: isErrorAdit } = useQuery({
     queryKey: ["aditivos_adm_dash", projetoId],
     queryFn: () => entities.Aditivo.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
-  const { data: medicoes = [], isError: isErrorMed } = useQuery({
+  const { data: medicoes = [], isPending: isLoadingMed, isError: isErrorMed } = useQuery({
     queryKey: ["medicoes_dash", projetoId],
     queryFn: () => entities.Medicao.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
@@ -542,7 +542,7 @@ export default function AdmContratualSection({ projetoId }) {
     queryFn: () => entities.Pleito.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
-  const { data: mudancas = [], isError: isErrorMud } = useQuery({
+  const { data: mudancas = [], isPending: isLoadingMud, isError: isErrorMud } = useQuery({
     queryKey: ["mudancas_adm_dash", projetoId],
     queryFn: () => entities.MudancaContratual.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
@@ -554,12 +554,12 @@ export default function AdmContratualSection({ projetoId }) {
     queryFn: () => entities.Rdo.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
-  const { data: registros = [], isError: isErrorReg } = useQuery({
+  const { data: registros = [], isPending: isLoadingReg, isError: isErrorReg } = useQuery({
     queryKey: ["registros_adm_dash", projetoId],
     queryFn: () => entities.Registro.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
   });
-  const { data: categorias = [], isError: isErrorCat } = useQuery({
+  const { data: categorias = [], isPending: isLoadingCat, isError: isErrorCat } = useQuery({
     queryKey: ["categorias_adm_dash", projetoId],
     queryFn: () => entities.CategoriaImpacto.filter({ projeto_id: projetoId }),
     enabled: !!projetoId,
@@ -588,7 +588,7 @@ export default function AdmContratualSection({ projetoId }) {
             contratos={contratos}
             aditivos={aditivos}
             medicoes={medicoes}
-            isLoading={isLoadingCtr}
+            isLoading={isLoadingCtr || isLoadingAdit || isLoadingMed}
             isError={isErrorCtr || isErrorAdit || isErrorMed}
           />
         </div>
@@ -605,7 +605,7 @@ export default function AdmContratualSection({ projetoId }) {
           <PleitosMudancasBloco
             pleitos={pleitos}
             mudancas={mudancas}
-            isLoading={isLoadingPle}
+            isLoading={isLoadingPle || isLoadingMud}
             isError={isErrorPle || isErrorMud}
           />
         </div>
@@ -623,7 +623,7 @@ export default function AdmContratualSection({ projetoId }) {
             rdos={rdos}
             registros={registros}
             categorias={categorias}
-            isLoading={isLoadingRdo}
+            isLoading={isLoadingRdo || isLoadingReg || isLoadingCat}
             isError={isErrorRdo || isErrorReg || isErrorCat}
           />
         </div>
