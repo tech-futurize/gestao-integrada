@@ -319,7 +319,7 @@ export default function PqMestraTab({
         <div className="border border-dashed border-border rounded-xl py-16 flex flex-col items-center gap-2 text-muted-foreground">
           <TableProperties className="w-8 h-8 opacity-30" />
           <p className="text-sm">Nenhuma PQ Mestra definida para este projeto.</p>
-          <p className="text-xs">Use "Importar / Exportar" ou "Adicionar Item" para começar.</p>
+          <p className="text-xs">Use &quot;Importar / Exportar&quot; ou &quot;Adicionar Item&quot; para começar.</p>
         </div>
         {dialogs}
       </div>

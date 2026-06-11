@@ -487,7 +487,7 @@ function FinanceiroBloco({ financeiros, faturamentos, medicoes, isLoading, isErr
       </div>
     );
 
-  const { realAcum, prevAcum, avancoFin, desvioAcum, medicaoEmitidas, aprovadas } =
+  const { realAcum, avancoFin, desvioAcum, medicaoEmitidas, aprovadas } =
     calcFinanceiroKpis(financeiros, faturamentos, medicoes);
 
   const avancoColor =

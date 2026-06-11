@@ -518,7 +518,7 @@ export default function Registros() {
                   : "Nenhum registro corresponde aos filtros"}
               </p>
               {baseList.length === 0 && (
-                <p className="text-sm mt-1">Clique em "Novo Registro" para começar.</p>
+                <p className="text-sm mt-1">Clique em &quot;Novo Registro&quot; para começar.</p>
               )}
             </div>
           ) : (

@@ -216,7 +216,6 @@ export default function ProvidersTab() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {PROVIDERS.map((provider) => {
-          const config = getConfig(provider.id);
           const { rows: providerPrecos, isStatic } = getPrecos(provider);
           const isConfigured = hasKey(provider.id);
 

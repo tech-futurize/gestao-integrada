@@ -105,7 +105,7 @@ function DetalheRow({ label, value }) {
   );
 }
 
-function CardClassificacao({ tipo, total, linhas, bgColor, borderColor, textColor, numColor, label }) {
+function CardClassificacao({ total, linhas, bgColor, borderColor, textColor, numColor, label }) {
   return (
     <div
       className="flex-1 rounded-xl p-4"

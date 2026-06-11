@@ -332,7 +332,7 @@ export default function PlanoAcao({ projectId }) {
           ) : isErrorAcoes ? (
             <div className="text-center py-12 text-sm text-status-critical">Erro ao carregar ações. Tente recarregar a página.</div>
           ) : acoes.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">Nenhuma ação registrada. Clique em "Nova Ação" para começar.</div>
+            <div className="text-center py-12 text-muted-foreground">Nenhuma ação registrada. Clique em &quot;Nova Ação&quot; para começar.</div>
           ) : (
             <div className="overflow-auto max-h-[500px]">
               <Table>

@@ -75,7 +75,7 @@ export default function AgentsList() {
         </div>
       ) : agentes.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground text-sm">
-          Nenhum agente cadastrado. Clique em "Novo agente" para começar.
+          Nenhum agente cadastrado. Clique em &quot;Novo agente&quot; para começar.
         </div>
       ) : (
         <div className="space-y-3">

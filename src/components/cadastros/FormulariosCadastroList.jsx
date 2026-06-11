@@ -150,7 +150,7 @@ export default function FormulariosCadastroList() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Excluir formulário?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Esta ação excluirá permanentemente o formulário "{f.titulo}" e todas as respostas vinculadas. Esta ação não pode ser desfeita.
+                            Esta ação excluirá permanentemente o formulário &quot;{f.titulo}&quot; e todas as respostas vinculadas. Esta ação não pode ser desfeita.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -173,7 +173,7 @@ export default function FormulariosCadastroList() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Formulários são globais (compartilhados entre projetos). Apenas os marcados como <strong>Ativo</strong> aparecem no módulo "Formulários Digitais" para preenchimento.
+        Formulários são globais (compartilhados entre projetos). Apenas os marcados como <strong>Ativo</strong> aparecem no módulo &quot;Formulários Digitais&quot; para preenchimento.
       </p>
     </div>
   );
