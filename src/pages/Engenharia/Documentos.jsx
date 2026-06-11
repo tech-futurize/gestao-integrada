@@ -96,7 +96,7 @@ export default function Documentos() {
     enabled: !!selectedProjectId,
   });
 
-  const { data: tarefas = [] } = useQuery({
+  const { data: tarefas = [], isError: isErrorTarefas } = useQuery({
     queryKey: ["tarefas_cronograma", selectedProjectId],
     queryFn: () => entities.TarefaCronograma.filter({ projeto_id: selectedProjectId }),
     enabled: !!selectedProjectId,
@@ -617,6 +617,9 @@ export default function Documentos() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">— Sem vínculo —</SelectItem>
+                      {isErrorTarefas && (
+                        <SelectItem value="__erro__" disabled>Erro ao carregar o cronograma</SelectItem>
+                      )}
                       {tarefas.map(t => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.codigo_wbs ? `${t.codigo_wbs} — ` : ""}{t.nome}

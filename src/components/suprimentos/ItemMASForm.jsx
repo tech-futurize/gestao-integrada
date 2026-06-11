@@ -79,7 +79,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
   };
 
   const handleSave = async () => {
-    if (!form.quantidade || parseFloat(form.quantidade) <= 0) {
+    if (!form.quantidade || isNaN(parseFloat(form.quantidade)) || parseFloat(form.quantidade) <= 0) {
       toast({ title: "Campo obrigatório", description: "Informe uma quantidade válida.", variant: "destructive" });
       return;
     }
@@ -100,6 +100,7 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
         id_cronograma: form.id_cronograma || null,
         data_cronograma: form.data_cronograma || null,
         unidade_id: form.unidade_id || null,
+        unidade: unidades.find(u => u.id === form.unidade_id)?.sigla || null,
         pacote_id: form.pacote_id || null,
       };
       if (item) await entities.ItemMAS.update(item.id, data);

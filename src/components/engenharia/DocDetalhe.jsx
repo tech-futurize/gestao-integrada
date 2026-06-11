@@ -19,6 +19,7 @@ export default function DocDetalhe({ doc, tarefas = [], onClose: _onClose, onUpd
   const etapaCfg = ETAPA_COLORS[doc.etapa] || {};
 
   const handleAddRevisao = () => {
+    if (!novaRevisao.revisao || !novaRevisao.data) return;
     const hist = [...(doc.historico_revisoes || []), { ...novaRevisao, etapa: doc.etapa }];
     onUpdate(doc.id, { historico_revisoes: hist });
     setShowRevModal(false);

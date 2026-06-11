@@ -39,6 +39,12 @@ export default function MapaSuprimentos() {
     enabled: !!selectedProjectId,
   });
 
+  const { data: unidades = [] } = useQuery({
+    queryKey: ["unidades_medida"],
+    queryFn: () => entities.UnidadeMedida.list(),
+    staleTime: 1000 * 60 * 5,
+  });
+
   const handleImport = async (row) => {
     setImporting(true);
     try {
@@ -47,12 +53,16 @@ export default function MapaSuprimentos() {
       const unidadeNormalizada = UNIDADE_SIGLAS.find(
         s => s.toLowerCase() === siglaImportada.toLowerCase()
       ) || siglaImportada || null;
+      const unidadeCadastrada = unidadeNormalizada
+        ? unidades.find(u => u.sigla.toLowerCase() === unidadeNormalizada.toLowerCase())
+        : null;
       const payload = {
         projeto_id:       selectedProjectId,
         numero_sc:        row.numero_sc        || "",
         descricao:        row.descricao        || "",
         fornecedor:       row.fornecedor       || "",
         unidade:          unidadeNormalizada,
+        unidade_id:       unidadeCadastrada?.id || null,
         quantidade:       row.quantidade       ?? 0,
         responsavel:      row.responsavel      || "",
         status:           row.status           || "A iniciar",
