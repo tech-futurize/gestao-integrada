@@ -65,15 +65,26 @@ export default function Usuarios() {
   const hasFilters = search || filterPerfil !== "Todos";
 
   // Permissões do usuário em edição
-  const { data: userPermsRows = [] } = useQuery({
+  const { data: userPermsRows = [], isPending: permsPending, isError: permsError } = useQuery({
     queryKey: ["permissoes-editor", editing?.id],
     queryFn: () => entities.PermissaoUsuario.filter({ usuario_id: editing.id }),
     enabled: !!editing?.id,
   });
 
+  // Avisa se as permissões não carregaram — evita salvar matriz zerada por engano
+  useEffect(() => {
+    if (permsError) {
+      toast({
+        title: "Erro ao carregar permissões",
+        description: "A matriz não reflete as permissões atuais. Feche e tente novamente antes de salvar.",
+        variant: "destructive",
+      });
+    }
+  }, [permsError, toast]);
+
   // Preenche a matriz quando as permissões do usuário em edição carregam
   useEffect(() => {
-    if (!editing?.id) return;
+    if (!editing?.id || permsPending || permsError) return;
     const map = userPermsRows.reduce((acc, row) => {
       acc[row.modulo] = { ...row.acoes };
       return acc;
@@ -83,7 +94,7 @@ export default function Usuarios() {
       return acc;
     }, {});
     setPermsMatrix(full);
-  }, [editing?.id, userPermsRows]);
+  }, [editing?.id, userPermsRows, permsPending, permsError]);
 
   // Criação de usuário
   const createMut = useMutation({

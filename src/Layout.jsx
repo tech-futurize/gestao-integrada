@@ -57,10 +57,11 @@ export default function Layout({ children }) {
     });
   }, [permissoes, isAdmin, agentesAtivos]);
 
-  const { data: projetosDB = [] } = useQuery({
+  const { data: projetosDB = [], isError: isErrorProjetos } = useQuery({
     queryKey: ["projetos"],
     queryFn: async () => {
-      const { data } = await supabase.from('projetos').select('id, nome, cliente');
+      const { data, error } = await supabase.from('projetos').select('id, nome, cliente');
+      if (error) throw error;
       return data ?? [];
     },
   });
@@ -282,6 +283,9 @@ export default function Layout({ children }) {
                   Todos os Projetos
                 </button>
               </div>
+              {isErrorProjetos && (
+                <p className="text-sm text-destructive py-2">Erro ao carregar a lista de projetos. Tente novamente.</p>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 {projetosDB.map((projeto) => {
                   const isSelected = selectedProjectId === projeto.id;
