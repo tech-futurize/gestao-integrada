@@ -47,10 +47,7 @@ async function uploadFiles(projectId, rdoId, files) {
       .from("rdo-evidencias")
       .upload(path, file, { upsert: false });
     if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage
-      .from("rdo-evidencias")
-      .getPublicUrl(path);
-    uploaded.push({ nome: file.name, url: publicUrl, tipo: file.type, tamanho: file.size });
+    uploaded.push({ nome: file.name, path, tipo: file.type, tamanho: file.size });
   }
   return uploaded;
 }

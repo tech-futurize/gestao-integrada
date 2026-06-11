@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Printer } from "lucide-react";
 import { formatDate } from "@/lib/dateUtils";
 import { FormDialog } from "@/components/ui/FormDialog";
+import { openAnexo } from "@/lib/storageUtils";
+import { useToast } from "@/components/ui/use-toast";
 
 function ClimaDisplay({ turno }) {
   if (!turno?.ativo) return <span className="text-muted-foreground/40 text-xs">—</span>;
@@ -18,6 +20,7 @@ function ClimaDisplay({ turno }) {
 }
 
 export function RDODetail({ rdo, casos, tarefas, onClose }) {
+  const { toast } = useToast();
   const atividadeNome = id => {
     const t = (tarefas || []).find(t => t.id === id);
     return t?.nome || t?.titulo || id;
@@ -179,10 +182,15 @@ export function RDODetail({ rdo, casos, tarefas, onClose }) {
             <p className="text-xs font-bold uppercase tracking-wide mb-2 text-muted-foreground">📷 Evidências</p>
             <div className="flex flex-wrap gap-2">
               {rdo.evidencias.map((ev, i) => (
-                <a key={i} href={ev.url} target="_blank" rel="noopener noreferrer"
+                <button key={i} type="button"
+                  onClick={() =>
+                    openAnexo("rdo-evidencias", ev).catch((err) =>
+                      toast({ title: "Erro ao abrir evidência", description: err.message, variant: "destructive" })
+                    )
+                  }
                   className="text-xs px-3 py-1.5 rounded-lg border border-border text-blue-600 dark:text-blue-400 hover:bg-muted transition-colors">
                   {ev.nome}
-                </a>
+                </button>
               ))}
             </div>
           </div>

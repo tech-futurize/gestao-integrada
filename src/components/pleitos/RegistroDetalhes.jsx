@@ -22,6 +22,7 @@ import {
 import RegistroForm from "@/components/pleitos/RegistroForm";
 import { useProject } from "@/lib/ProjectContext";
 import { supabase } from "@/lib/supabaseClient";
+import { openAnexo } from "@/lib/storageUtils";
 
 const TIPO_COLORS = {
   "Ata de Reunião":          "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
@@ -367,11 +368,14 @@ export default function RegistroDetalhes({ registro, onBack }) {
                       key={i}
                       className="flex items-center gap-3 p-3 border border-border rounded-lg hover:bg-muted/50 transition-colors"
                     >
-                      <a
-                        href={anexo.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 flex-1 min-w-0"
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openAnexo("registros-anexos", anexo).catch((err) =>
+                            toast({ title: "Erro ao abrir anexo", description: err.message, variant: "destructive" })
+                          )
+                        }
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left"
                       >
                         <Paperclip className="w-4 h-4 text-muted-foreground shrink-0" />
                         <span className="text-sm text-foreground truncate">
@@ -382,7 +386,7 @@ export default function RegistroDetalhes({ registro, onBack }) {
                             {formatBytes(anexo.tamanho)}
                           </span>
                         )}
-                      </a>
+                      </button>
                       <Button
                         size="icon"
                         variant="ghost"

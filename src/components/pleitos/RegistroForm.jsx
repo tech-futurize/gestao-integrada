@@ -10,6 +10,7 @@ import { Paperclip, X as XIcon } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import { openAnexo } from "@/lib/storageUtils";
 import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
 import { useQuery } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
@@ -237,12 +238,17 @@ export default function RegistroForm({ incidente, onSubmit, onCancel, isSubmitti
 
         {existingAnexos.map((anexo) => (
           <div key={anexo.url} className="flex items-center justify-between gap-2 p-2 bg-muted rounded-md">
-            <a href={anexo.url} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-2 min-w-0 text-sm text-blue-600 hover:underline">
+            <button type="button"
+              onClick={() =>
+                openAnexo("registros-anexos", anexo).catch((err) =>
+                  toast({ title: "Erro ao abrir anexo", description: err.message, variant: "destructive" })
+                )
+              }
+              className="flex items-center gap-2 min-w-0 text-sm text-blue-600 hover:underline text-left">
               <Paperclip className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">{anexo.nome}</span>
               <span className="text-muted-foreground text-xs shrink-0">{formatBytes(anexo.tamanho)}</span>
-            </a>
+            </button>
             <Button type="button" size="icon" variant="ghost" className="h-6 w-6 shrink-0"
               onClick={() => handleRemoveExisting(anexo)}>
               <XIcon className="w-3 h-3 text-muted-foreground" />

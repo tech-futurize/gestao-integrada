@@ -203,10 +203,8 @@ export default function Documentos() {
       data_real: form.data_real || null,
       historico_revisoes: editing ? historicoRevisoes : [],
     };
-    if (form.id_cronograma) {
-      payload.id_cronograma = form.id_cronograma;
-      payload.data_cronograma = form.data_cronograma || null;
-    }
+    payload.id_cronograma = form.id_cronograma || null;
+    payload.data_cronograma = form.id_cronograma ? (form.data_cronograma || null) : null;
     if (editing) updateMut.mutate({ id: editing.id, data: payload });
     else createMut.mutate(payload);
   };

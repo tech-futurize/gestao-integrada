@@ -370,11 +370,11 @@ Toda página deve seguir esta hierarquia, nesta ordem:
 - [x] Config/Layout: erro tratado na lista de projetos e na matriz de permissões (evita salvar matriz zerada)
 - [x] Banco: índice duplicado removido + 11 índices de FK criados
 
-**Decisões pendentes do PO (não executadas):**
-1. Formulário de Riscos não expõe campo "Plano de Resposta" (`mitigacao`) — a coluna existe, aparece no hover card e no import/export, mas não é editável no form. Adicionar o campo ou removê-lo da UI?
-2. Bucket público `registros-anexos` permite listagem de todos os arquivos (advisor WARN). Trocar para bucket privado + signed URLs impacta UX de anexos.
-3. Proteção contra senhas vazadas (HaveIBeenPwned) desabilitada no Supabase Auth — habilitar no dashboard (sem impacto de código).
-4. `documentos_engenharia.id_cronograma` é TEXT sem FK (itens_mas usa UUID+FK) — padronizar exige migration com cast.
+**Decisões pendentes — executadas em 2026-06-11 (autorização do PO):**
+1. ✅ Campo "Plano de Resposta" (`mitigacao`) adicionado ao formulário de Riscos (EMPTY_FORM + handleEdit + Textarea).
+2. ✅ Bucket `registros-anexos` agora é **privado**; leitura via signed URL (1h) com helper `src/lib/storageUtils.js`. Bônus: bucket `rdo-evidencias` (já privado) estava **sem nenhuma policy** — upload e leitura de evidências do RDO estavam quebrados; policies criadas e links migrados para signed URL.
+3. ⚠️ Proteção contra senhas vazadas: **passo manual no dashboard** (sem API disponível) — Authentication → Sign In / Providers → Password → "Prevent use of leaked passwords".
+4. ✅ `documentos_engenharia.id_cronograma` migrado TEXT → UUID + FK (`ON DELETE SET NULL`) + índice; front corrigido para limpar vínculo ao salvar sem tarefa (antes o vínculo nunca era removido).
 
 ### Melhorias de Qualidade (2026-06-02)
 

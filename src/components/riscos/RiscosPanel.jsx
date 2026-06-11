@@ -47,6 +47,7 @@ const EMPTY_FORM = {
   impactos: [],
   areas_impacto: [],
   escopo_texto: "", prazo_dias: "", valor_impacto: "",
+  mitigacao: "",
 };
 
 function formatBRL(value) {
@@ -221,6 +222,7 @@ export default function RiscosPanel({ projectId, classificacao }) {
       escopo_texto:  risco.escopo_texto  || "",
       prazo_dias:    risco.prazo_dias    ?? "",
       valor_impacto: risco.valor_impacto ?? "",
+      mitigacao:     risco.mitigacao     || "",
     });
     setShowForm(true);
   };
@@ -647,6 +649,15 @@ export default function RiscosPanel({ projectId, classificacao }) {
                 />
               </div>
             )}
+          </div>
+          <div className="space-y-1">
+            <Label>Plano de Resposta</Label>
+            <Textarea
+              value={form.mitigacao}
+              onChange={e => setForm(f => ({ ...f, mitigacao: e.target.value }))}
+              rows={2}
+              placeholder="Como o risco será mitigado ou tratado..."
+            />
           </div>
           {(form.impactos.includes("Prazo") || form.impactos.includes("Valor")) && (
             <div className="p-2 bg-muted rounded-lg text-sm space-y-1">
