@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
       }
     ].filter(Boolean),
     server: {
-      host: 'localhost',
+      host: '127.0.0.1',
       port: 8080,
       open: true,
       allowedHosts: true,
