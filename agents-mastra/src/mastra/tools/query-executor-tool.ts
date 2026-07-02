@@ -10,7 +10,7 @@ export const queryExecutorTool = createTool({
     question: z
       .string()
       .describe(
-        'Pergunta completa e específica para o executor. Inclua o project_id, período e quaisquer filtros relevantes.'
+        'Pergunta completa e específica para o executor. Inclua o projeto_id, período e quaisquer filtros relevantes.'
       ),
   }),
   outputSchema: z.object({

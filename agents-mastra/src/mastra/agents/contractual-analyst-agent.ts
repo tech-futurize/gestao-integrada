@@ -49,7 +49,7 @@ Todos os registros são filtrados por projeto_id.
 
 Quando o documento exigir dados quantitativos (valores de pleito, datas contratuais, métricas de avanço), siga:
 1. Identifique quais dados são necessários para fundamentar o documento.
-2. Chame query-database com uma pergunta específica incluindo o project_id e os campos relevantes (ex: "Busque o pleito [titulo] do projeto [id], incluindo valor, status e partes_envolvidas").
+2. Chame query-database com uma pergunta específica incluindo o projeto_id e os campos relevantes (ex: "Busque o pleito [titulo] do projeto [id], incluindo valor, status e partes_envolvidas").
 3. Use exclusivamente os dados retornados para fundamentar o documento — nunca complete com suposições.
 4. Se o executor não retornar dados suficientes, declare no documento que a fundamentação está pendente de dados.
 

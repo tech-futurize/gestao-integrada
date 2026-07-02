@@ -406,6 +406,22 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L023 — Agente de IA sem visão das FKs e sem semântica de domínio interpreta dados errado
+
+- **Data:** 2026-07-01
+- **Agente:** Builder
+- **Milestone:** Correção do Agente de Negócio (2026-07-01)
+- **Categoria:** Agentes de IA
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** O agente de negócio recebia via `get_db_schema` apenas nomes/tipos de colunas — sem foreign keys e sem glossário de domínio, ele montava JOINs por adivinhação e interpretava mal os dados (ex.: `semana_iso` "2024-W18" apresentada ao usuário como "Mês 1").
+- **Erro observado:** Respostas do agente com dados corretos mas rotulados errado (semanas viraram meses) e respostas curtas/vazias em perguntas que exigiam JOIN; usuário percebeu como "o agente não encontra os dados".
+- **Causa raiz:** Orientação incompleta: (1) `get_db_schema` não expunha relacionamentos; (2) instructions no banco perderam o glossário de domínio que existia nos agentes estáticos; (3) instructions estáticas do Mastra citavam `project_id` quando a coluna real é `projeto_id`; (4) `.env.local` sem `SUPABASE_SERVICE_KEY` fazia o Mastra local cair no fallback estático desatualizado, com cache de schema congelado de 3 de junho.
+- **Correção aplicada:** `get_db_schema` reescrita para incluir `foreign_keys` por tabela (ACL preservada — L022); glossário de domínio adicionado às instructions do `business-analyst-agent` no banco; `project_id` → `projeto_id` nos agentes estáticos; `SUPABASE_SERVICE_KEY` adicionada ao `.env.local`; cache local `public-schema.json` removido.
+- **Como evitar em projetos futuros:** Todo contexto de schema injetado em agentes SQL deve incluir relacionamentos (FKs), não só colunas. Nomes de colunas em instructions devem ser validados contra o banco real (mesmo princípio da L021 para `*_COLUMNS`). Colunas com nomes enganosos (ex.: `avanco_previsto_mensal` que na verdade é semanal) precisam de glossário explícito no prompt — ou rename na tabela.
+- **Referências:** `docs/database/supabase-migration-agentes-schema-fks.sql`, `agents-mastra/src/mastra/agents/business-analyst-agent.ts`, Edge Function `agent-chat` (v5).
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:
