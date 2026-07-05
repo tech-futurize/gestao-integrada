@@ -12,10 +12,10 @@ function formatAnswer(field, val) {
   if (val === undefined || val === null || val === "") return "—";
   if (field.type === "multiple_choice") {
     if (!Array.isArray(val)) return "—";
-    return val.map(v => field.options?.find(o => o.value === v)?.label || v).join(", ") || "—";
+    return val.map(v => field.options?.find(o => o.value === v)?.label || "(opção removida)").join(", ") || "—";
   }
   if (field.type === "single_choice" || field.type === "dropdown") {
-    return field.options?.find(o => o.value === val)?.label || val;
+    return field.options?.find(o => o.value === val)?.label || "(opção removida)";
   }
   if (field.type === "rating") {
     return val ? `${"★".repeat(val)}${"☆".repeat((field.max || 5) - val)}` : "—";

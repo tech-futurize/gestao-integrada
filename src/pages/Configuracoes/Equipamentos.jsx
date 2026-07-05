@@ -134,7 +134,7 @@ export default function Equipamentos({ asTab = false }) {
                       </td>
                       <td className="px-5 py-3">
                         <button
-                          onClick={() => toggleMut.mutate({ id: t.id, ativo: !t.ativo })}
+                          onClick={() => toggleMut.mutate({ id: t.id, ativo: t.ativo === false })}
                           disabled={toggleMut.isPending}
                           className="flex items-center gap-2 group"
                           title={inativo ? "Ativar" : "Desativar"}

@@ -22,6 +22,7 @@ export default function FieldCardEditor({ field, onUpdate, onRemove, onDuplicate
       ...fresh,
       id: field.id,
       label: field.label,
+      description: field.description,
       required: field.required,
     });
   }

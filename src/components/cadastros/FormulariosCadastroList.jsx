@@ -110,7 +110,7 @@ export default function FormulariosCadastroList() {
                 </td>
                 <td className="px-4 py-3 text-center">
                   <button
-                    onClick={() => toggleMut.mutate({ id: f.id, ativo: !f.ativo })}
+                    onClick={() => toggleMut.mutate({ id: f.id, ativo: f.ativo === false })}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none ${
                       f.ativo ? 'bg-green-600' : 'bg-border'
                     }`}

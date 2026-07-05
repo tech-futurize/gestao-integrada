@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList } from "lucide-react";
 import { entities } from "@/api/supabaseEntities";
+import { supabase } from "@/lib/supabaseClient";
 import { useProject } from "@/lib/ProjectContext";
 import PageHeader from "@/components/ui/PageHeader";
 import PageEmptyState from "@/components/ui/PageEmptyState";
@@ -18,7 +19,16 @@ export default function ListaFormularios() {
 
   const { data: respostas = [] } = useQuery({
     queryKey: ["formulario_respostas_count", selectedProjectId],
-    queryFn: () => entities.FormularioResposta.filter({ projeto_id: selectedProjectId }),
+    // apenas formulario_id: buscar as respostas inteiras (answers JSONB) só para
+    // contar ficava pesado com o crescimento das respostas
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("formulario_respostas")
+        .select("formulario_id")
+        .eq("projeto_id", selectedProjectId);
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
     enabled: !!selectedProjectId,
   });
 

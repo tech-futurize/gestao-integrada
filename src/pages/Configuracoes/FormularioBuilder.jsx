@@ -23,7 +23,7 @@ export default function FormularioBuilder() {
   const [ativo, setAtivo] = useState(false);
   const [definition, setDefinition] = useState(null);
 
-  const { data: formulario, isPending } = useQuery({
+  const { data: formulario, isPending, isError } = useQuery({
     queryKey: ["formulario_digital", id],
     queryFn: async () => {
       const [result] = await entities.FormularioDigital.filter({ id });
@@ -56,6 +56,16 @@ export default function FormularioBuilder() {
 
   function handleSave() {
     saveMut.mutate({ titulo, descricao, ativo, definicao: definition });
+  }
+
+  // id apagado/inválido ou erro de rede: sem isso o spinner ficava para sempre
+  if (isError || (!isPending && !formulario)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+        <p>Formulário não encontrado ou removido.</p>
+        <button className="text-sm underline" onClick={() => window.history.back()}>Voltar</button>
+      </div>
+    );
   }
 
   if (isPending || !definition) {

@@ -49,7 +49,7 @@ export default function FieldInput({ field, value, onChange, error, readOnly }) 
         <Input
           type="number"
           value={value ?? ""}
-          onChange={e => onChange(e.target.value)}
+          onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
           placeholder={placeholder || "0"}
           disabled={readOnly}
           inputMode="numeric"

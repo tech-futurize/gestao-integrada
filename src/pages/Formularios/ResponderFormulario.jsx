@@ -107,6 +107,18 @@ export default function ResponderFormulario() {
     );
   }
 
+  // Desativado no cadastro: bloqueia novas respostas mesmo com o link direto
+  if (formulario.ativo === false) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader />
+        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+          Este formulário foi desativado e não aceita novas respostas.
+        </div>
+      </div>
+    );
+  }
+
   if (submitted) {
     return (
       <div className="flex flex-col h-full">
