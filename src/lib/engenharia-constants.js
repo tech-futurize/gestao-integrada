@@ -38,4 +38,3 @@ export const ETAPA_COLORS = {
   "Aprovado":                  { bg: "#dcfce7", text: "#16a34a" },
 };
 
-export const ETAPA_COLORS_PIE = ["#2563eb", "#ea580c", "#d97706", "#9333ea", "#16a34a"];

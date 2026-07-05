@@ -20,4 +20,3 @@ export const UNIDADES_MEDIDA = [
 export const UNIDADE_SIGLAS = UNIDADES_MEDIDA.map((u) => u.sigla);
 
 /** Rótulo padrão de cabeçalho de coluna de unidade em todo o sistema. */
-export const UNIDADE_COLUMN_LABEL = "Und";

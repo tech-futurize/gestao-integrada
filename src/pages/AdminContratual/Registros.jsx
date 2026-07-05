@@ -136,7 +136,6 @@ export default function Registros() {
     toast({ title: "Erro ao salvar", description: msg, variant: "destructive" });
 
   const [showForm, setShowForm] = useState(false);
-  const [editingRegistro, setEditingRegistro] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filtros, setFiltros] = useState({});
@@ -170,7 +169,6 @@ export default function Registros() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["registros"] });
       setShowForm(false);
-      setEditingRegistro(null);
       toast({ title: "Registro criado com sucesso." });
     },
     onError: (e) => onErr(e.message),
@@ -185,13 +183,9 @@ export default function Registros() {
     onError: (e) => onErr(e.message),
   });
 
+  // Edição acontece no detalhe (RegistroDetalhes) — aqui só criação
   const handleSubmit = (data) => {
-    const payload = { ...data, projeto_id: selectedProjectId };
-    if (editingRegistro) {
-      // edição ocorre no detalhe
-    } else {
-      createMutation.mutate(payload);
-    }
+    createMutation.mutate({ ...data, projeto_id: selectedProjectId });
   };
 
   const baseList = useMemo(
@@ -370,7 +364,7 @@ export default function Registros() {
             </Button>
             <Button
               size="sm"
-              onClick={() => { setEditingRegistro(null); setShowForm(true); }}
+              onClick={() => setShowForm(true)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -656,19 +650,18 @@ export default function Registros() {
       {/* Modal — Novo Registro */}
       <FormDialog
         open={showForm}
-        onOpenChange={(open) => { if (!open) { setShowForm(false); setEditingRegistro(null); } }}
+        onOpenChange={(open) => { if (!open) setShowForm(false); }}
         icon={FileText}
-        title={editingRegistro ? "Editar Registro" : "Novo Registro"}
+        title="Novo Registro"
         subtitle="Preencha os dados do registro contratual"
         maxWidth="max-w-3xl"
         hideFooter
       >
         <RegistroForm
-          key={editingRegistro?.id || "new-registro"}
-          incidente={editingRegistro}
+          key="new-registro"
           selectedProjectId={selectedProjectId}
           onSubmit={handleSubmit}
-          onCancel={() => { setShowForm(false); setEditingRegistro(null); }}
+          onCancel={() => setShowForm(false)}
           isSubmitting={createMutation.isPending}
           noChrome
         />

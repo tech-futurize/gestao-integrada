@@ -20,19 +20,6 @@ export function toLocalDateISO(d) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-// Convert a UTC ISO string from DB to YYYY-MM-DDTHH:MM in local (São Paulo) time
-// datetime-local inputs reject values with timezone info — they need plain local time
-export function toDatetimeLocal(val) {
-  if (!val) return "";
-  try {
-    const d = new Date(val);
-    if (isNaN(d.getTime())) return "";
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  } catch {
-    return "";
-  }
-}
-
 // Convert a datetime-local value (local time, no TZ) to UTC ISO string for DB storage.
 // Valores date-only ("YYYY-MM-DD") são ancorados à meia-noite LOCAL — new Date("YYYY-MM-DD")
 // interpretaria como meia-noite UTC e a data regrediria um dia a cada ciclo de edição em UTC-3.

@@ -3,7 +3,6 @@ export const CATEGORIAS_RISCO = [
   "Regulatório", "Ambiental", "Outros",
 ];
 
-export const CLASSIFICACOES = ["Ameaça", "Oportunidade"];
 export const NIVEL_OPTIONS   = ["Baixo", "Médio", "Alto"];
 
 export const CAT_COLORS = {
@@ -107,9 +106,3 @@ export function labelRisco(risco) {
  * Formata o label de uma mudança para exibição em selects.
  * @param {{ titulo?: string, descricao?: string, id?: string }} mudanca
  */
-export function labelMudanca(mudanca) {
-  if (!mudanca) return "";
-  const id = mudanca.titulo || mudanca.id || "";
-  const desc = mudanca.descricao || "";
-  return id && desc ? `${id} — ${desc}` : id || desc || "Mudança";
-}
