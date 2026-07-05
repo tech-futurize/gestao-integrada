@@ -135,7 +135,9 @@ Deno.serve(async (req: Request) => {
     let systemPrompt = agentRow.instructions || "";
 
     if (agentRow.injetar_data) {
-      const today = new Date().toISOString().split("T")[0];
+      // Data local do Brasil (en-CA => formato ISO YYYY-MM-DD). toISOString() daria
+      // a data UTC — após 21h em BRT o agente pensaria que já é amanhã (L026)
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
       systemPrompt += `\n\nData atual: ${today}`;
     }
 
