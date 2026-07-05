@@ -58,6 +58,7 @@ function Popover({ item, etapaIdx, rect, onClose, onSave }) {
 
     if (status === "concluida") {
       for (let i = 0; i <= etapaIdx; i++) {
+        if (novasEtapas[i].status === "nao_aplicavel" && i !== etapaIdx) continue;
         novasEtapas[i] = { ...novasEtapas[i], nome: ETAPAS[i].label, status: "concluida" };
       }
       novasEtapas[etapaIdx] = { ...novasEtapas[etapaIdx], data };
@@ -74,12 +75,15 @@ function Popover({ item, etapaIdx, rect, onClose, onSave }) {
       };
     }
 
+    // Projeção +7d apenas até a etapa editada quando ela foi resetada para pendente —
+    // sem isso, limpar uma etapa era imediatamente desfeito pelo auto-preenchimento
+    const limiteProjecao = status === "pendente" ? etapaIdx : 7;
     let lastDate = null;
     for (let i = 0; i < 7; i++) {
       if (novasEtapas[i].status === "nao_aplicavel") continue;
       if (novasEtapas[i].data) {
         lastDate = new Date(novasEtapas[i].data);
-      } else if (lastDate) {
+      } else if (lastDate && i < limiteProjecao) {
         lastDate = new Date(lastDate.getTime() + 7 * 86400000);
         novasEtapas[i] = { ...novasEtapas[i], data: toLocalDateISO(lastDate) };
       }
@@ -236,9 +240,10 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
       const current = etapas.findIndex(e => e.status === "em_andamento");
       if (current === idx) return true;
       if (current === -1) {
-        const lastDone = [...(item.etapas || [])].reverse().findIndex(e => e.status === "concluida");
+        const arr = item.etapas || [];
+        const lastDone = [...arr].reverse().findIndex(e => e.status === "concluida");
         if (lastDone !== -1) {
-          const realIdx = 6 - lastDone;
+          const realIdx = arr.length - 1 - lastDone;
           return realIdx === idx;
         }
       }
@@ -526,7 +531,10 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
               disabled={page === 1}
               className="px-2 py-1 rounded border border-border disabled:opacity-40 hover:bg-card"
             >‹</button>
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                const start = Math.min(Math.max(1, page - 2), Math.max(1, totalPages - 4));
+                return start + i;
+              }).map(p => (
               <button
                 key={p}
                 onClick={() => setPage(p)}

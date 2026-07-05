@@ -56,28 +56,32 @@ export default function MapaSuprimentos() {
       const unidadeCadastrada = unidadeNormalizada
         ? unidades.find(u => u.sigla.toLowerCase() === unidadeNormalizada.toLowerCase())
         : null;
-      const payload = {
-        projeto_id:       selectedProjectId,
-        numero_sc:        row.numero_sc        || "",
-        descricao:        row.descricao        || "",
-        fornecedor:       row.fornecedor       || "",
-        unidade:          unidadeNormalizada,
+      const numeroSc = row.numero_sc || "";
+      if (!numeroSc) throw new Error("Número da SC é obrigatório.");
+      // Patch apenas com as colunas mapeadas — reimportar planilha parcial não
+      // deve apagar fornecedor/responsável/datas dos itens existentes
+      const patch = {};
+      if ("descricao" in row)       patch.descricao       = row.descricao       || "";
+      if ("fornecedor" in row)      patch.fornecedor      = row.fornecedor      || "";
+      if ("quantidade" in row)      patch.quantidade      = row.quantidade      ?? 0;
+      if ("responsavel" in row)     patch.responsavel     = row.responsavel     || "";
+      if ("status" in row)          patch.status          = row.status          || "A iniciar";
+      if ("data_cronograma" in row) patch.data_cronograma = row.data_cronograma || null;
+      if ("unidade" in row) {
+        patch.unidade = unidadeNormalizada;
         // Só grava a FK quando a lista de unidades já carregou — evita zerar vínculo em update
-        ...(unidades.length > 0 ? { unidade_id: unidadeCadastrada?.id || null } : {}),
-        quantidade:       row.quantidade       ?? 0,
-        responsavel:      row.responsavel      || "",
-        status:           row.status           || "A iniciar",
-        data_cronograma:  row.data_cronograma  || null,
-      };
-      const existing = await entities.ItemMAS.filter({ projeto_id: selectedProjectId, numero_sc: payload.numero_sc });
+        if (unidades.length > 0) patch.unidade_id = unidadeCadastrada?.id || null;
+      }
+      const existing = await entities.ItemMAS.filter({ projeto_id: selectedProjectId, numero_sc: numeroSc });
       if (existing.length > 0) {
-        await entities.ItemMAS.update(existing[0].id, payload);
+        await entities.ItemMAS.update(existing[0].id, patch);
       } else {
-        await entities.ItemMAS.create(payload);
+        await entities.ItemMAS.create({ projeto_id: selectedProjectId, numero_sc: numeroSc, ...patch });
       }
       queryClient.invalidateQueries({ queryKey: ["itemMAS"] });
     } catch (e) {
       toast({ title: "Erro ao importar item", description: friendlyMessage(e), variant: "destructive" });
+      throw e; // repassa para o dialog contabilizar o erro na linha
     } finally {
       setImporting(false);
     }

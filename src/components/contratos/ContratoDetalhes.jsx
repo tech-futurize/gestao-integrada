@@ -33,8 +33,11 @@ export default function ContratoDetalhes({ contrato, onBack, onEdit, onDelete })
   });
 
   const totalMedido = medicoes.filter((m) => CONCLUIDAS.includes(m.status)).reduce((s, m) => s + (m.valor || 0), 0);
-  const saldo = (contrato.valor_total || 0) - totalMedido;
-  const percentMedido = contrato.valor_total ? (totalMedido / contrato.valor_total) * 100 : 0;
+  // Mesma base da listagem: valor do contrato + aditivos de valor assinados
+  const valorAditivos = aditivos.filter((a) => a.status === "Assinado" && a.valor).reduce((s, a) => s + a.valor, 0);
+  const valorAjustado = (contrato.valor_total || 0) + valorAditivos;
+  const saldo = valorAjustado - totalMedido;
+  const percentMedido = valorAjustado ? (totalMedido / valorAjustado) * 100 : 0;
 
   const totalPrazoDias = aditivos.filter((a) => a.status === "Assinado" && a.prazo_dias).reduce((s, a) => s + (a.prazo_dias || 0), 0);
   const terminoAtual = totalPrazoDias > 0 ? addDaysToDate(contrato.data_fim, totalPrazoDias) : contrato.data_fim;

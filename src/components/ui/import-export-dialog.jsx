@@ -114,10 +114,10 @@ export function ImportExportDialog({
 
       for (const col of columns) {
         const fileHeader = mapping[col.key];
-        const rawValue =
-          fileHeader !== null && fileHeader !== undefined
-            ? rawRow[fileHeader]
-            : undefined;
+        // Coluna não mapeada fica fora da linha — updates parciais não devem
+        // sobrescrever campos existentes com vazio
+        if (fileHeader === null || fileHeader === undefined) continue;
+        const rawValue = rawRow[fileHeader];
         const { ok, value } = validateAndConvert(rawValue, col.type || "string", col.required === true);
 
         if (!ok) {

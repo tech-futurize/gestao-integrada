@@ -184,10 +184,13 @@ export default function Documentos() {
 
   const handleSubmit = () => {
     const hoje = todayISO();
-    const revisaoMudou = editing && form.revisao_atual && form.revisao_atual !== (editing.revisao_atual || "");
+    // Base do histórico vem do cache (editingDoc), não do snapshot de abertura —
+    // revisões adicionadas na aba Histórico seriam apagadas ao salvar a aba Dados
+    const baseDoc = editingDoc ?? editing;
+    const revisaoMudou = editing && form.revisao_atual && form.revisao_atual !== (baseDoc?.revisao_atual || "");
     const historicoRevisoes = revisaoMudou
-      ? [...(editing.historico_revisoes || []), { revisao: form.revisao_atual, data: hoje, etapa: form.etapa, observacao: "" }]
-      : editing?.historico_revisoes ?? [];
+      ? [...(baseDoc?.historico_revisoes || []), { revisao: form.revisao_atual, data: hoje, etapa: form.etapa, observacao: "" }]
+      : baseDoc?.historico_revisoes ?? [];
 
     const payload = {
       projeto_id: selectedProjectId,
@@ -212,30 +215,44 @@ export default function Documentos() {
   const handleImport = async (row) => {
     setImporting(true);
     try {
-      const payload = {
-        projeto_id:      selectedProjectId,
-        tag_id:          row.tag_id          || "",
-        titulo:          row.titulo          || "",
-        disciplina:      row.disciplina      || "",
-        fornecedor:      row.fornecedor      || "",
-        num_folhas:      row.num_folhas      ?? 0,
-        progresso:       row.progresso       ?? 0,
-        etapa:           row.etapa           || "A Emitir",
-        revisao_atual:   row.revisao_atual   || "",
-        id_cronograma:   row.id_cronograma   || null,
-        data_cronograma: row.data_cronograma || null,
-        data_projetada:  row.data_projetada  || null,
-        data_real:       row.data_real       || null,
-      };
-      const existing = await entities.DocumentoEngenharia.filter({ projeto_id: selectedProjectId, tag_id: payload.tag_id });
+      const tagId = row.tag_id || "";
+      if (!tagId) throw new Error("TAG/ID é obrigatório.");
+      // Patch apenas com as colunas mapeadas no arquivo — reimportar uma planilha
+      // parcial não deve apagar fornecedor/datas/revisão dos documentos existentes
+      const patch = {};
+      if ("titulo" in row)          patch.titulo          = row.titulo          || "";
+      if ("disciplina" in row)      patch.disciplina      = row.disciplina      || "";
+      if ("fornecedor" in row)      patch.fornecedor      = row.fornecedor      || "";
+      if ("num_folhas" in row)      patch.num_folhas      = row.num_folhas      ?? 0;
+      if ("progresso" in row)       patch.progresso       = row.progresso       ?? 0;
+      if ("etapa" in row)           patch.etapa           = row.etapa           || "A Emitir";
+      if ("revisao_atual" in row)   patch.revisao_atual   = row.revisao_atual   || "";
+      if ("id_cronograma" in row)   patch.id_cronograma   = row.id_cronograma   || null;
+      if ("data_cronograma" in row) patch.data_cronograma = row.data_cronograma || null;
+      if ("data_projetada" in row)  patch.data_projetada  = row.data_projetada  || null;
+      if ("data_real" in row)       patch.data_real       = row.data_real       || null;
+
+      const existing = await entities.DocumentoEngenharia.filter({ projeto_id: selectedProjectId, tag_id: tagId });
       if (existing.length > 0) {
-        await entities.DocumentoEngenharia.update(existing[0].id, payload);
+        await entities.DocumentoEngenharia.update(existing[0].id, patch);
       } else {
-        await entities.DocumentoEngenharia.create(payload);
+        if (!patch.disciplina) throw new Error("Disciplina é obrigatória para criar um documento.");
+        await entities.DocumentoEngenharia.create({
+          projeto_id: selectedProjectId,
+          tag_id: tagId,
+          titulo: "",
+          fornecedor: "",
+          num_folhas: 0,
+          progresso: 0,
+          etapa: "A Emitir",
+          revisao_atual: "",
+          ...patch,
+        });
       }
       queryClient.invalidateQueries({ queryKey: ["documentos_engenharia"] });
     } catch (e) {
       toast({ title: "Erro ao importar documento", description: e?.message || "Tente novamente.", variant: "destructive" });
+      throw e; // repassa para o dialog contabilizar o erro na linha
     } finally {
       setImporting(false);
     }
@@ -323,7 +340,7 @@ export default function Documentos() {
               { key: "disciplina", label: "Disciplina", options: ["MEC", "CIV", "ELE", "TUB", "INS", "AUT", "EST", "PRC", "HSE"] },
               { key: "fornecedor", label: "Fornecedor", options: fornecedorOptions },
             ]}
-            onChange={setFiltros}
+            onChange={(f) => { setFiltros(f); setPage(1); }}
           />
         </FilterToolbar>
 
@@ -450,7 +467,10 @@ export default function Documentos() {
             <div className="flex gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 className="px-2 py-1 rounded border border-border disabled:opacity-40 hover:bg-card">‹</button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                const start = Math.min(Math.max(1, page - 2), Math.max(1, totalPages - 4));
+                return start + i;
+              }).map(p => (
                 <button key={p} onClick={() => setPage(p)}
                   className={`px-2 py-1 rounded border ${p === page ? "bg-foreground text-background border-foreground" : "border-border hover:bg-card"}`}>{p}</button>
               ))}

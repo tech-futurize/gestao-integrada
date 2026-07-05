@@ -130,7 +130,14 @@ export default function Contratos() {
     );
   }
 
-  const totalContratado = contratos.reduce((s, c) => s + (c.valor_total || 0), 0);
+  // Base única com a lista: valor do contrato + aditivos de valor assinados
+  const aditivosAssinadosPorContrato = todosAditivos.reduce((m, a) => {
+    if (a.status === "Assinado" && a.valor) m[a.contrato_id] = (m[a.contrato_id] || 0) + a.valor;
+    return m;
+  }, {});
+  const totalContratado = contratos.reduce(
+    (s, c) => s + (c.valor_total || 0) + (aditivosAssinadosPorContrato[c.id] || 0), 0
+  );
   const emAndamento = contratos.filter((c) => c.status === "Em andamento").length;
 
   const handleSaveContrato = (data) => {
@@ -224,7 +231,12 @@ export default function Contratos() {
         exportFileName="contratos"
         title="Contratos — Importar / Exportar"
         onExport={() => contratos}
-        onImport={(row) => createContrato.mutateAsync({ ...row, projeto_id: selectedProjectId })}
+        onImport={async (row) => {
+          // upsert por numero — reimportar o arquivo exportado duplicava os contratos
+          const existente = row.numero ? contratos.find((c) => String(c.numero) === String(row.numero)) : null;
+          if (existente) await updateContrato.mutateAsync({ id: existente.id, data: row });
+          else await createContrato.mutateAsync({ ...row, projeto_id: selectedProjectId });
+        }}
       />
     </div>
   );

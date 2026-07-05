@@ -100,9 +100,10 @@ export default function ItemMASForm({ item, selectedProjectId, onClose, onSaved 
         id_cronograma: form.id_cronograma || null,
         data_cronograma: form.data_cronograma || null,
         unidade_id: form.unidade_id || null,
+        // Sem FK selecionada, preserva a unidade em texto livre de itens importados
         unidade: form.unidade_id
           ? (unidades.find(u => u.id === form.unidade_id)?.sigla ?? item?.unidade ?? null)
-          : null,
+          : (item?.unidade ?? null),
         pacote_id: form.pacote_id || null,
       };
       if (item) await entities.ItemMAS.update(item.id, data);

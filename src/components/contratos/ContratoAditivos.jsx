@@ -34,7 +34,9 @@ export default function ContratoAditivos({ contrato }) {
     enabled: !!contrato.id,
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["aditivos", contrato.id] });
+  // Prefixo "aditivos" cobre também ["aditivos","projeto",id] usada na lista de
+  // contratos — sem isso o valor ajustado ficava stale ao voltar para a listagem
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["aditivos"] });
   const createMut = useMutation({ mutationFn: (d) => entities.Aditivo.create(d), onSuccess: () => { invalidate(); setShowForm(false); }, onError: onErr });
   const updateMut = useMutation({ mutationFn: ({ id, data }) => entities.Aditivo.update(id, data), onSuccess: () => { invalidate(); setShowForm(false); setEdit(null); }, onError: onErr });
   const deleteMut = useMutation({ mutationFn: (id) => entities.Aditivo.delete(id), onSuccess: invalidate, onError: onErr });
