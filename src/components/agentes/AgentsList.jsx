@@ -13,7 +13,7 @@ export default function AgentsList() {
 
   const { data: agentes = [], isPending, isError } = useQuery({
     queryKey: ['agentes'],
-    queryFn: () => entities.Agente.list({}, { pageSize: 100 }),
+    queryFn: () => entities.Agente.list(),
   });
 
   const { data: toolLinksData = [] } = useQuery({

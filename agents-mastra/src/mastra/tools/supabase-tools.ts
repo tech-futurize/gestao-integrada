@@ -14,11 +14,18 @@ function getPool(): InstanceType<typeof Pool> {
     pool = new Pool({
       connectionString,
       ssl: { rejectUnauthorized: false },
-      options: '-c search_path=public',
+      // read-only na sessão: o regex de bloqueio é heurística; a garantia real de
+      // somente-leitura vem do Postgres. Timeout evita pg_sleep/cross join travando o pool.
+      options: '-c search_path=public -c default_transaction_read_only=on -c statement_timeout=15000',
     });
+    // sem listener, um reset de conexão idle pelo pooler derruba o processo Node
+    pool.on('error', (e) => console.warn('[pg pool]', e.message));
   }
   return pool;
 }
+
+// Teto de linhas devolvidas ao modelo — evita estourar memória/contexto
+const MAX_ROWS = 500;
 
 async function query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
   const client = await getPool().connect();
@@ -85,7 +92,12 @@ export const executeSQLTool = createTool({
       );
     }
     const rows = await query(input.query);
-    return { rows, rowCount: rows.length };
+    const truncated = rows.length > MAX_ROWS;
+    const limited = truncated ? rows.slice(0, MAX_ROWS) : rows;
+    if (truncated) {
+      limited.push({ _aviso: `Resultado truncado em ${MAX_ROWS} linhas (total: ${rows.length}). Use LIMIT/agregações.` } as Record<string, unknown>);
+    }
+    return { rows: limited, rowCount: rows.length };
   },
 });
 
@@ -108,6 +120,11 @@ export const analyzeTableTool = createTool({
   }),
   execute: async (input) => {
     const sch = input.schema ?? 'public';
+    // identificadores são interpolados na query de nulos — valida o formato
+    const IDENT = /^[a-z_][a-z0-9_]*$/i;
+    if (!IDENT.test(sch) || !IDENT.test(input.tableName)) {
+      throw new Error('Nome de schema/tabela inválido.');
+    }
     const fullName = `${sch}.${input.tableName}`;
 
     const [statsRows, indexRows, colRows] = await Promise.all([

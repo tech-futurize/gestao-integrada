@@ -10,7 +10,7 @@ export default function AgenteViewer() {
 
   const { data: agentes = [], isPending, isError } = useQuery({
     queryKey: ['agentes'],
-    queryFn: () => entities.Agente.list({}, { pageSize: 100 }),
+    queryFn: () => entities.Agente.list(),
   });
 
   if (isError) {

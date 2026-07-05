@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { entities } from '@/api/supabaseEntities';
+import { todayISO, toLocalDateISO } from '@/lib/dateUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { X, Bot, CalendarDays, Cpu, User } from 'lucide-react';
@@ -114,8 +115,8 @@ export default function MetricsDashboard() {
   const [dateRange, setDateRange] = useState(defaultDateRange);
   const [activeFilter, setActiveFilter] = useState(null);
 
-  const dateFrom = dateRange?.from ? dateRange.from.toISOString().slice(0, 10) : '';
-  const dateTo   = dateRange?.to   ? dateRange.to.toISOString().slice(0, 10)   : new Date().toISOString().slice(0, 10);
+  const dateFrom = dateRange?.from ? toLocalDateISO(dateRange.from) : '';
+  const dateTo   = dateRange?.to   ? toLocalDateISO(dateRange.to)   : todayISO();
 
   const toggleFilter = (type, value) => {
     setActiveFilter(prev => prev?.type === type && prev.value === value ? null : { type, value });
@@ -130,12 +131,13 @@ export default function MetricsDashboard() {
 
   const { data: agentes = [] } = useQuery({
     queryKey: ['agentes'],
-    queryFn: () => entities.Agente.list({}, { pageSize: 100 }),
+    queryFn: () => entities.Agente.list(),
   });
   const agentNames = Object.fromEntries(agentes.map(a => [a.slug, a.nome]));
 
+  // Chave única compartilhada com a query do período anterior: uma busca, dois selects
   const { data: logs = [], isPending, isError } = useQuery({
-    queryKey: ['agente-uso-logs', dateFrom, dateTo],
+    queryKey: ['agente-uso-logs-all'],
     queryFn: () => entities.AgenteUsoLog.list(),
     select: (data) => data.filter(log => {
       const d = (log.created_at ?? '').slice(0, 10);
@@ -149,7 +151,7 @@ export default function MetricsDashboard() {
   const custoMedio     = totalExecucoes > 0 ? totalCusto / totalExecucoes : 0;
 
   const { data: prevLogs = [] } = useQuery({
-    queryKey: ['agente-uso-logs-prev'],
+    queryKey: ['agente-uso-logs-all'],
     queryFn: () => entities.AgenteUsoLog.list(),
     select: (data) => {
       const from = new Date(dateFrom);
@@ -241,7 +243,7 @@ export default function MetricsDashboard() {
       >
         <div>
           <p className="text-xs opacity-65 font-bold uppercase tracking-widest mb-1">
-            Custo Total — {new Date(dateTo).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            Custo Total — {new Date(dateTo + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
           </p>
           {usdBrl ? (
             <>

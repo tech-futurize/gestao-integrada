@@ -229,12 +229,15 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
         agentId = created.id;
       }
 
-      // Sync tool links (unified — agente_tool_links)
-      await supabase.from('agente_tool_links').delete().eq('agente_id', agentId);
+      // Sync tool links (unified — agente_tool_links); supabase-js não lança:
+      // sem checar error, um insert falho deixava o agente sem tools com toast de sucesso
+      const { error: delError } = await supabase.from('agente_tool_links').delete().eq('agente_id', agentId);
+      if (delError) throw new Error(`Falha ao limpar tools: ${delError.message}`);
       if (selectedTools.length > 0) {
-        await supabase.from('agente_tool_links').insert(
+        const { error: insError } = await supabase.from('agente_tool_links').insert(
           selectedTools.map(toolId => ({ agente_id: agentId, tool_id: toolId }))
         );
+        if (insError) throw new Error(`Falha ao vincular tools: ${insError.message}`);
       }
     },
     onSuccess: () => {
@@ -522,9 +525,11 @@ export default function AgentEditor({ agent, systemTools = [], onCancel, onSaved
       <div className="flex-1 overflow-auto p-6 md:p-8">
         <div className="max-w-3xl mx-auto">
           {step === 0 && <StepIdentidade form={form} set={set} isEditing={isEditing} />}
-          {step === 1 && <StepModelo />}
-          {step === 2 && <StepPrompt />}
-          {step === 3 && <StepTools />}
+          {/* chamados como função (não <JSX/>): componentes definidos no corpo
+              geram tipo novo por render e o remount fazia inputs perderem o foco */}
+          {step === 1 && StepModelo()}
+          {step === 2 && StepPrompt()}
+          {step === 3 && StepTools()}
         </div>
       </div>
 

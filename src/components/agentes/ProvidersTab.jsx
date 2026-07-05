@@ -108,11 +108,18 @@ function KeyDialog({ provider, config, open, onOpenChange, onSaved }) {
   const queryClient = useQueryClient();
 
   const saveMutation = useMutation({
+    // Upsert: providers ainda sem linha em provider_configs não têm config.id —
+    // o update direto crashava e a chave nunca era salva
     mutationFn: () =>
-      entities.ProviderConfig.update(config.id, {
-        api_key: keyValue.trim() || null,
-        updated_at: new Date().toISOString(),
-      }),
+      config?.id
+        ? entities.ProviderConfig.update(config.id, {
+            api_key: keyValue.trim() || null,
+          })
+        : entities.ProviderConfig.create({
+            provider: provider.id,
+            api_key: keyValue.trim() || null,
+            ativo: true,
+          }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['provider-configs'] });
       toast({ title: `Chave ${provider.name} salva!`, variant: 'success' });

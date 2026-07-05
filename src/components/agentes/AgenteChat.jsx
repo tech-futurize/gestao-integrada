@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { useAuth } from "@/lib/AuthContext";
 import { useAgentTelemetry } from "@/hooks/useAgentTelemetry";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function AgenteChat({ agent }) {
   const [messages, setMessages] = useState([]);
@@ -29,8 +30,10 @@ export default function AgenteChat({ agent }) {
   });
   const project = projetos[0] ?? null;
 
-  // Reinicia a conversa ao trocar de projeto ou de agente
+  // Reinicia a conversa ao trocar de projeto ou de agente — aborta o stream em
+  // curso, senão as escritas do stream antigo vazariam para o chat novo
   useEffect(() => {
+    abortRef.current?.abort();
     setMessages([]);
     setThreadId(crypto.randomUUID());
   }, [selectedProjectId, agent.id]);
@@ -85,11 +88,16 @@ export default function AgenteChat({ agent }) {
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      // Token da sessão como Bearer (não a anon key): permite à Edge Function
+      // autenticar o usuário real e derivar o e-mail do JWT verificado
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada — faça login novamente.");
       const response = await fetch(`${supabaseUrl}/functions/v1/agent-chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabaseKey}`,
+          "Authorization": `Bearer ${accessToken}`,
           "apikey": supabaseKey,
         },
         body: JSON.stringify({
@@ -101,33 +109,51 @@ export default function AgenteChat({ agent }) {
         signal: controller.signal,
       });
 
-      if (!response.ok) throw new Error(`Erro ${response.status}: ${response.statusText}`);
+      if (!response.ok) {
+        const body = await response.text().catch(() => "");
+        throw new Error(`Erro ${response.status}: ${body || response.statusText || "falha na Edge Function"}`);
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = "";
+      let buffer = "";
+
+      const applyDelta = () => {
+        setMessages((prev) => {
+          // stream antigo após reset: índice fora do array — ignora em vez de
+          // criar array esparso (que quebrava o render com msg undefined)
+          if (assistantIndex >= prev.length) return prev;
+          const updated = [...prev];
+          updated[assistantIndex] = { role: "assistant", content: accumulated };
+          return updated;
+        });
+      };
+
+      const processLine = (line) => {
+        if (!line.startsWith("data: ")) return;
+        const raw = line.slice(6).trim();
+        if (!raw) return;
+        try {
+          const event = JSON.parse(raw);
+          if (event.type === "text-delta" && event.payload?.text) {
+            accumulated += event.payload.text;
+            applyDelta();
+          }
+        } catch { /* evento malformado */ }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        for (const line of decoder.decode(value, { stream: true }).split("\n")) {
-          if (!line.startsWith("data: ")) continue;
-          const raw = line.slice(6).trim();
-          if (!raw) continue;
-          try {
-            const event = JSON.parse(raw);
-            if (event.type === "text-delta" && event.payload?.text) {
-              accumulated += event.payload.text;
-              setMessages((prev) => {
-                const updated = [...prev];
-                updated[assistantIndex] = { role: "assistant", content: accumulated };
-                return updated;
-              });
-            }
-          } catch { /* chunk parcial */ }
-        }
+        // buffer entre reads: uma linha "data:" dividida em dois chunks era
+        // descartada em silêncio e palavras sumiam da resposta
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+        for (const line of lines) processLine(line);
       }
+      if (buffer) processLine(buffer);
 
       logTelemetry({
         agenteSlug: agent.id,
@@ -255,7 +281,7 @@ export default function AgenteChat({ agent }) {
             placeholder={`Pergunte ao ${agent.name}...`}
             rows={1}
             disabled={isStreaming}
-            className={`flex-1 resize-none border border-border bg-background text-foreground rounded-xl px-4 py-3 text-sm focus:outline-none ${agent.ring} disabled:opacity-50 min-h-[44px] max-h-32 overflow-y-auto placeholder:text-muted-foreground`}
+            className={`flex-1 resize-none border border-border bg-background text-foreground rounded-xl px-4 py-3 text-sm focus:outline-none ${agent.ring || "focus:ring-2 focus:ring-primary/30"} disabled:opacity-50 min-h-[44px] max-h-32 overflow-y-auto placeholder:text-muted-foreground`}
             style={{ lineHeight: "1.5" }}
             onInput={(e) => {
               e.target.style.height = "auto";
