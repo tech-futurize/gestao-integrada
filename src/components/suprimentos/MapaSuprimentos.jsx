@@ -226,9 +226,10 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     [pacotes]
   );
 
+  const tarefaById = useMemo(() => new Map(tarefas.map(t => [t.id, t])), [tarefas]);
   const tarefaLabel = (id) => {
     if (!id) return "—";
-    const t = tarefas.find(t => t.id === id);
+    const t = tarefaById.get(id);
     if (!t) return "—";
     return t.codigo_wbs ? `${t.codigo_wbs} — ${t.nome}` : t.nome;
   };

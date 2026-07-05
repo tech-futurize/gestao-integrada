@@ -422,6 +422,86 @@ Copie o bloco abaixo para cada nova lição.
 
 ---
 
+### L024 — placeholderData em query de permissões derruba o gate de loading
+
+- **Data:** 2026-07-05
+- **Agente:** Tester
+- **Milestone:** Auditoria completa de bugs (2026-07-04)
+- **Categoria:** Front-end
+- **Gravidade:** Crítica
+- **Contexto em 1 frase:** `usePermissionsQuery` usava `placeholderData: {}`; no React Query v5 o placeholder coloca a query em `success` com `isLoading=false` durante o fetch, e o `ProtectedRoute` avaliava `DENY_ALL` antes das permissões chegarem.
+- **Erro observado:** Todo usuário não-admin era redirecionado para /sem-permissao em qualquer hard-reload; o bypass de Admin mascarou o bug no QA.
+- **Causa raiz:** `placeholderData` muda o status da query para success — o gate `isLoading` nunca fica true para a query com placeholder.
+- **Correção aplicada:** Remoção do `placeholderData` (os consumidores já têm default `= {}` na desestruturação).
+- **Como evitar em projetos futuros:** Nunca usar `placeholderData` em queries que alimentam gates de autorização/loading. Testar fluxos de permissão sempre com um perfil não-admin.
+- **Referências:** `src/hooks/usePermissions.js`, `src/App.jsx` (ProtectedRoute).
+
+---
+
+### L025 — Parse de números pt-BR e datas dd/mm com new Date corrompe dados em importação
+
+- **Data:** 2026-07-05
+- **Agente:** Tester
+- **Milestone:** Auditoria completa de bugs (2026-07-04)
+- **Categoria:** Front-end
+- **Gravidade:** Crítica
+- **Contexto em 1 frase:** `raw.replace(",", ".")` não remove separador de milhar ("1.234,56" → 1.234) e `new Date("04/07/2026")` interpreta MM/DD (4 de julho virava 7 de abril) — todo importador compartilhava esses parsers.
+- **Erro observado:** Valores monetários importados 1000x menores; datas com dia ≤ 12 silenciosamente trocadas (corrupção mista, difícil de notar).
+- **Causa raiz:** Parsers ingênuos assumindo formato único; `new Date(string)` tem semântica US para barras.
+- **Correção aplicada:** `parseFlexibleNumber` (detecta pt-BR/US pelo último separador) + prioridade regex dd/mm/yyyy antes de `new Date`; 16 testes de regressão em `importTypeValidator.test.js`.
+- **Como evitar em projetos futuros:** Nunca usar `parseFloat(x.replace(",", "."))` nem `new Date(string com barras)`. Todo parser de entrada do usuário/planilha precisa de teste com "1.234,56" e "04/07/2026" como fixtures.
+- **Referências:** `src/utils/importTypeValidator.js`, `src/components/contratos/ContratoForm.jsx`.
+
+---
+
+### L026 — Date-only ancorado em UTC regride um dia por ciclo de edição
+
+- **Data:** 2026-07-05
+- **Agente:** Tester
+- **Milestone:** Auditoria completa de bugs (2026-07-04)
+- **Categoria:** Front-end
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** `new Date("YYYY-MM-DD")` é meia-noite UTC; em UTC-3 a exibição/round-trip volta um dia, e cada salvar sem tocar no campo subtraía um dia da data (corrupção progressiva) — o mesmo vale para `new Date().toISOString().slice(0,10)` como "hoje" (após 21h já é amanhã).
+- **Erro observado:** Registros exibidos um dia antes; mudanças de segunda-feira caindo na semana anterior do heatmap; KPIs de atraso disparando na véspera à noite.
+- **Causa raiz:** Mistura de date-only com timestamptz sem convenção de ancoragem local.
+- **Correção aplicada:** `dateUtils` com `todayISO()`/`toLocalDateISO()`; `toUtcIso` ancora date-only à meia-noite local; `toDateInput`/`formatDate` tratam timestamptz de meia-noite UTC como date-only.
+- **Como evitar em projetos futuros:** Proibir `toISOString().slice(0,10)` para "hoje" e `new Date("YYYY-MM-DD")` para exibição — usar sempre os helpers de `dateUtils`. Em code review, todo `new Date(` com string date-only é suspeito.
+- **Referências:** `src/lib/dateUtils.js`, `src/hooks/useMapaRegistroData.js`.
+
+---
+
+### L027 — Componentes definidos dentro de componentes remontam a cada render
+
+- **Data:** 2026-07-05
+- **Agente:** Tester
+- **Milestone:** Auditoria completa de bugs (2026-07-04)
+- **Categoria:** Front-end
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** `StepModelo/StepPrompt/StepTools` eram funções-componente declaradas no corpo do `AgentEditor` e usadas como `<JSX/>` — cada render criava um tipo novo e o React remontava o subtree.
+- **Erro observado:** Textarea de instructions perdia o foco a cada tecla (edição de prompt praticamente inutilizável); a correção anterior tratou só o Step 1.
+- **Causa raiz:** Identidade do tipo do componente muda por render quando ele é definido inline.
+- **Correção aplicada:** Steps chamados como função (`{StepModelo()}`), preservando o DOM; alternativa é içar para fora com props.
+- **Como evitar em projetos futuros:** Nunca declarar componente dentro de componente para uso como JSX. Se precisar de closure, chamar como função ou içar com props.
+- **Referências:** `src/components/agentes/AgentEditor.jsx`.
+
+---
+
+### L028 — Migrations não replayáveis: mudanças aplicadas direto no banco real
+
+- **Data:** 2026-07-05
+- **Agente:** Tester
+- **Milestone:** Auditoria completa de bugs (2026-07-04)
+- **Categoria:** Banco
+- **Gravidade:** Alta
+- **Contexto em 1 frase:** Renomeações (`incidentes→registros`, `casos→pleitos`, `tarefas_cronograma→atividades_cronograma`) e ~10 colunas + 4 tabelas de cadastro existem apenas no banco real — nenhum SQL versionado as cria; um ambiente novo provisionado por `docs/database/` quebra dezenas de telas.
+- **Erro observado:** Auditoria de consistência não conseguiu validar NOT NULL/CHECK/FK de 5 tabelas; migrations m11/m17/m18 nem aplicam sobre o schema base.
+- **Causa raiz:** Alterações emergenciais feitas no Studio/SQL editor sem commitar a migration correspondente (mesma família da L020, agora em escala).
+- **Correção aplicada:** `supabase-migration-m21-reconciliacao.sql` idempotente com renames guardados e `ADD COLUMN/CREATE TABLE IF NOT EXISTS`; pendências manuais documentadas no próprio arquivo (api_key em provider_configs, backfill M20, pg_dump).
+- **Como evitar em projetos futuros:** Toda mudança de schema no banco real deve nascer como arquivo em `docs/database/` e ser aplicada a partir dele. Rodar `pg_dump --schema-only` a cada milestone-close e diffar contra os SQLs versionados.
+- **Referências:** `docs/database/supabase-migration-m21-reconciliacao.sql`.
+
+---
+
 ## 6. Como curar o arquivo
 
 A cada `/milestone-close`, o Architect:

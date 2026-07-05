@@ -517,14 +517,21 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
     onError: onErr,
   });
 
-  const enriched = useMemo(() => items.map(item => {
-    const lncs     = todosLancamentos.filter(l => l.commodity_id === item.id);
+  const enriched = useMemo(() => {
+    const lancPorCommodity = new Map();
+    for (const l of todosLancamentos) {
+      const arr = lancPorCommodity.get(l.commodity_id);
+      if (arr) arr.push(l); else lancPorCommodity.set(l.commodity_id, [l]);
+    }
+    return items.map(item => {
+    const lncs     = lancPorCommodity.get(item.id) ?? [];
     const realizado = lncs.reduce((s, l) => s + l.quantidade, 0);
     const saldo     = item.qtd_contrato - realizado;
     const pct       = item.qtd_contrato > 0 ? (realizado / item.qtd_contrato) * 100 : 0;
     const status    = calcStatus(realizado, item.qtd_contrato);
     return { ...item, realizado, saldo, pct, status };
-  }), [items, todosLancamentos]);
+    });
+  }, [items, todosLancamentos]);
 
   // Base filtrada pelos filtros do toolbar (busca + FilterBar) — sem os filtros de clique nos gráficos
   const baseFiltered = useMemo(() => {

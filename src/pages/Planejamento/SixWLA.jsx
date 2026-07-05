@@ -93,8 +93,9 @@ export default function SixWLAPage() {
 
   // Merge: itens_6wla ← tarefa + semanasBadge calculados
   const merged = useMemo(() => {
+    const tarefaById = new Map(tarefas.map(t => [t.id, t]));
     return itens.map(item => {
-      const tarefa = tarefas.find(t => t.id === item.tarefa_cronograma_id) || null;
+      const tarefa = tarefaById.get(item.tarefa_cronograma_id) || null;
       return {
         ...item,
         tarefa,

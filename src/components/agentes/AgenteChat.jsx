@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, memo } from "react";
 import { Send, Loader2, User, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
@@ -232,41 +232,7 @@ export default function AgenteChat({ agent }) {
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            {msg.role === "assistant" && (
-              <div
-                className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
-                style={{ background: agent.cor || '#26405d' }}
-              >
-                <AgentIcon className="w-4 h-4 text-white" />
-              </div>
-            )}
-            <div
-              className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                msg.role === "user"
-                  ? "text-white rounded-tr-sm"
-                  : "bg-card border border-border text-foreground rounded-tl-sm shadow-sm"
-              }`}
-              style={msg.role === "user" ? { background: agent.cor || '#26405d' } : undefined}
-            >
-              {msg.role === "assistant" ? (
-                msg.content ? (
-                  <div className="prose prose-sm max-w-none dark:prose-invert overflow-x-auto">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                )
-              ) : (
-                msg.content
-              )}
-            </div>
-            {msg.role === "user" && (
-              <div className="w-8 h-8 rounded-full bg-muted flex-shrink-0 flex items-center justify-center mt-0.5">
-                <User className="w-4 h-4 text-muted-foreground" />
-              </div>
-            )}
-          </div>
+          <ChatMessage key={i} msg={msg} cor={agent.cor} AgentIcon={AgentIcon} />
         ))}
         <div ref={bottomRef} />
       </div>
@@ -302,3 +268,46 @@ export default function AgenteChat({ agent }) {
     </div>
   );
 }
+
+// Memoizado: durante o stream cada text-delta atualiza só a última mensagem —
+// sem memo, todas as anteriores re-parseavam o markdown a cada token
+const ChatMessage = memo(function ChatMessage({ msg, cor, AgentIcon }) {
+  if (!msg) return null;
+  return (
+    <div className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+      {msg.role === "assistant" && (
+        <div
+          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center mt-0.5"
+          style={{ background: cor || '#26405d' }}
+        >
+          <AgentIcon className="w-4 h-4 text-white" />
+        </div>
+      )}
+      <div
+        className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+          msg.role === "user"
+            ? "text-white rounded-tr-sm"
+            : "bg-card border border-border text-foreground rounded-tl-sm shadow-sm"
+        }`}
+        style={msg.role === "user" ? { background: cor || '#26405d' } : undefined}
+      >
+        {msg.role === "assistant" ? (
+          msg.content ? (
+            <div className="prose prose-sm max-w-none dark:prose-invert overflow-x-auto">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+            </div>
+          ) : (
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          )
+        ) : (
+          msg.content
+        )}
+      </div>
+      {msg.role === "user" && (
+        <div className="w-8 h-8 rounded-full bg-muted flex-shrink-0 flex items-center justify-center mt-0.5">
+          <User className="w-4 h-4 text-muted-foreground" />
+        </div>
+      )}
+    </div>
+  );
+});
