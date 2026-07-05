@@ -11,6 +11,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { VincularAtividadesDialog } from "./VincularAtividadesDialog";
 import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
+import { todayISO } from "@/lib/dateUtils";
 
 const DISCIPLINAS = ["Mecânica", "Elétrica", "Estrutura Metálica", "Tubulação", "Instrumentação", "Civil", "Pintura"];
 
@@ -21,7 +22,7 @@ const EMPTY_TURNO = { ativo: false, condicao: "", praticabilidade: "" };
 function emptyRdo() {
   return {
     numero: "",
-    data: new Date().toISOString().split("T")[0],
+    data: todayISO(),
     area: "",
     equipe: "",
     disciplinas: [],
@@ -92,7 +93,7 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
     if (!rdo) return emptyRdo();
     return {
       numero: rdo.numero || "",
-      data: rdo.data || new Date().toISOString().split("T")[0],
+      data: rdo.data || todayISO(),
       area: rdo.area || "",
       equipe: rdo.equipe || "",
       disciplinas: rdo.disciplinas || [],

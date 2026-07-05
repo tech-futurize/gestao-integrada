@@ -13,7 +13,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
 import { Plus, CheckCircle2, Clock, X, Search, SlidersHorizontal } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, toLocalDateISO } from "@/lib/dateUtils";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useSortTable } from "@/hooks/useSortTable";
 import { SortableTableHead } from "@/components/ui/SortableTableHead";
@@ -99,8 +99,8 @@ export default function PlanoAcao({ projectId }) {
 
     // 4. Período (DateRangePicker)
     if (periodoRange?.from) {
-      const from = periodoRange.from.toISOString().slice(0, 10);
-      const to   = periodoRange.to ? periodoRange.to.toISOString().slice(0, 10) : from;
+      const from = toLocalDateISO(periodoRange.from);
+      const to   = periodoRange.to ? toLocalDateISO(periodoRange.to) : from;
       r = r.filter(a => {
         const di = a.data_inicio_prevista || "";
         const df = a.data_fim_prevista    || "";

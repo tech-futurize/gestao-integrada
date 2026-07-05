@@ -7,7 +7,7 @@ import { useSortTable } from "@/hooks/useSortTable";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import FilterBar from "@/components/ui/FilterBar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, toLocalDateISO } from "@/lib/dateUtils";
 import { useToast } from "@/components/ui/use-toast";
 import { RDOForm } from "./RDOForm";
 import { RDODetail } from "./RDODetail";
@@ -81,11 +81,11 @@ export default function RDOModule({
     );
     if (filtros.area?.length > 0) result = result.filter(r => filtros.area.includes(r.area));
     if (periodo?.from) {
-      const fromStr = periodo.from.toISOString().split("T")[0];
+      const fromStr = toLocalDateISO(periodo.from);
       result = result.filter(r => r.data && r.data >= fromStr);
     }
     if (periodo?.to) {
-      const toStr = periodo.to.toISOString().split("T")[0];
+      const toStr = toLocalDateISO(periodo.to);
       result = result.filter(r => r.data && r.data <= toStr);
     }
     return result;

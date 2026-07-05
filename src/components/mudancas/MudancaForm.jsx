@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormDialog, SectionDivider } from "@/components/ui/FormDialog";
 import MultiSelectDropdown from "@/components/ui/MultiSelectDropdown";
 import { useCategoriasImpacto } from "@/hooks/useCategoriasImpacto";
+import { todayISO } from "@/lib/dateUtils";
 
 export default function MudancaForm({ open, onOpenChange, mudanca, onSubmit, onCancel, isSubmitting, pleitos = [] }) {
   const { data: categoriasNomes = [], isPending: categoriasPending } = useCategoriasImpacto();
@@ -16,7 +17,7 @@ export default function MudancaForm({ open, onOpenChange, mudanca, onSubmit, onC
     descricao: mudanca?.descricao || "",
     origem: mudanca?.origem || "Contratante",
     status: mudanca?.status || "Identificada",
-    data_ocorrencia: mudanca?.data_ocorrencia || new Date().toISOString().split("T")[0],
+    data_ocorrencia: mudanca?.data_ocorrencia || todayISO(),
     impacto_custo: mudanca?.impacto_custo ?? "",
     impacto_prazo_dias: mudanca?.impacto_prazo_dias ?? "",
     impacto_escopo: mudanca?.impacto_escopo || "",

@@ -9,20 +9,17 @@ const TIPOS = ["Serviços", "Fornecimento", "Fornecimento + Serviço"];
 const STATUS = ["A iniciar", "Em andamento", "Concluído", "Paralisado"];
 const MODALIDADES = ["Preço unitário", "Global", "HH"];
 
+import { parseFlexibleNumber } from "@/utils/importTypeValidator";
+
 const formatBR = (v) => {
-  if (v === "" || v == null) return "";
-  const n = typeof v === "number" ? v : parseFloat(String(v).replace(/\./g, "").replace(",", "."));
-  if (isNaN(n)) return "";
+  const n = typeof v === "number" ? v : parseFlexibleNumber(v);
+  if (v === "" || v == null || isNaN(n)) return "";
   return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 };
 
 const parseBRFloat = (s) => {
-  if (!s) return 0;
-  const str = String(s).trim();
-  if (str.includes(",")) {
-    return parseFloat(str.replace(/\./g, "").replace(",", ".")) || 0;
-  }
-  return parseFloat(str) || 0;
+  const n = parseFlexibleNumber(s);
+  return isNaN(n) ? 0 : n;
 };
 
 export default function ContratoForm({ contrato, onSave, onClose }) {

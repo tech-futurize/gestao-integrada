@@ -57,7 +57,8 @@ export function normalizarMudancas(mudancas) {
     .filter((m) => !!m.data_ocorrencia)
     .map((m) => ({
       id: `mudanca-${m.id}`,
-      data_hora: m.data_ocorrencia,
+      // Como no caminho dos RDOs: força parse local — new Date("YYYY-MM-DD") seria meia-noite UTC
+      data_hora: m.data_ocorrencia.includes("T") ? m.data_ocorrencia : `${m.data_ocorrencia}T00:00:00`,
       impacto_ocorrencia: inferirCategoriasMudanca(m),
       responsabilidade: m.origem ?? "",
       descricao: m.titulo ?? "",

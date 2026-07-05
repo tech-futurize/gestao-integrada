@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { ShoppingCart, CheckCircle, AlertCircle, Clock, TrendingUp } from "lucide-react";
 import { SectionHeader, KpiCard } from "@/components/dashboard/DashboardPrimitives";
+import { todayISO } from "@/lib/dateUtils";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,7 @@ function formatDate(dateStr) {
 // ── Derivações ────────────────────────────────────────────────────────────────
 
 function deriveKpis(itens) {
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = todayISO();
   const total = itens.length;
   const emAndamento = itens.filter((i) => i.status === "Em andamento").length;
   const concluidos = itens.filter((i) => i.status === "Concluído").length;
@@ -98,7 +99,7 @@ function deriveEtapasChartData(itens) {
 }
 
 function deriveAtrasados(itens) {
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = todayISO();
   return itens
     .filter((i) => i.data_cronograma && i.data_cronograma < hoje && i.status !== "Concluído")
     .sort((a, b) => (a.data_cronograma < b.data_cronograma ? -1 : 1))

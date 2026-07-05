@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import FilterBar from "@/components/ui/FilterBar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
+import { toLocalDateISO } from "@/lib/dateUtils";
 
 const PLEITO_COLUMNS = [
   { key: "titulo",              label: "Título",             type: "string", required: true },
@@ -72,11 +73,11 @@ export default function Pleitos() {
     if (filtros.status?.length)    r = r.filter(p => filtros.status.includes(p.status));
     if (filtros.prioridade?.length) r = r.filter(p => filtros.prioridade.includes(p.prioridade));
     if (periodo?.from) {
-      const fromStr = periodo.from.toISOString().split("T")[0];
+      const fromStr = toLocalDateISO(periodo.from);
       r = r.filter(p => p.data_abertura && p.data_abertura >= fromStr);
     }
     if (periodo?.to) {
-      const toStr = periodo.to.toISOString().split("T")[0];
+      const toStr = toLocalDateISO(periodo.to);
       r = r.filter(p => p.data_abertura && p.data_abertura <= toStr);
     }
     return r;

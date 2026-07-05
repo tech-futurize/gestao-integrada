@@ -15,6 +15,7 @@ import { useToast, friendlyMessage } from "@/components/ui/use-toast";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import FilterBar from "@/components/ui/FilterBar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
+import { toLocalDateISO } from "@/lib/dateUtils";
 
 const fmt = (v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
 
@@ -79,11 +80,11 @@ export default function Contratos() {
     if (filtros.status?.length) r = r.filter((c) => filtros.status.includes(c.status));
     if (filtros.tipo?.length) r = r.filter((c) => filtros.tipo.includes(c.tipo));
     if (periodo?.from) {
-      const fromStr = periodo.from.toISOString().split("T")[0];
+      const fromStr = toLocalDateISO(periodo.from);
       r = r.filter((c) => !c.data_fim || c.data_fim >= fromStr);
     }
     if (periodo?.to) {
-      const toStr = periodo.to.toISOString().split("T")[0];
+      const toStr = toLocalDateISO(periodo.to);
       r = r.filter((c) => !c.data_inicio || c.data_inicio <= toStr);
     }
     return r;

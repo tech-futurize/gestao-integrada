@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X } from "lucide-react";
 import CloseButton from "@/components/ui/CloseButton";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import { todayISO } from "@/lib/dateUtils";
 
 const CATEGORIAS = ["Escopo", "Prazo", "Custo"];
 
@@ -18,7 +19,7 @@ export default function PleitoForm({ pleito, onSubmit, onCancel, isSubmitting })
       descricao_problema: "",
       contexto: "",
       partes_envolvidas: [],
-      data_abertura: new Date().toISOString().split("T")[0],
+      data_abertura: todayISO(),
       status: "Aberto",
       responsavel: "",
       categorias: [],

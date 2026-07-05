@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useSortTable } from "@/hooks/useSortTable";
 import { usePermissions } from "@/hooks/usePermissions";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, todayISO } from "@/lib/dateUtils";
 import PageHeader from "@/components/ui/PageHeader";
 import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
@@ -183,7 +183,7 @@ export default function Documentos() {
   };
 
   const handleSubmit = () => {
-    const hoje = new Date().toISOString().split("T")[0];
+    const hoje = todayISO();
     const revisaoMudou = editing && form.revisao_atual && form.revisao_atual !== (editing.revisao_atual || "");
     const historicoRevisoes = revisaoMudou
       ? [...(editing.historico_revisoes || []), { revisao: form.revisao_atual, data: hoje, etapa: form.etapa, observacao: "" }]
@@ -272,7 +272,7 @@ export default function Documentos() {
   // KPIs
   const progGeral = docs.length ? Math.round(docs.reduce((s, d) => s + (d.progresso || 0), 0) / docs.length) : 0;
   const totalSheets = docs.reduce((s, d) => s + (d.num_folhas || 0), 0);
-  const overdue = docs.filter(d => d.data_projetada && d.data_projetada < new Date().toISOString().split("T")[0] && d.etapa !== "Aprovado");
+  const overdue = docs.filter(d => d.data_projetada && d.data_projetada < todayISO() && d.etapa !== "Aprovado");
 
   if (!selectedProjectId) {
     return (
@@ -403,7 +403,7 @@ export default function Documentos() {
                 )}
                 {paginated.map((doc, i) => {
                   const stEtapa = ETAPA_COLORS[doc.etapa] || {};
-                  const today = new Date().toISOString().split("T")[0];
+                  const today = todayISO();
                   const aprovado = doc.etapa === "Aprovado";
                   const vencido = !aprovado && doc.data_projetada && doc.data_projetada < today;
                   const atrasadoCron = !aprovado && !vencido && doc.data_projetada && doc.data_cronograma && doc.data_projetada > doc.data_cronograma;

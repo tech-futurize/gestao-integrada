@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { Ruler, CheckCircle, AlertCircle, BarChart2 } from "lucide-react";
 import { SectionHeader, KpiCard } from "@/components/dashboard/DashboardPrimitives";
+import { todayISO } from "@/lib/dateUtils";
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ function deriveKpis(documentos) {
       ? Math.round(documentos.reduce((acc, d) => acc + (d.progresso ?? 0), 0) / total)
       : 0;
   const aprovados = documentos.filter((d) => d.etapa === "Aprovado").length;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = todayISO();
   const atrasados = documentos.filter(
     (d) => d.deadline && d.deadline < hoje && (d.progresso ?? 0) < 100
   ).length;

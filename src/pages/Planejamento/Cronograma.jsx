@@ -12,6 +12,7 @@ import DateRangePicker from "@/components/ui/DateRangePicker";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, Upload, Eye, GitBranch, Search, Layers } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
+import { toLocalDateISO } from "@/lib/dateUtils";
 
 const EXPORT_COLUMNS = [
   { key: "codigo_wbs",               label: "WBS",                     type: "string",  required: true },
@@ -97,8 +98,8 @@ export default function Cronograma() {
         if (fim < today || inicio > sixWeeks) return false;
       }
       if (periodoAtividade?.from) {
-        const fromStr = periodoAtividade.from.toISOString().split("T")[0];
-        const toStr   = periodoAtividade.to ? periodoAtividade.to.toISOString().split("T")[0] : fromStr;
+        const fromStr = toLocalDateISO(periodoAtividade.from);
+        const toStr   = periodoAtividade.to ? toLocalDateISO(periodoAtividade.to) : fromStr;
         const inicio  = t.data_inicio_planejada || "";
         const fim     = t.data_fim_planejada    || "";
         if (!inicio || !fim) return false;

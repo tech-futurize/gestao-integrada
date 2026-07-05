@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRightLeft, Plus, Upload, ArrowUpDown, ArrowUp, ArrowDown, Search } from "lucide-react";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, toLocalDateISO } from "@/lib/dateUtils";
 import RowActions from "@/components/ui/RowActions";
 import { useSortTable } from "@/hooks/useSortTable";
 import { ImportExportDialog } from "@/components/ui/import-export-dialog";
@@ -109,11 +109,11 @@ export default function GestaoMudancas() {
     if (st.length > 0) r = r.filter(m => st.includes(m.status));
     if (or.length > 0) r = r.filter(m => or.includes(m.origem));
     if (periodo?.from) {
-      const fromStr = periodo.from.toISOString().split("T")[0];
+      const fromStr = toLocalDateISO(periodo.from);
       r = r.filter(m => m.data_ocorrencia && m.data_ocorrencia >= fromStr);
     }
     if (periodo?.to) {
-      const toStr = periodo.to.toISOString().split("T")[0];
+      const toStr = toLocalDateISO(periodo.to);
       r = r.filter(m => m.data_ocorrencia && m.data_ocorrencia <= toStr);
     }
     return r;

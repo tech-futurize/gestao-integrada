@@ -118,7 +118,7 @@ export function ImportExportDialog({
           fileHeader !== null && fileHeader !== undefined
             ? rawRow[fileHeader]
             : undefined;
-        const { ok, value } = validateAndConvert(rawValue, col.type || "string");
+        const { ok, value } = validateAndConvert(rawValue, col.type || "string", col.required === true);
 
         if (!ok) {
           errors.push({

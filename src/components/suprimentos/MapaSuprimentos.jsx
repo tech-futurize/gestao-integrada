@@ -12,7 +12,7 @@ import FilterBar from "@/components/ui/FilterBar";
 import FilterToolbar from "@/components/ui/FilterToolbar";
 import DateRangePicker from "@/components/ui/DateRangePicker";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatDate } from "@/lib/dateUtils";
+import { formatDate, toLocalDateISO } from "@/lib/dateUtils";
 import { useToast } from "@/components/ui/use-toast";
 
 const PER_PAGE = 25;
@@ -81,7 +81,7 @@ function Popover({ item, etapaIdx, rect, onClose, onSave }) {
         lastDate = new Date(novasEtapas[i].data);
       } else if (lastDate) {
         lastDate = new Date(lastDate.getTime() + 7 * 86400000);
-        novasEtapas[i] = { ...novasEtapas[i], data: lastDate.toISOString().split("T")[0] };
+        novasEtapas[i] = { ...novasEtapas[i], data: toLocalDateISO(lastDate) };
       }
     }
 
@@ -289,11 +289,11 @@ export default function MapaSuprimentos({ selectedProjectId, triggerNew = 0 }) {
     if (filtroResponsavel) result = result.filter(i => i.responsavel?.toLowerCase().includes(filtroResponsavel.toLowerCase()));
     if (filtroFornecedor) result = result.filter(i => i.fornecedor?.toLowerCase().includes(filtroFornecedor.toLowerCase()));
     if (periodoFornecimento?.from) {
-      const fromStr = periodoFornecimento.from.toISOString().split("T")[0];
+      const fromStr = toLocalDateISO(periodoFornecimento.from);
       result = result.filter(i => (i.etapas?.[6]?.data || "") >= fromStr);
     }
     if (periodoFornecimento?.to) {
-      const toStr = periodoFornecimento.to.toISOString().split("T")[0];
+      const toStr = toLocalDateISO(periodoFornecimento.to);
       result = result.filter(i => (i.etapas?.[6]?.data || "") <= toStr);
     }
     return result;
