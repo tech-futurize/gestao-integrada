@@ -84,15 +84,19 @@ export default function RegistroForm({ incidente, onSubmit, onCancel, isSubmitti
         const { data: urlData } = supabase.storage.from("registros-anexos").getPublicUrl(path);
         uploaded.push({ nome: file.name, url: urlData.publicUrl, path, tipo: file.type, tamanho: file.size });
       }
-      if (removedPaths.length > 0) {
-        await supabase.storage.from("registros-anexos").remove(removedPaths);
-      }
-      onSubmit({
+      // Salva primeiro; remove do storage só depois do banco confirmar — remover
+      // antes deixava o registro apontando para arquivos inexistentes se o save falhasse
+      const result = onSubmit({
         ...formData,
         data_hora:  toUtcIso(formData.data_hora),
         pleito_id:  formData.pleito_id || null,
         anexos:     [...existingAnexos, ...uploaded],
       });
+      if (result?.then) await result;
+      if (removedPaths.length > 0) {
+        // limpeza best-effort: falha aqui não pode quebrar o fluxo de save
+        supabase.storage.from("registros-anexos").remove(removedPaths).catch(() => {});
+      }
     } catch (err) {
       toast({ title: "Erro ao enviar arquivo", description: err.message, variant: "destructive" });
     } finally {

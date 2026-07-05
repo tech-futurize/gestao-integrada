@@ -43,7 +43,10 @@ function emptyRdo() {
 async function uploadFiles(projectId, rdoId, files) {
   const uploaded = [];
   for (const file of files) {
-    const path = `${projectId}/${rdoId}/${Date.now()}_${file.name}`;
+    // Storage rejeita chaves com caracteres fora de ASCII (ex.: "relatório.pdf") —
+    // chave opaca via UUID; o nome original fica nos metadados do anexo
+    const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
+    const path = `${projectId}/${rdoId}/${crypto.randomUUID()}${ext}`;
     const { error } = await supabase.storage
       .from("rdo-evidencias")
       .upload(path, file, { upsert: false });
@@ -66,19 +69,28 @@ export function RDOForm({ rdo, selectedProjectId, casos, tarefas, onClose, onSav
     queryKey: ["tipos_equipamento"],
     queryFn: () => entities.TipoEquipamento.list({ ativo: true }),
   });
-  const { data: rdosCount = 0 } = useQuery({
-    queryKey: ["rdos_count", selectedProjectId],
-    queryFn: () => entities.Rdo.count({ projeto_id: selectedProjectId }),
+  const { data: proximoNumeroRdo = null } = useQuery({
+    queryKey: ["rdos", selectedProjectId, "max-numero"],
+    queryFn: async () => {
+      const rows = await entities.Rdo.filter({ projeto_id: selectedProjectId });
+      // maior número existente, não count: excluir um RDO intermediário fazia
+      // count+1 colidir com um número já usado
+      const max = rows.reduce((m, r) => {
+        const n = parseInt(String(r.numero || "").replace(/\D/g, ""), 10);
+        return Number.isFinite(n) ? Math.max(m, n) : m;
+      }, 0);
+      return max + 1;
+    },
     enabled: !!selectedProjectId && !rdo,
   });
 
   const { data: categoriasNomes = [], isPending: categoriasPending } = useCategoriasImpacto();
 
   useEffect(() => {
-    if (!rdo && rdosCount >= 0) {
-      set("numero", `RDO-${String(rdosCount + 1).padStart(3, "0")}`);
+    if (!rdo && proximoNumeroRdo != null) {
+      set("numero", `RDO-${String(proximoNumeroRdo).padStart(3, "0")}`);
     }
-  }, [rdosCount]);
+  }, [proximoNumeroRdo]);
 
   const areaOptions = useMemo(
     () => [...new Set((tarefas || []).map(t => t.area).filter(Boolean))].sort(),

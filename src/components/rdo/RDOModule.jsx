@@ -76,9 +76,12 @@ export default function RDOModule({
 
   const filtered = useMemo(() => {
     let result = rdos;
-    if (search) result = result.filter(r =>
-      (r.numero || r.area || "").toLowerCase().includes(search.toLowerCase())
-    );
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(r =>
+        (r.numero || "").toLowerCase().includes(q) || (r.area || "").toLowerCase().includes(q)
+      );
+    }
     if (filtros.area?.length > 0) result = result.filter(r => filtros.area.includes(r.area));
     if (periodo?.from) {
       const fromStr = toLocalDateISO(periodo.from);

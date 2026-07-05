@@ -17,7 +17,16 @@ export function anexoPath(anexo, bucket) {
 export async function openAnexo(bucket, anexo) {
   const path = anexoPath(anexo, bucket);
   if (!path) throw new Error("Não foi possível localizar o arquivo no storage.");
-  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
-  if (error) throw error;
-  window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  // Abrir a janela depois do await consome o gesto do usuário e o Safari bloqueia
+  // o popup — abre sincronamente e navega quando a URL assinada chegar
+  const win = window.open("about:blank", "_blank", "noopener,noreferrer");
+  try {
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+    if (error) throw error;
+    if (win) win.location = data.signedUrl;
+    else window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  } catch (e) {
+    win?.close();
+    throw e;
+  }
 }

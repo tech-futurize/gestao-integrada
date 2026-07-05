@@ -92,8 +92,9 @@ export default function RegistroDetalhes({ registro, onBack }) {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => entities.Registro.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["registros"] });
+      queryClient.invalidateQueries({ queryKey: ["registro", id] });
       setShowEditForm(false);
       toast({ title: "Registro atualizado com sucesso!" });
     },
@@ -138,12 +139,21 @@ export default function RegistroDetalhes({ registro, onBack }) {
   };
 
   const handleRemoveAnexo = async (anexo) => {
-    const storagePath = anexo.path || anexo.url.split("/registros-anexos/")[1];
-    if (storagePath) await supabase.storage.from("registros-anexos").remove([storagePath]);
-    updateMutation.mutate({
-      id: registro.id,
-      data: { anexos: (registro.anexos || []).filter(a => a.url !== anexo.url) },
-    });
+    const storagePath = anexo.path || anexo.url?.split("/registros-anexos/")[1];
+    // Identidade por path (url pode ser undefined em anexos legados — filtrar por
+    // url removeria todos os anexos sem url de uma vez)
+    const key = (a) => a.path ?? a.url;
+    try {
+      await updateMutation.mutateAsync({
+        id: registro.id,
+        data: { anexos: (registro.anexos || []).filter(a => key(a) !== key(anexo)) },
+      });
+    } catch {
+      return; // banco não confirmou — não remove o arquivo do storage
+    }
+    if (storagePath) {
+      supabase.storage.from("registros-anexos").remove([storagePath]).catch(() => {});
+    }
   };
 
   const tipoClass = TIPO_COLORS[registro.tipo_registro] || "bg-muted text-muted-foreground";
@@ -214,7 +224,7 @@ export default function RegistroDetalhes({ registro, onBack }) {
               key={registro.id}
               incidente={registro}
               selectedProjectId={selectedProjectId}
-              onSubmit={(data) => updateMutation.mutate({ id: registro.id, data })}
+              onSubmit={(data) => updateMutation.mutateAsync({ id: registro.id, data })}
               onCancel={() => setShowEditForm(false)}
               isSubmitting={updateMutation.isPending}
             />

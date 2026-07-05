@@ -316,10 +316,9 @@ function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPi
     const contratada = todasOcorrencias.filter(i => i.responsabilidade === "Contratada").length;
     const contratante = todasOcorrencias.filter(i => i.responsabilidade === "Contratante").length;
     const total = contratada + contratante;
-    if (total === 0) return [
-      { name: "Contratada", value: 50 },
-      { name: "Contratante", value: 50 },
-    ];
+    // Sem dados: retorna vazio e o gráfico mostra estado vazio — dados fabricados
+    // 50/50 apareciam no tooltip como "50 registro(s)" reais
+    if (total === 0) return [];
     return [
       { name: "Contratada", value: contratada },
       { name: "Contratante", value: contratante },
@@ -345,32 +344,38 @@ function ChartsRow({ todasOcorrencias, heatmapData, responsabilidadeFiltro, onPi
             <span className="ml-2 text-xs font-semibold text-ocre">— filtrando: {responsabilidadeFiltro}</span>
           )}
         </h4>
-        <ResponsiveContainer width="100%" height={260}>
-          <PieChart margin={{ top: 36, right: 60, bottom: 36, left: 60 }}>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              outerRadius={72}
-              dataKey="value"
-              cursor="pointer"
-              onClick={(data) => onPieClick(data.name)}
-              label={renderPieLabel}
-              labelLine={true}
-            >
-              {pieData.map((entry, i) => (
-                <Cell
-                  key={i}
-                  fill={PIE_COLORS[i % PIE_COLORS.length]}
-                  opacity={responsabilidadeFiltro && responsabilidadeFiltro !== entry.name ? 0.35 : 1}
-                  stroke={responsabilidadeFiltro === entry.name ? "#fff" : "none"}
-                  strokeWidth={2}
-                />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value) => [`${value} registro(s)`, ""]} />
-          </PieChart>
-        </ResponsiveContainer>
+        {pieData.length === 0 ? (
+          <div className="flex items-center justify-center h-[260px] text-sm text-muted-foreground">
+            Nenhuma ocorrência classificada no período.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart margin={{ top: 36, right: 60, bottom: 36, left: 60 }}>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                outerRadius={72}
+                dataKey="value"
+                cursor="pointer"
+                onClick={(data) => onPieClick(data.name)}
+                label={renderPieLabel}
+                labelLine={true}
+              >
+                {pieData.map((entry, i) => (
+                  <Cell
+                    key={i}
+                    fill={PIE_COLORS[i % PIE_COLORS.length]}
+                    opacity={responsabilidadeFiltro && responsabilidadeFiltro !== entry.name ? 0.35 : 1}
+                    stroke={responsabilidadeFiltro === entry.name ? "#fff" : "none"}
+                    strokeWidth={2}
+                  />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => [`${value} registro(s)`, ""]} />
+            </PieChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Radar chart */}

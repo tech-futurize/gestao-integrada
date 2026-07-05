@@ -91,7 +91,9 @@ export default function VinculoPickerDialog({
   };
 
   const handleVincular = () => {
-    const registros = filtrados.filter((r) => selecionados.has(r.id));
+    // candidatos (não filtrados): a busca ativa esconderia itens já marcados e
+    // o botão criaria menos vínculos do que o contador anuncia
+    const registros = candidatos.filter((r) => selecionados.has(r.id));
     if (registros.length === 0) return;
     createMutation.mutate(registros);
   };

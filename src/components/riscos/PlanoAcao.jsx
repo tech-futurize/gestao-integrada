@@ -158,6 +158,9 @@ export default function PlanoAcao({ projectId }) {
       ...formData,
       projeto_id:        projectId,
       registro_risco_id: formData.registro_risco_id,
+      // Postgres rejeita "" em colunas DATE — sem isso, criar ação sem datas falhava
+      data_inicio_prevista: formData.data_inicio_prevista || null,
+      data_fim_prevista:    formData.data_fim_prevista    || null,
     };
     if (editingAcao) updateAcaoMutation.mutate({ id: editingAcao.id, data: payload });
     else createAcaoMutation.mutate(payload);
