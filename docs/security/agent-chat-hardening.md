@@ -1,9 +1,11 @@
 # Endurecimento da Edge Function `agent-chat`
 
-> **Status:** pendente de deploy. A função vive **fora deste repositório** (Supabase
-> Edge Functions). Não há código-fonte em disco nem Personal Access Token
-> (`sbp_...`) no ambiente, então o deploy **não pôde ser executado na auditoria** —
-> este documento traz o patch exato e o teste de verificação para quem tiver acesso.
+> **Status: APLICADO e verificado em 2026-07-05.** A função foi baixada, corrigida
+> e re-deployada; o código-fonte agora está versionado em
+> `supabase/functions/agent-chat/index.ts`. Verificação pós-deploy (abaixo)
+> confirmou: JWT falso/anon → 401, projeto inválido → 403, usuário real + projeto
+> válido → 200 com streaming. Este documento fica como registro do furo e do
+> racional da correção.
 
 ## Problema (verificado em 2026-07-05)
 
