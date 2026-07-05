@@ -31,7 +31,9 @@ function usePermissionsQuery(usuarioId) {
     },
     enabled: !!usuarioId,
     staleTime: Infinity,
-    placeholderData: {},
+    // Sem placeholderData: em React Query v5 o placeholder coloca a query em "success"
+    // e isLoading fica false durante o fetch — o gate do ProtectedRoute liberaria o
+    // redirect para /sem-permissao antes das permissões chegarem (não-admins bloqueados).
   });
 }
 

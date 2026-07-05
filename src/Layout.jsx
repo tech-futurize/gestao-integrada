@@ -32,7 +32,7 @@ export default function Layout({ children }) {
   const [flyoutGroup, setFlyoutGroup] = useState(null);
   const [flyoutY, setFlyoutY] = useState(0);
   const isDark = useDarkMode();
-  const { selectedProjectId, setSelectedProjectId } = useProject();
+  const { selectedProjectId, setSelectedProjectId, isAllProjects } = useProject();
   const { permissoes, isAdmin } = usePermissionsMap();
 
   const { data: agentesAtivos = [] } = useQuery({
@@ -44,13 +44,13 @@ export default function Layout({ children }) {
   const visibleNavigation = useMemo(() => {
     const groups = isAdmin
       ? navigationGroups
-      : navigationGroups.filter(group => permissoes[group.title]?.view === true);
+      : navigationGroups.filter(group => permissoes[group.permissionKey ?? group.title]?.view === true);
 
     return groups.map(group => {
       if (group.title !== 'Agentes de IA') return group;
       return {
         ...group,
-        children: agentesAtivos
+        children: [...agentesAtivos]
           .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
           .map(a => ({ title: a.nome, path: `/agentes/${a.slug}` })),
       };
@@ -67,10 +67,14 @@ export default function Layout({ children }) {
   });
 
   useEffect(() => {
-    if (projetosDB.length > 0 && !selectedProjectId) {
+    if (projetosDB.length === 0 || isAllProjects) return;
+    // Id persistido pode apontar para projeto excluído/inacessível — sem esta checagem
+    // todas as queries filtrariam por um id morto enquanto a UI diz "Todos os Projetos"
+    const isStale = selectedProjectId && !projetosDB.some(p => p.id === selectedProjectId);
+    if (!selectedProjectId || isStale) {
       setSelectedProjectId(projetosDB[0].id);
     }
-  }, [projetosDB, selectedProjectId, setSelectedProjectId]);
+  }, [projetosDB, selectedProjectId, isAllProjects, setSelectedProjectId]);
 
   useEffect(() => {
     setFlyoutGroup(null);

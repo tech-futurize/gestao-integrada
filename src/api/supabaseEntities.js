@@ -40,27 +40,50 @@ const TABLE_MAP = {
   FormularioResposta: 'formulario_respostas',
 };
 
+// Tabelas sem coluna created_at (junções) precisam de outra coluna de ordenação
+const ORDER_COLUMN_OVERRIDES = {
+  agente_tool_links: 'agente_id',
+};
+
+// PostgREST limita cada resposta a 1000 linhas — blocos deste tamanho na paginação interna
+const PAGE_CHUNK = 1000;
+
 function createEntityClient(tableName) {
   return {
     async list(filters = {}, { page = null, pageSize = null } = {}) {
-      let query = supabase
-        .from(tableName)
-        .select('*')
-        .order('created_at', { ascending: false });
+      const orderColumn = ORDER_COLUMN_OVERRIDES[tableName] ?? 'created_at';
+      const buildQuery = (from, to) => {
+        let query = supabase
+          .from(tableName)
+          .select('*')
+          .order(orderColumn, { ascending: false });
 
-      for (const [key, value] of Object.entries(filters)) {
-        if (value !== undefined && value !== null && value !== '') {
-          query = query.eq(key, value);
+        for (const [key, value] of Object.entries(filters)) {
+          if (value !== undefined && value !== null && value !== '') {
+            query = query.eq(key, value);
+          }
         }
+
+        return query.range(from, to);
+      };
+
+      if (pageSize !== null) {
+        const start = (page ?? 0) * pageSize;
+        const { data, error } = await buildQuery(start, start + pageSize - 1);
+        if (error) throw new Error(error.message);
+        return data ?? [];
       }
 
-      if (page !== null && pageSize !== null) {
-        query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+      // Sem paginação explícita: busca em blocos até a página vir incompleta,
+      // senão listas com >1000 linhas seriam truncadas silenciosamente
+      const all = [];
+      for (let offset = 0; ; offset += PAGE_CHUNK) {
+        const { data, error } = await buildQuery(offset, offset + PAGE_CHUNK - 1);
+        if (error) throw new Error(error.message);
+        all.push(...(data ?? []));
+        if (!data || data.length < PAGE_CHUNK) break;
       }
-
-      const { data, error } = await query;
-      if (error) throw new Error(error.message);
-      return data ?? [];
+      return all;
     },
 
     async filter(filters = {}) {
@@ -109,12 +132,18 @@ function createEntityClient(tableName) {
     },
 
     async delete(id) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from(tableName)
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
 
       if (error) throw new Error(error.message);
+      // RLS pode negar silenciosamente (0 linhas afetadas, sem erro) — sem esta checagem
+      // a UI mostraria toast de sucesso e o registro reapareceria no refetch
+      if (!data || data.length === 0) {
+        throw new Error('Nenhum registro foi excluído — ele pode já ter sido removido ou você não tem permissão.');
+      }
     },
   };
 }

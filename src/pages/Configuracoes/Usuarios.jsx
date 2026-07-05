@@ -13,7 +13,8 @@ import { FormDialog } from "@/components/ui/FormDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast, friendlyMessage } from "@/components/ui/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   PERFIL_OPTIONS,
   PERFIL_SEED,
@@ -38,6 +39,10 @@ const EMPTY_FORM = {
 export default function Usuarios() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  // RLS é aberta para authenticated — o gate de ações da UI é a camada de proteção
+  // contra escalação (ex.: Gestor com Configurações:view editando as próprias permissões)
+  const canCreate = usePermissions("Configurações", "create");
+  const canEdit = usePermissions("Configurações", "edit");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -107,7 +112,7 @@ export default function Usuarios() {
       setForm(EMPTY_FORM);
       toast({ variant: "success", description: "Usuário criado com sucesso." });
     },
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Erro", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   // Seed automático de permissões ao criar usuário
@@ -123,7 +128,7 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["permissoes"] });
     },
-    onError: (e) => toast({ title: "Erro ao criar permissões", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Erro ao criar permissões", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   // Atualização de usuário
@@ -136,7 +141,7 @@ export default function Usuarios() {
       setForm(EMPTY_FORM);
       toast({ variant: "success", description: "Usuário atualizado." });
     },
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Erro", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   // Toggle de status (Ativo ↔ Inativo)
@@ -146,7 +151,7 @@ export default function Usuarios() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["usuarios"] });
     },
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Erro", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   // Salvar permissões editadas
@@ -167,12 +172,12 @@ export default function Usuarios() {
         })
       );
     },
-    onSuccess: () => {
+    onSuccess: (_data, { usuarioId }) => {
       queryClient.invalidateQueries({ queryKey: ["permissoes"] });
-      queryClient.invalidateQueries({ queryKey: ["permissoes-editor", editing?.id] });
+      queryClient.invalidateQueries({ queryKey: ["permissoes-editor", usuarioId] });
       toast({ variant: "success", description: "Permissões salvas." });
     },
-    onError: (e) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onError: (e) => toast({ title: "Erro", description: friendlyMessage(e), variant: "destructive" }),
   });
 
   // Helpers da matriz de permissões
@@ -221,6 +226,10 @@ export default function Usuarios() {
   };
 
   const handleSubmit = () => {
+    if (editing ? !canEdit : !canCreate) {
+      toast({ title: "Sem permissão", description: "Você não tem permissão para esta ação em Configurações.", variant: "destructive" });
+      return;
+    }
     if (!form.nome || !form.email) {
       toast({ title: "Campos obrigatórios", description: "Nome e e-mail são obrigatórios.", variant: "destructive" });
       return;
@@ -241,9 +250,11 @@ export default function Usuarios() {
     <div className="flex flex-col h-full">
       <PageHeader
         actions={
-          <Button size="sm" onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Plus className="w-4 h-4 mr-2" />Novo Usuário
-          </Button>
+          canCreate && (
+            <Button size="sm" onClick={() => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); }} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Plus className="w-4 h-4 mr-2" />Novo Usuário
+            </Button>
+          )
         }
       />
       <div className="flex-1 overflow-auto p-6 space-y-4">
@@ -333,7 +344,7 @@ export default function Usuarios() {
                           <button
                             type="button"
                             onClick={() => toggleStatusMut.mutate({ id: u.id, status })}
-                            disabled={toggleStatusMut.isPending}
+                            disabled={toggleStatusMut.isPending || !canEdit}
                             title={status === "Ativo" ? "Clique para desativar" : "Clique para ativar"}
                             className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-colors cursor-pointer ${cfg.bg}`}
                           >
@@ -343,7 +354,7 @@ export default function Usuarios() {
                         <td className="py-3 px-4 text-right">
                           <RowActions
                             onView={() => setViewItem(u)}
-                            onEdit={() => handleEdit(u)}
+                            onEdit={canEdit ? () => handleEdit(u) : undefined}
                             size="sm"
                           />
                         </td>
@@ -495,7 +506,7 @@ export default function Usuarios() {
                   size="sm"
                   variant="save"
                   onClick={() => savePermsMut.mutate({ usuarioId: editing.id, matrix: permsMatrix })}
-                  disabled={savePermsMut.isPending || permsPending || permsError}
+                  disabled={savePermsMut.isPending || permsPending || permsError || !canEdit}
                 >
                   {savePermsMut.isPending ? "Salvando..." : "Salvar Permissões"}
                 </Button>

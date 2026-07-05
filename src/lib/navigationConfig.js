@@ -50,6 +50,9 @@ export const navigationGroups = [
   },
   {
     title: "Riscos",
+    // O módulo de permissões usa "Riscos e Mudanças" — sem esta chave o grupo
+    // ficaria invisível para todo usuário não-admin (permissoes["Riscos"] nunca existe)
+    permissionKey: "Riscos e Mudanças",
     icon: ShieldAlert,
     children: [
       { title: "Gestão de Riscos", path: "/riscos-mudancas/gestao-riscos" },

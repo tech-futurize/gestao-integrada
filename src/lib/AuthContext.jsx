@@ -1,5 +1,6 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { queryClientInstance } from '@/lib/query-client';
 
 const AuthContext = createContext();
 
@@ -10,16 +11,26 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings] = useState(null);
+  const prevUserIdRef = useRef(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      prevUserIdRef.current = session?.user?.id ?? null;
       setIsAuthenticated(!!session);
       setIsLoadingAuth(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const nextUser = session?.user ?? null;
+      const prevId = prevUserIdRef.current;
+      // Sessão encerrada (expiração/SIGNED_OUT) ou troca de usuário na mesma aba:
+      // sem limpar o cache, o próximo usuário veria dados do anterior até o refetch
+      if (prevId && (!nextUser || nextUser.id !== prevId)) {
+        queryClientInstance.clear();
+      }
+      prevUserIdRef.current = nextUser?.id ?? null;
+      setUser(nextUser);
       setIsAuthenticated(!!session);
       setAuthError(null);
     });
