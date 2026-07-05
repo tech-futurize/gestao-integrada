@@ -42,10 +42,11 @@ export default function FaturamentoForm({ faturamento, faturamentos = [], pqpMes
 
   const [form, setForm] = useState({
     numero: proximoNumero,
-    mes_referencia: faturamento?.mes_referencia ? faturamento.mes_referencia.slice(0, 7) : "",
     status: "Elaboração",
     observacoes: "",
     ...faturamento,
+    // depois do spread: input type="month" exige "YYYY-MM"; o valor do banco é "YYYY-MM-DD"
+    mes_referencia: faturamento?.mes_referencia ? faturamento.mes_referencia.slice(0, 7) : "",
     itens: initialItens,
   });
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));

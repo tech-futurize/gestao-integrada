@@ -254,7 +254,7 @@ export default function PqMestraTab({
       qtd_contratual: Number(addQtd) || 0,
       preco_unitario: Number(addPreco) || 0,
     };
-    const newTree = insertIntoTree(pqpMestra, addParent || null, newNode);
+    const newTree = insertIntoTree(pqpMestra, addParent && addParent !== "__root__" ? addParent : null, newNode);
     onSavePqp?.(newTree);
     setShowAddItem(false);
   };
@@ -561,7 +561,8 @@ function AddItemForm({
             <SelectValue placeholder="— Raiz (nível superior) —" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">— Raiz (nível superior) —</SelectItem>
+            {/* Radix Select rejeita value="" (lança em render) — sentinela mapeada para raiz */}
+            <SelectItem value="__root__">— Raiz (nível superior) —</SelectItem>
             {allNodes.map(({ item, descricao }) => (
               <SelectItem key={item} value={item}>
                 {item} — {descricao || "(sem descrição)"}

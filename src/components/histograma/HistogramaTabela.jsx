@@ -82,7 +82,7 @@ function CelulaEditavel({ registro, campo, onSave, isFirstInMonth = false }) {
 
   const handleBlur = () => {
     if (cancelRef.current) { cancelRef.current = false; setEditing(false); return; }
-    const numVal = Number(inputVal);
+    const numVal = Number(String(inputVal).replace(",", "."));
     const parsed = isNaN(numVal) ? 0 : numVal;
     const original = registro[campo] ?? 0;
     if (parsed !== original) {

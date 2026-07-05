@@ -413,10 +413,23 @@ export default function AvancoFisicoPanel({ showImportExport, setShowImportExpor
         <ImportExportDialog
           open={showImportExport}
           onOpenChange={setShowImportExport}
-          data={avancos}
           columns={EXPORT_COLUMNS}
-          entityName="AvancoFisico"
-          projectId={selectedProjectId}
+          exportFileName="avanco-fisico"
+          onExport={() => avancos}
+          onImport={async (row) => {
+            const semanaIso = String(row.semana_iso ?? "").trim();
+            if (!semanaIso) throw new Error("Semana ISO é obrigatória.");
+            const payload = {
+              avanco_previsto_mensal:  Number(row.avanco_previsto_mensal)  || 0,
+              avanco_realizado_mensal: Number(row.avanco_realizado_mensal) || 0,
+              avanco_projetado:        Number(row.avanco_projetado)        || 0,
+            };
+            // upsert por semana_iso — a tabela tem UNIQUE (projeto_id, semana_iso)
+            const existing = dataMap.get(semanaIso);
+            if (existing) await entities.AvancoFisico.update(existing.id, payload);
+            else await entities.AvancoFisico.create({ projeto_id: selectedProjectId, semana_iso: semanaIso, ...payload });
+            queryClient.invalidateQueries({ queryKey: ["avanco_fisico", selectedProjectId] });
+          }}
         />
       )}
     </div>

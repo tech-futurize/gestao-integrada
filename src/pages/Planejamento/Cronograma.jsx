@@ -1,4 +1,4 @@
-import { useState, useMemo, useDeferredValue } from "react";
+import { useState, useMemo, useRef, useDeferredValue } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { entities } from "@/api/supabaseEntities";
 import { useProject } from "@/lib/ProjectContext";
@@ -39,6 +39,7 @@ export default function Cronograma() {
   const queryClient = useQueryClient();
 
   const [showImportExport, setShowImportExport] = useState(false);
+  const importMapRef = useRef(null);
   const [viewingTarefa, setViewingTarefa] = useState(null);
   const [zoom, setZoom] = useState("meses");
   const [showBaseline, setShowBaseline] = useState(false);
@@ -131,12 +132,20 @@ export default function Cronograma() {
       caminho_critico:       row.caminho_critico       ?? false,
     };
 
-    // Match por codigo_wbs dentro do projeto; fallback: cria novo
-    const existing = tarefas.find(t => t.codigo_wbs && t.codigo_wbs === row.codigo_wbs);
-    if (existing) {
-      await entities.TarefaCronograma.update(existing.id, payload);
+    // Match por codigo_wbs dentro do projeto; o mapa vive durante a importação
+    // (o array `tarefas` é um closure stale — não vê linhas criadas nas iterações
+    // anteriores, o que duplicava tarefas com o mesmo WBS no arquivo)
+    if (!importMapRef.current) {
+      importMapRef.current = new Map(
+        tarefas.filter(t => t.codigo_wbs).map(t => [t.codigo_wbs, t.id])
+      );
+    }
+    const existingId = row.codigo_wbs ? importMapRef.current.get(row.codigo_wbs) : null;
+    if (existingId) {
+      await entities.TarefaCronograma.update(existingId, payload);
     } else {
-      await entities.TarefaCronograma.create(payload);
+      const created = await entities.TarefaCronograma.create(payload);
+      if (created?.codigo_wbs) importMapRef.current.set(created.codigo_wbs, created.id);
     }
     queryClient.invalidateQueries({ queryKey: ["tarefas_cronograma"] });
   };
@@ -166,7 +175,8 @@ export default function Cronograma() {
   const totalTarefas = filteredTarefas.length;
   const concluidas   = filteredTarefas.filter(t => (t.avanco_realizado || 0) === 100).length;
   const emAndamento  = filteredTarefas.filter(t => (t.avanco_realizado || 0) > 0 && (t.avanco_realizado || 0) < 100).length;
-  const atrasadas    = filteredTarefas.filter(t => t.data_fim_planejada && new Date(t.data_fim_planejada) < new Date() && (t.avanco_realizado || 0) < 100).length;
+  const _hojeKpi     = new Date(); _hojeKpi.setHours(0, 0, 0, 0);
+  const atrasadas    = filteredTarefas.filter(t => t.data_fim_planejada && new Date(t.data_fim_planejada + "T00:00:00") < _hojeKpi && (t.avanco_realizado || 0) < 100).length;
   const criticas     = filteredTarefas.filter(t => t.caminho_critico).length;
   const _hoje6wla    = new Date(); _hoje6wla.setHours(0, 0, 0, 0);
   const _fim6wla     = new Date(_hoje6wla); _fim6wla.setDate(_hoje6wla.getDate() + 42);
@@ -339,7 +349,7 @@ export default function Cronograma() {
       {/* Import/Export */}
       <ImportExportDialog
         open={showImportExport}
-        onOpenChange={setShowImportExport}
+        onOpenChange={(open) => { if (!open) importMapRef.current = null; setShowImportExport(open); }}
         title="Cronograma"
         exportFileName="cronograma"
         columns={EXPORT_COLUMNS}

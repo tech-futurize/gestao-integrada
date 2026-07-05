@@ -184,7 +184,16 @@ function ItemModal({ item, onSave, onClose, totalItems, lancamentos = [], onSave
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={onClose}>Cancelar</Button>
-              <Button variant="save" onClick={() => onSave({ ...form, qtd_contrato: Number(form.qtd_contrato), qtd_takeoff: Number(form.qtd_takeoff) || null })}>
+              <Button variant="save" onClick={() => onSave({
+                // whitelist: form herda campos derivados (realizado/saldo/pct/status)
+                // do item enriquecido — enviá-los faria o PostgREST rejeitar o update
+                codigo: form.codigo,
+                descricao: form.descricao,
+                disciplina: form.disciplina,
+                unidade: form.unidade,
+                qtd_contrato: Number(String(form.qtd_contrato).replace(",", ".")) || 0,
+                qtd_takeoff: form.qtd_takeoff === "" || form.qtd_takeoff == null ? null : Number(String(form.qtd_takeoff).replace(",", ".")) || 0,
+              })}>
                 <Save className="w-4 h-4 mr-1" />Salvar
               </Button>
             </div>
@@ -834,7 +843,15 @@ export default function TakeOffCommodities({ showImportExport, onCloseImportExpo
         exportFileName="takeoff-commodities"
         columns={COMMODITY_COLUMNS}
         onExport={() => filtered}
-        onImport={(row) => createItem.mutateAsync({ ...row, projeto_id: selectedProjectId })}
+        onImport={async (row) => {
+          const payload = { ...row, projeto_id: selectedProjectId };
+          if (!DISCIPLINAS.includes(payload.disciplina)) {
+            throw new Error(`Disciplina inválida: "${payload.disciplina ?? ""}" — use uma de: ${DISCIPLINAS.join(", ")}`);
+          }
+          const existente = items.find((i) => i.codigo === row.codigo);
+          if (existente) await updateItem.mutateAsync({ id: existente.id, data: payload });
+          else await createItem.mutateAsync(payload);
+        }}
       />
     </div>
   );

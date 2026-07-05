@@ -114,15 +114,21 @@ export default function Faturamento() {
   const handleImport = async (row) => {
     const rawMes = (row.mes_referencia ?? "").trim();
     const mes = /^\d{4}-\d{2}$/.test(rawMes) ? `${rawMes}-01` : rawMes;
-    await entities.Faturamento.create({
-      projeto_id: selectedProjectId,
-      numero: String(row.numero || ""),
+    const numero = String(row.numero || "");
+    const payload = {
+      numero,
       mes_referencia: mes || null,
       valor_medido: Number(row.valor_medido) || 0,
       status: row.status === "Concluído" ? "Concluído" : "Elaboração",
       observacoes: row.observacoes || "",
-      itens: [],
-    });
+    };
+    // upsert por numero — reimportar o arquivo exportado duplicava todas as medições
+    const existing = numero ? faturamentos.find((f) => String(f.numero) === numero) : null;
+    if (existing) {
+      await entities.Faturamento.update(existing.id, payload);
+    } else {
+      await entities.Faturamento.create({ ...payload, projeto_id: selectedProjectId, itens: [] });
+    }
     queryClient.invalidateQueries({ queryKey: ["faturamentos"] });
   };
 

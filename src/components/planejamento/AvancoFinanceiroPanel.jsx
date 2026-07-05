@@ -246,7 +246,8 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
   const handleSave = (pk, campo, valor) => {
     if (campo === FIELDS.real) return; // Real é derivado do módulo Faturamento — não editável
     const existing = dataMap.get(pk);
-    if (existing) {
+    // registros sintéticos (Real vindo só do Faturamento) não têm id — precisam de create
+    if (existing?.id) {
       const updates = { [campo]: valor };
       // Regra de negócio: ao salvar Real, zera Projetado do mesmo mês
       if (campo === "faturamento_realizado_mensal") updates.faturamento_projetado = 0;
@@ -278,7 +279,7 @@ export default function AvancoFinanceiroPanel({ showImportExport, setShowImportE
         faturamento_projetado:         Number(row.faturamento_projetado)        || 0,
       };
       const existing = dataMap.get(pk);
-      if (existing) {
+      if (existing?.id) {
         await entities.Financeiro.update(existing.id, payload);
       } else {
         await entities.Financeiro.create(payload);
